@@ -1,25 +1,36 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Mapsui;
+using Microsoft.Extensions.Logging;
+using SkiaSharp.Views.Maui.Controls.Hosting;
+using TourGuideApp.Services;
+using TourGuideApp.ViewModels;
 
-namespace TourGuideApp
+namespace TourGuideApp;
+public static class MauiProgram
 {
-    public static class MauiProgram
+    public static MauiApp CreateMauiApp()
     {
-        public static MauiApp CreateMauiApp()
-        {
-            var builder = MauiApp.CreateBuilder();
-            builder
-                .UseMauiApp<App>()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                    fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
-                });
+        var builder = MauiApp.CreateBuilder();
+
+        builder
+            .UseMauiApp<App>()
+            .UseSkiaSharp()
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+            });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+        builder.Logging.AddDebug();
 #endif
 
-            return builder.Build();
-        }
+        // SERVICES
+        builder.Services.AddSingleton<MapService>();
+        builder.Services.AddSingleton<LocationService>();
+
+        // VIEWMODELS
+        builder.Services.AddSingleton<MapViewModel>();
+
+        return builder.Build();
     }
 }

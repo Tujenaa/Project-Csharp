@@ -3,13 +3,51 @@
     x:Class="TourGuideApp.AppShell"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:TourGuideApp"
-    Shell.FlyoutBehavior="Disabled"
-    Title="TourGuideApp">
+    xmlns:pages="clr-namespace:TourGuideApp.Pages"
+    Shell.FlyoutBehavior="Flyout"
+    FlyoutBackgroundColor="#1a1a2e"
+    FlyoutHeaderBehavior="CollapseOnScroll">
 
-    <ShellContent
-        Title="Home"
-        ContentTemplate="{DataTemplate local:MainPage}"
-        Route="MainPage" />
+    <Shell.FlyoutHeader>
+        <Grid BackgroundColor="#16213e" Padding="20" HeightRequest="180">
+            <VerticalStackLayout VerticalOptions="Center">
+
+                <Image Source="logo.png" HeightRequest="80" WidthRequest="80" Aspect="AspectFill" HorizontalOptions="Center">
+                    <Image.Clip>
+                        <EllipseGeometry Center="40,40" RadiusX="40" RadiusY="40"/>
+                    </Image.Clip>
+                </Image>
+
+                <Label Text="Tour Guide" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,10,0,0"/>
+                <Label Text="Khám phá địa điểm" TextColor="#e94560" FontSize="14" HorizontalOptions="Center"/>
+
+            </VerticalStackLayout>
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <FlyoutItem Title="Trang chủ" Icon="home.png">
+        <ShellContent Title="Home" Route="home" ContentTemplate="{DataTemplate pages:HomePage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Bản đồ" Icon="map.png">
+        <ShellContent Title="Map" Route="map" ContentTemplate="{DataTemplate pages:MapPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="Cài đặt" Icon="settings.png">
+        <ShellContent Title="Settings" Route="settings" ContentTemplate="{DataTemplate pages:SettingsPage}" />
+    </FlyoutItem>
+
+    <Shell.FlyoutFooter>
+        <Grid BackgroundColor="#0f3460" Padding="20" HeightRequest="60">
+            <Label Text="© 2026 Tour Guide App" TextColor="#94a3b8" FontSize="12" VerticalOptions="Center" HorizontalOptions="Center"/>
+        </Grid>
+    </Shell.FlyoutFooter>
+
+    <Shell.Resources>
+        <Style TargetType="FlyoutItem">
+            <Setter Property="Shell.BackgroundColor" Value="#1a1a2e"/>
+            <Setter Property="Shell.ForegroundColor" Value="White"/>
+        </Style>
+    </Shell.Resources>
 
 </Shell>
