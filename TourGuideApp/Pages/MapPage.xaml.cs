@@ -1,4 +1,5 @@
-﻿using TourGuideApp.ViewModels;
+﻿using Mapsui.UI.Maui;
+using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.Pages;
 
