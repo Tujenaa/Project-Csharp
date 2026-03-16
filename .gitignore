@@ -1,0 +1,18 @@
+# build
+bin/
+obj/
+
+# visual studio
+.vs/
+*.user
+*.suo
+
+# maui
+*.apk
+*.aab
+
+# logs
+*.log
+
+# temp
+*.tmp

@@ -1,0 +1,62 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — TourGuide CMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="~/css/site.css" rel="stylesheet" />
+</head>
+<body>
+
+    <div class="app-shell">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="logo-icon"><i class="bi bi-broadcast-pin"></i></span>
+                <span class="logo-text">TourGuide</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-item @(ViewData["Active"]?.ToString() == "home" ? "active" : "")">
+                    <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                </a>
+                <div class="nav-section">NỘI DUNG</div>
+                <a href="/Pois" class="nav-item @(ViewData["Active"]?.ToString() == "pois" ? "active" : "")">
+                    <i class="bi bi-geo-alt"></i><span>Điểm thuyết minh</span>
+                </a>
+                <a href="/AudioManager" class="nav-item @(ViewData["Active"]?.ToString() == "audio" ? "active" : "")">
+                    <i class="bi bi-music-note-beamed"></i><span>Quản lý Audio</span>
+                </a>
+                <div class="nav-section">DỮ LIỆU</div>
+                <a href="/HistoryPage" class="nav-item @(ViewData["Active"]?.ToString() == "history" ? "active" : "")">
+                    <i class="bi bi-clock-history"></i><span>Lịch sử phát</span>
+                </a>
+                <a href="/Users" class="nav-item @(ViewData["Active"]?.ToString() == "users" ? "active" : "")">
+                    <i class="bi bi-people"></i><span>Người dùng</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <span>API: <code>:5266</code></span>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main class="main-area">
+            <header class="top-bar">
+                <div class="page-title">@ViewData["Title"]</div>
+                <div class="top-actions">
+                    <span class="status-dot"></span>
+                    <span class="status-text">API Online</span>
+                </div>
+            </header>
+            <div class="page-body">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
