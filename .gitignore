@@ -16,3 +16,10 @@ obj/
 
 # temp
 *.tmp
+
+bin/
+obj/
+.vs/
+*.user
+*.log
+
