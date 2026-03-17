@@ -1,20 +1,20 @@
-﻿using MapsuiMap = Mapsui.Map;
+﻿using System.Collections.ObjectModel;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
-
-namespace TourGuideApp.ViewModels;
 
 public class MapViewModel
 {
     public Mapsui.Map Map { get; set; }
 
+    public ObservableCollection<POI> NearbyPOI { get; set; } = new();
+
     readonly MapService mapService = new();
     readonly LocationService locationService = new();
+    readonly ApiService apiService = new();
 
     public MapViewModel()
     {
         Map = mapService.CreateMap();
-
         LoadMap();
     }
 
@@ -22,55 +22,13 @@ public class MapViewModel
     {
         var location = await locationService.GetCurrentLocationAsync();
 
-        // danh sách nhà hàng
-        var restaurants = new List<Restaurant>
-        {
-            new Restaurant
-            {
-                Name = "Phở Hòa Pasteur",
-                Latitude = 10.7840,
-                Longitude = 106.6992
-            },
-            new Restaurant
-            {
-                Name = "Bún Chả Hà Nội 26",
-                Latitude = 10.7804,
-                Longitude = 106.7008
-            },
-            new Restaurant
-            {
-                Name = "Bánh mì Huỳnh Hoa",
-                Latitude = 10.7725,
-                Longitude = 106.6980
-            }
-        };
+        var pois = await apiService.GetPOI();
 
-        // marker vị trí người dùng
-        if (location != null)
+        foreach (var poi in pois)
         {
-            mapService.AddMarker(Map, location.Longitude, location.Latitude);
+            NearbyPOI.Add(poi);
 
-            mapService.ZoomToLocation(Map, location.Longitude, location.Latitude);
+            mapService.AddMarker(Map, poi.Longitude, poi.Latitude);
         }
-        else
-        {
-            // fallback nếu không lấy được GPS
-            mapService.ZoomToLocation(Map, restaurants[0].Longitude, restaurants[0].Latitude);
-        }
-
-        // marker nhà hàng
-        foreach (var r in restaurants)
-        {
-            mapService.AddMarker(Map, r.Longitude, r.Latitude);
-        }
-
-        // vẽ đường đi giữa các nhà hàng
-        var route = restaurants
-            .Select(r => (r.Longitude, r.Latitude))
-            .ToList();
-
-        mapService.DrawRoute(Map, route);
-        mapService.ZoomToLocation(Map, 106.6992, 10.7840);
     }
-
 }

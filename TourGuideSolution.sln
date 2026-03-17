@@ -5,7 +5,9 @@ VisualStudioVersion = 17.14.37012.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TourGuideWeb", "TourGuideWeb\TourGuideWeb.csproj", "{BB4DB095-8550-F70C-9E8F-A01134A3FC90}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TourGuideAPI", "TourGuideAPI\TourGuideAPI\TourGuideAPI.csproj", "{399F1625-221F-3D64-611C-01868A30E3E4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TourGuideAPI", "TourGuideAPI\TourGuideAPI.csproj", "{F37F190B-27FC-6E55-DE80-42A055FD7382}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TourGuideApp", "TourGuideApp\TourGuideApp.csproj", "{09A4976B-CE90-D799-F6A8-DD265AFFB99C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +19,16 @@ Global
 		{BB4DB095-8550-F70C-9E8F-A01134A3FC90}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB4DB095-8550-F70C-9E8F-A01134A3FC90}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB4DB095-8550-F70C-9E8F-A01134A3FC90}.Release|Any CPU.Build.0 = Release|Any CPU
-		{399F1625-221F-3D64-611C-01868A30E3E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{399F1625-221F-3D64-611C-01868A30E3E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{399F1625-221F-3D64-611C-01868A30E3E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{399F1625-221F-3D64-611C-01868A30E3E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F37F190B-27FC-6E55-DE80-42A055FD7382}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F37F190B-27FC-6E55-DE80-42A055FD7382}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F37F190B-27FC-6E55-DE80-42A055FD7382}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F37F190B-27FC-6E55-DE80-42A055FD7382}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09A4976B-CE90-D799-F6A8-DD265AFFB99C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09A4976B-CE90-D799-F6A8-DD265AFFB99C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09A4976B-CE90-D799-F6A8-DD265AFFB99C}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{09A4976B-CE90-D799-F6A8-DD265AFFB99C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09A4976B-CE90-D799-F6A8-DD265AFFB99C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09A4976B-CE90-D799-F6A8-DD265AFFB99C}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

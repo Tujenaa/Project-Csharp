@@ -1,17 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using GPSGuide.Web.Models;
-<<<<<<< HEAD
+
 using System.Net.Http.Json;
 using System.Text.Json;
-=======
->>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
 
 namespace GPSGuide.Web.Pages;
 
 public class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _http;
-<<<<<<< HEAD
+
 
     public int TotalPois { get; set; }
     public int TotalPlays { get; set; }
@@ -83,7 +81,7 @@ public class IndexModel : PageModel
         public string Name { get; set; } = "";
         public int Count { get; set; }
     }
-=======
+
     private readonly IConfiguration _config;
 
     public IndexModel(IHttpClientFactory http, IConfiguration config)
@@ -141,5 +139,4 @@ public class IndexModel : PageModel
     public record HistoryItem(int Id, int PoiId, string? PoiName, DateTime PlayTime);
     private record AudioItem(int Id, int PoiId);
     private record UserItem(int Id, string Username);
->>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
 }

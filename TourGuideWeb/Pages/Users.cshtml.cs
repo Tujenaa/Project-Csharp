@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-<<<<<<< HEAD
+
 using GPSGuide.Web.Models;
 using System.Net.Http.Json;
-=======
->>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
 
 namespace GPSGuide.Web.Pages;
 
@@ -13,7 +11,7 @@ public class UsersModel : PageModel
     private readonly IHttpClientFactory _http;
     public UsersModel(IHttpClientFactory http) => _http = http;
 
-<<<<<<< HEAD
+
     [TempData] public string Msg { get; set; } = "";
     [TempData] public string Error { get; set; } = "";
 
@@ -70,7 +68,7 @@ public class UsersModel : PageModel
 
         return RedirectToPage();
     }
-=======
+
     public List<UserItem> Users { get; set; } = [];
     [TempData] public string Msg { get; set; } = "";
 
@@ -103,5 +101,4 @@ public class UsersModel : PageModel
     }
 
     public record UserItem(int Id, string Username, string Role);
->>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
 }

@@ -1,4 +1,6 @@
-﻿using Mapsui.UI.Maui;
+﻿using Mapsui;
+using Mapsui.UI.Maui;
+using Microsoft.Maui.Devices.Sensors;
 using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.Pages;
@@ -13,11 +15,43 @@ public partial class MapPage : ContentPage
 
         viewModel = new MapViewModel();
 
-        RouteMap.Map = viewModel.Map;
+        BindingContext = viewModel;
+
+        map.Map = viewModel.Map;
+    }
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        var location = await Geolocation.GetLocationAsync();
+
+        if (location != null)
+        {
+            var point = new MPoint(location.Longitude, location.Latitude);
+
+            map.Map.Navigator.CenterOn(point);
+            map.Map.Navigator.ZoomTo(1000);
+        }
     }
 
     private async void OnCurrentLocationTapped(object sender, EventArgs e)
     {
-        await DisplayAlert("GPS", "Đang lấy vị trí hiện tại", "OK");
+        try
+        {
+            var location = await Geolocation.GetLocationAsync(
+                new GeolocationRequest(GeolocationAccuracy.Medium));
+
+            if (location != null)
+            {
+                var point = new MPoint(location.Longitude, location.Latitude);
+                map.Map.Navigator.CenterOn(point);
+                map.Map.Navigator.ZoomTo(1000);
+            }
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Lỗi", ex.Message, "OK");
+        }
     }
 }

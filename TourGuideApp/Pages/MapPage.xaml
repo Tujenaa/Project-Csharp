@@ -15,7 +15,7 @@
 
         <Grid Grid.Row="0">
             <mapsui:MapControl
-                x:Name="RouteMap"
+                x:Name="map"
                 HorizontalOptions="Fill"
                 VerticalOptions="Fill"/>
 
@@ -76,39 +76,49 @@
                         TextColor="#64748b"/>
                 </VerticalStackLayout>
 
-                <ScrollView
+                <CollectionView
                     Grid.Row="1"
-                    Orientation="Horizontal"
-                    Padding="20,0,20,20">
+                    ItemsSource="{Binding NearbyPOI}"
+                    ItemsLayout="HorizontalList"
+                    Margin="20,0,20,20">
 
-                    <HorizontalStackLayout Spacing="15">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
 
-                        <Frame BackgroundColor="White" CornerRadius="20" WidthRequest="260">
-                            <VerticalStackLayout Padding="15">
-                                <Label Text="Nhà thờ Đức Bà" FontSize="18" FontAttributes="Bold" TextColor="#1a1a2e"/>
-                                <Label Text="⭐ 4.8 • 300m" FontSize="13" TextColor="#64748b" Margin="0,0,0,10"/>
-                                <Button Text="▶ Audio giới thiệu" BackgroundColor="#fef3f2" TextColor="#e94560" CornerRadius="10" HeightRequest="40"/>
-                            </VerticalStackLayout>
-                        </Frame>
+                            <Frame BackgroundColor="White"
+                           CornerRadius="20"
+                           WidthRequest="260"
+                           Margin="0,0,15,0">   
 
-                        <Frame BackgroundColor="White" CornerRadius="20" WidthRequest="260">
-                            <VerticalStackLayout Padding="15">
-                                <Label Text="Dinh Độc Lập" FontSize="18" FontAttributes="Bold" TextColor="#1a1a2e"/>
-                                <Label Text="⭐ 4.7 • 450m" FontSize="13" TextColor="#64748b" Margin="0,0,0,10"/>
-                                <Button Text="▶ Audio giới thiệu" BackgroundColor="#fef3f2" TextColor="#e94560" CornerRadius="10" HeightRequest="40"/>
-                            </VerticalStackLayout>
-                        </Frame>
+                                <VerticalStackLayout Padding="15">
 
-                        <Frame BackgroundColor="White" CornerRadius="20" WidthRequest="260">
-                            <VerticalStackLayout Padding="15">
-                                <Label Text="Chợ Bến Thành" FontSize="18" FontAttributes="Bold" TextColor="#1a1a2e"/>
-                                <Label Text="⭐ 4.6 • 500m" FontSize="13" TextColor="#64748b" Margin="0,0,0,10"/>
-                                <Button Text="▶ Audio giới thiệu" BackgroundColor="#fef3f2" TextColor="#e94560" CornerRadius="10" HeightRequest="40"/>
-                            </VerticalStackLayout>
-                        </Frame>
+                                    <Label
+                        Text="{Binding Name}"
+                        FontSize="18"
+                        FontAttributes="Bold"
+                        TextColor="#1a1a2e"/>
 
-                    </HorizontalStackLayout>
-                </ScrollView>
+                                    <Label
+                        Text="📍 Địa điểm gần bạn"
+                        FontSize="13"
+                        TextColor="#64748b"
+                        Margin="0,0,0,10"/>
+
+                                    <Button
+                        Text="▶ Audio giới thiệu"
+                        BackgroundColor="#fef3f2"
+                        TextColor="#e94560"
+                        CornerRadius="10"
+                        HeightRequest="40"/>
+
+                                </VerticalStackLayout>
+
+                            </Frame>
+
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+
+                </CollectionView>
             </Grid>
         </Frame>
     </Grid>
