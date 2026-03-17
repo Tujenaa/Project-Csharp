@@ -10,10 +10,20 @@ public class PoisModel : PageModel
     private readonly IHttpClientFactory _http;
     public PoisModel(IHttpClientFactory http) => _http = http;
 
+<<<<<<< HEAD
     [TempData] public string Msg { get; set; } = "";
     [TempData] public string Error { get; set; } = "";
     public IList<POI> Pois { get; private set; } = new List<POI>();
 
+=======
+    // ── View data ─────────────────────────────────────────────
+    [TempData] public string Msg { get; set; } = "";
+    [TempData] public string Error { get; set; } = "";
+
+    public IList<POI> Pois { get; private set; } = new List<POI>();
+
+    // ── Bound properties cho form (khớp đúng cột DB) ─────────
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
     [BindProperty] public int Id { get; set; }
     [BindProperty] public string Name { get; set; } = "";
     [BindProperty] public string? Description { get; set; }
@@ -25,10 +35,15 @@ public class PoisModel : PageModel
 
     private HttpClient Api => _http.CreateClient("API");
 
+<<<<<<< HEAD
+=======
+    // ── GET ───────────────────────────────────────────────────
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
     public async Task OnGetAsync()
     {
         try
         {
+<<<<<<< HEAD
             // Bỏ "api/" thừa — BaseAddress đã là https://localhost:7134/api/
             Pois = await Api.GetFromJsonAsync<List<POI>>("poi") ?? new List<POI>();
         }
@@ -38,6 +53,17 @@ public class PoisModel : PageModel
         }
     }
 
+=======
+            Pois = await Api.GetFromJsonAsync<List<POI>>("api/poi") ?? new List<POI>();
+        }
+        catch
+        {
+            Error = "Không kết nối được API. Kiểm tra lại cấu hình ApiUrl.";
+        }
+    }
+
+    // ── POST: Tạo mới hoặc cập nhật ──────────────────────────
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)
@@ -62,12 +88,20 @@ public class PoisModel : PageModel
             HttpResponseMessage resp;
             if (Id == 0)
             {
+<<<<<<< HEAD
                 resp = await Api.PostAsJsonAsync("poi", body);
+=======
+                resp = await Api.PostAsJsonAsync("api/poi", body);
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
                 Msg = $"Đã thêm điểm \"{Name}\" thành công.";
             }
             else
             {
+<<<<<<< HEAD
                 resp = await Api.PutAsJsonAsync($"poi/{Id}", body);
+=======
+                resp = await Api.PutAsJsonAsync($"api/poi/{Id}", body);
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
                 Msg = $"Đã cập nhật \"{Name}\" thành công.";
             }
 
@@ -82,11 +116,19 @@ public class PoisModel : PageModel
         return RedirectToPage();
     }
 
+<<<<<<< HEAD
+=======
+    // ── POST: Xoá ─────────────────────────────────────────────
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
     public async Task<IActionResult> OnPostDeleteAsync()
     {
         try
         {
+<<<<<<< HEAD
             var resp = await Api.DeleteAsync($"poi/{DeleteId}");
+=======
+            var resp = await Api.DeleteAsync($"api/poi/{DeleteId}");
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
             if (resp.IsSuccessStatusCode)
                 Msg = "Đã xoá điểm thuyết minh thành công.";
             else
@@ -99,4 +141,8 @@ public class PoisModel : PageModel
 
         return RedirectToPage();
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e

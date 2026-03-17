@@ -1,18 +1,25 @@
 ﻿@page
 @model GPSGuide.Web.Pages.UsersModel
 @{
+<<<<<<< HEAD
     ViewData["Title"] = "Người dùng";
     ViewData["Active"] = "users";
+=======
+    ViewData["Title"] = "Người dùng"; ViewData["Active"] = "users";
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
 }
 
 @if (!string.IsNullOrEmpty(Model.Msg))
 {
     <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
 }
+<<<<<<< HEAD
 @if (!string.IsNullOrEmpty(Model.Error))
 {
     <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
 }
+=======
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
 
 <div class="page-header">
     <div>
@@ -27,12 +34,16 @@
 <div class="card">
     <table class="tg-table">
         <thead>
+<<<<<<< HEAD
             <tr>
                 <th>ID</th>
                 <th>Tên đăng nhập</th>
                 <th>Vai trò</th>
                 <th>Hành động</th>
             </tr>
+=======
+            <tr><th>ID</th><th>Tên đăng nhập</th><th>Vai trò</th><th>Hành động</th></tr>
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
         </thead>
         <tbody>
             @foreach (var u in Model.Users)
@@ -64,14 +75,19 @@
             }
             @if (!Model.Users.Any())
             {
+<<<<<<< HEAD
                 <tr>
                     <td colspan="4" class="empty-state">Chưa có người dùng nào.</td>
                 </tr>
+=======
+                <tr><td colspan="4" class="empty-state">Chưa có người dùng nào.</td></tr>
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
             }
         </tbody>
     </table>
 </div>
 
+<<<<<<< HEAD
 <!-- ===== MODAL THÊM NGƯỜI DÙNG ===== -->
 <div id="userModal" class="modal-backdrop" style="display:none"
      onclick="if(event.target===this)closeModal()">
@@ -81,17 +97,33 @@
             <button type="button" class="btn btn-ghost btn-icon" onclick="closeModal()">
                 <i class="bi bi-x-lg"></i>
             </button>
+=======
+<div id="userModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4>Thêm người dùng</h4>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
         </div>
         <form method="post">
             @Html.AntiForgeryToken()
             <div class="modal-body">
                 <div class="form-group">
+<<<<<<< HEAD
                     <label class="form-label">Tên đăng nhập <span class="req">*</span></label>
                     <input type="text" name="Username" class="form-control" required
                            maxlength="100" placeholder="VD: nguyen_owner" />
                 </div>
                 <div class="form-group">
                     <label class="form-label">Mật khẩu <span class="req">*</span></label>
+=======
+                    <label class="form-label">Tên đăng nhập <span class="required">*</span></label>
+                    <input type="text" name="Username" class="form-control" required maxlength="100"
+                           placeholder="VD: nguyen_owner" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu <span class="required">*</span></label>
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
                     <input type="password" name="PasswordHash" class="form-control" required />
                 </div>
                 <div class="form-group">
@@ -104,14 +136,19 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+<<<<<<< HEAD
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-check-lg"></i> Tạo
                 </button>
+=======
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Tạo</button>
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
             </div>
         </form>
     </div>
 </div>
 
+<<<<<<< HEAD
 <!-- ===== MODAL XOÁ ===== -->
 <div id="delModal" class="modal-backdrop" style="display:none"
      onclick="if(event.target===this)closeDelete()">
@@ -127,15 +164,30 @@
             <p class="text-muted" style="font-size:13px">
                 POI của người dùng này sẽ mất owner.
             </p>
+=======
+<div id="delModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeDelete()">
+    <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4>Xác nhận xoá</h4>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+            <p>Xoá người dùng <strong id="delName"></strong>?</p>
+            <p class="text-muted" style="font-size:13px">POI của người dùng này sẽ mất owner.</p>
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
             <form method="post" style="display:inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="DeleteId" id="fDelId" />
+<<<<<<< HEAD
                 <button type="submit" asp-page-handler="Delete" class="btn btn-danger">
                     <i class="bi bi-trash"></i> Xoá
                 </button>
+=======
+                <button type="submit" asp-page-handler="Delete" class="btn btn-danger"><i class="bi bi-trash"></i> Xoá</button>
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
             </form>
         </div>
     </div>
@@ -161,6 +213,7 @@
         background: #fee2e2;
         color: #b91c1c
     }
+<<<<<<< HEAD
 
     /* Fix chữ đen trong form */
     .form-control {
@@ -189,3 +242,17 @@
         if (e.key === 'Escape') { closeModal(); closeDelete(); }
     });
 </script>
+=======
+</style>
+<script>
+    function openModal(){ document.getElementById('userModal').style.display='flex'; }
+    function closeModal(){ document.getElementById('userModal').style.display='none'; }
+    function confirmDelete(btn){
+        document.getElementById('fDelId').value=btn.dataset.delId;
+        document.getElementById('delName').textContent=btn.dataset.delName;
+        document.getElementById('delModal').style.display='flex';
+    }
+    function closeDelete(){ document.getElementById('delModal').style.display='none'; }
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeDelete();}});
+</script>
+>>>>>>> a774dae7a97873962cbcdc147ce51e50f1dd3c0e
