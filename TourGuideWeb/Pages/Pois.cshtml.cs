@@ -10,12 +10,6 @@ public class PoisModel : PageModel
     private readonly IHttpClientFactory _http;
     public PoisModel(IHttpClientFactory http) => _http = http;
 
-
-    [TempData] public string Msg { get; set; } = "";
-    [TempData] public string Error { get; set; } = "";
-    public IList<POI> Pois { get; private set; } = new List<POI>();
-
-
     // ── View data ─────────────────────────────────────────────
     [TempData] public string Msg { get; set; } = "";
     [TempData] public string Error { get; set; } = "";
@@ -34,25 +28,12 @@ public class PoisModel : PageModel
 
     private HttpClient Api => _http.CreateClient("API");
 
-
-
     // ── GET ───────────────────────────────────────────────────
     public async Task OnGetAsync()
     {
         try
         {
-
-            // Bỏ "api/" thừa — BaseAddress đã là https://localhost:7134/api/
-            Pois = await Api.GetFromJsonAsync<List<POI>>("poi") ?? new List<POI>();
-        }
-        catch (Exception ex)
-        {
-            Error = "Không kết nối được API. Kiểm tra TourGuide.API đã chạy chưa. (" + ex.Message + ")";
-        }
-    }
-
-
-    Pois = await Api.GetFromJsonAsync<List<POI>>("api/poi") ?? new List<POI>();
+            Pois = await Api.GetFromJsonAsync<List<POI>>("api/poi") ?? new List<POI>();
         }
         catch
         {
@@ -62,79 +43,65 @@ public class PoisModel : PageModel
 
     // ── POST: Tạo mới hoặc cập nhật ──────────────────────────
     public async Task<IActionResult> OnPostAsync()
-{
-    if (!ModelState.IsValid)
     {
-        await OnGetAsync();
-        return Page();
-    }
-
-    var body = new POI
-    {
-        Id = Id,
-        Name = Name,
-        Description = Description ?? "",
-        Latitude = Latitude,
-        Longitude = Longitude,
-        Radius = Radius,
-        OwnerId = OwnerId
-    };
-
-    try
-    {
-        HttpResponseMessage resp;
-        if (Id == 0)
+        if (!ModelState.IsValid)
         {
-
-            resp = await Api.PostAsJsonAsync("poi", body);
-
-            resp = await Api.PostAsJsonAsync("api/poi", body);
-            Msg = $"Đã thêm điểm \"{Name}\" thành công.";
-        }
-        else
-        {
-
-            resp = await Api.PutAsJsonAsync($"poi/{Id}", body);
-
-            resp = await Api.PutAsJsonAsync($"api/poi/{Id}", body);
-            Msg = $"Đã cập nhật \"{Name}\" thành công.";
+            await OnGetAsync();
+            return Page();
         }
 
-        if (!resp.IsSuccessStatusCode)
-            Error = $"API trả về lỗi {(int)resp.StatusCode}: {resp.ReasonPhrase}";
+        var body = new POI
+        {
+            Id = Id,
+            Name = Name,
+            Description = Description ?? "",
+            Latitude = Latitude,
+            Longitude = Longitude,
+            Radius = Radius,
+            OwnerId = OwnerId
+        };
+
+        try
+        {
+            HttpResponseMessage resp;
+            if (Id == 0)
+            {
+                resp = await Api.PostAsJsonAsync("api/poi", body);
+                Msg = $"Đã thêm điểm \"{Name}\" thành công.";
+            }
+            else
+            {
+                resp = await Api.PutAsJsonAsync($"api/poi/{Id}", body);
+                Msg = $"Đã cập nhật \"{Name}\" thành công.";
+            }
+
+            if (!resp.IsSuccessStatusCode)
+                Error = $"API trả về lỗi {(int)resp.StatusCode}: {resp.ReasonPhrase}";
+        }
+        catch (Exception ex)
+        {
+            Error = "Lỗi kết nối API: " + ex.Message;
+        }
+
+        return RedirectToPage();
     }
-    catch (Exception ex)
+
+    // ── POST: Xoá ─────────────────────────────────────────────
+    public async Task<IActionResult> OnPostDeleteAsync()
     {
-        Error = "Lỗi kết nối API: " + ex.Message;
+        try
+        {
+            var resp = await Api.DeleteAsync($"api/poi/{DeleteId}");
+            if (resp.IsSuccessStatusCode)
+                Msg = "Đã xoá điểm thuyết minh thành công.";
+            else
+                Error = $"Xoá thất bại: {(int)resp.StatusCode} {resp.ReasonPhrase}";
+        }
+        catch (Exception ex)
+        {
+            Error = "Lỗi kết nối API: " + ex.Message;
+        }
+
+        return RedirectToPage();
     }
-
-    return RedirectToPage();
-}
-
-
-
-// ── POST: Xoá ─────────────────────────────────────────────
-public async Task<IActionResult> OnPostDeleteAsync()
-{
-    try
-    {
-
-        var resp = await Api.DeleteAsync($"poi/{DeleteId}");
-
-        var resp = await Api.DeleteAsync($"api/poi/{DeleteId}");
-        if (resp.IsSuccessStatusCode)
-            Msg = "Đã xoá điểm thuyết minh thành công.";
-        else
-            Error = $"Xoá thất bại: {(int)resp.StatusCode} {resp.ReasonPhrase}";
-    }
-    catch (Exception ex)
-    {
-        Error = "Lỗi kết nối API: " + ex.Message;
-    }
-
-    return RedirectToPage();
-}
-
-}
-
 }
