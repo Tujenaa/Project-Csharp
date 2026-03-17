@@ -1,0 +1,191 @@
+﻿@page
+@model GPSGuide.Web.Pages.UsersModel
+@{
+    ViewData["Title"] = "Người dùng";
+    ViewData["Active"] = "users";
+}
+
+@if (!string.IsNullOrEmpty(Model.Msg))
+{
+    <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
+}
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
+}
+
+<div class="page-header">
+    <div>
+        <h2>Người dùng</h2>
+        <div class="sub">Quản lý tài khoản và phân quyền</div>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">
+        <i class="bi bi-person-plus"></i> Thêm người dùng
+    </button>
+</div>
+
+<div class="card">
+    <table class="tg-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên đăng nhập</th>
+                <th>Vai trò</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in Model.Users)
+            {
+                <tr>
+                    <td class="text-muted">#@u.Id</td>
+                    <td>
+                        <span class="avatar">@u.Username.Substring(0, 1).ToUpper()</span>
+                        <strong>@u.Username</strong>
+                    </td>
+                    <td>
+                        @if (u.Role == "ADMIN")
+                        {
+                            <span class="badge badge-red">ADMIN</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-blue">OWNER</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
+                                data-del-id="@u.Id" data-del-name="@u.Username"
+                                onclick="confirmDelete(this)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Users.Any())
+            {
+                <tr>
+                    <td colspan="4" class="empty-state">Chưa có người dùng nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- ===== MODAL THÊM NGƯỜI DÙNG ===== -->
+<div id="userModal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeModal()">
+    <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4>Thêm người dùng</h4>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeModal()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Tên đăng nhập <span class="req">*</span></label>
+                    <input type="text" name="Username" class="form-control" required
+                           maxlength="100" placeholder="VD: nguyen_owner" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mật khẩu <span class="req">*</span></label>
+                    <input type="password" name="PasswordHash" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Vai trò</label>
+                    <select name="Role" class="form-control">
+                        <option value="OWNER">OWNER</option>
+                        <option value="ADMIN">ADMIN</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Tạo
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ===== MODAL XOÁ ===== -->
+<div id="delModal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeDelete()">
+    <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4>Xác nhận xoá</h4>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeDelete()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p>Xoá người dùng <strong id="delName"></strong>?</p>
+            <p class="text-muted" style="font-size:13px">
+                POI của người dùng này sẽ mất owner.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
+            <form method="post" style="display:inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="DeleteId" id="fDelId" />
+                <button type="submit" asp-page-handler="Delete" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Xoá
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #dbeafe;
+        color: #1d4ed8;
+        font-size: 12px;
+        font-weight: 600;
+        margin-right: 6px;
+        vertical-align: middle
+    }
+
+    .badge-red {
+        background: #fee2e2;
+        color: #b91c1c
+    }
+
+    /* Fix chữ đen trong form */
+    .form-control {
+        color: #212529 !important;
+        background-color: #ffffff !important;
+    }
+
+        .form-control::placeholder {
+            color: #9ca3af !important;
+            opacity: 1;
+        }
+</style>
+
+<script>
+    function openModal()  { document.getElementById('userModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('userModal').style.display = 'none'; }
+
+    function confirmDelete(btn) {
+        document.getElementById('fDelId').value          = btn.dataset.delId;
+        document.getElementById('delName').textContent   = btn.dataset.delName;
+        document.getElementById('delModal').style.display = 'flex';
+    }
+    function closeDelete() { document.getElementById('delModal').style.display = 'none'; }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeModal(); closeDelete(); }
+    });
+</script>

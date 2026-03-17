@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="TourGuideApp.Pages.PlaceDetailPage"
+    Title="Chi tiết địa điểm"
+    BackgroundColor="#f8f9fa">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+
+            <Grid HeightRequest="300">
+                <Image Source="{Binding Image}" Aspect="AspectFill"/>
+
+                <BoxView>
+                    <BoxView.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#00000000" Offset="0"/>
+                            <GradientStop Color="#80000000" Offset="1"/>
+                        </LinearGradientBrush>
+                    </BoxView.Background>
+                </BoxView>
+
+                <Frame BackgroundColor="#80000000" CornerRadius="20" Padding="10" WidthRequest="40" HeightRequest="40" Margin="15,50,0,0" HorizontalOptions="Start" VerticalOptions="Start">
+                    <Label Text="←" FontSize="20" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBackTapped"/>
+                    </Frame.GestureRecognizers>
+                </Frame>
+
+                <VerticalStackLayout VerticalOptions="End" Padding="20,20,20,25">
+                    <Label Text="{Binding Name}" FontSize="30" FontAttributes="Bold" TextColor="White"/>
+                    <Label Text="{Binding Address}" FontSize="14" TextColor="White" Opacity="0.9"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <Frame Margin="20,20,20,0" BackgroundColor="White" CornerRadius="20" Padding="20">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="🎧 Thuyết minh" FontSize="18" FontAttributes="Bold" TextColor="#1a1a2e"/>
+                    <Button Text="▶ Phát audio" BackgroundColor="#e94560" TextColor="White" CornerRadius="15" HeightRequest="45"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Grid Margin="20,20,20,0" ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Frame Grid.Column="0" BackgroundColor="White" CornerRadius="15" Padding="20">
+                    <VerticalStackLayout>
+                        <Label Text="📏" FontSize="28" HorizontalOptions="Center"/>
+                        <Label Text="{Binding Distance}" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Khoảng cách" FontSize="13" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame Grid.Column="1" BackgroundColor="White" CornerRadius="15" Padding="20">
+                    <VerticalStackLayout>
+                        <Label Text="🚶" FontSize="28" HorizontalOptions="Center"/>
+                        <Label Text="5 phút" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Đi bộ" FontSize="13" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <Frame Margin="20,20,20,0" BackgroundColor="White" CornerRadius="20" Padding="20">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Mô tả" FontSize="18" FontAttributes="Bold"/>
+                    <Label Text="{Binding Description}" FontSize="15" TextColor="#475569" LineHeight="1.5"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <Frame Margin="20,20,20,20" BackgroundColor="White" CornerRadius="20" Padding="20">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="📍 Thông tin" FontSize="18" FontAttributes="Bold"/>
+                    <Label Text="{Binding Address}" FontSize="14" TextColor="#475569"/>
+                    <Label Text="{Binding Phone}" FontSize="14" TextColor="#475569"/>
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

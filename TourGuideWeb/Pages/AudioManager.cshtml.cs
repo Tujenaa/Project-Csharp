@@ -1,0 +1,55 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using GPSGuide.Web.Models;
+
+namespace GPSGuide.Web.Pages;
+
+public class AudioManagerModel : PageModel
+{
+    private readonly IHttpClientFactory _http;
+    public AudioManagerModel(IHttpClientFactory http) => _http = http;
+
+    public List<Audio> Audios { get; set; } = [];
+    public List<POI> Pois { get; set; } = [];
+    [TempData] public string Msg { get; set; } = "";
+
+    [BindProperty] public int Id { get; set; }
+    [BindProperty] public int PoiId { get; set; }
+    [BindProperty] public string Language { get; set; } = "vi";
+    [BindProperty] public string? AudioUrl { get; set; }
+    [BindProperty] public string? Script { get; set; }
+    [BindProperty] public int DeleteId { get; set; }
+
+    public async Task OnGetAsync()
+    {
+        var client = _http.CreateClient("API");
+        try { Audios = await client.GetFromJsonAsync<List<Audio>>("audio") ?? []; } catch { Audios = []; }
+        try { Pois = await client.GetFromJsonAsync<List<POI>>("poi") ?? []; } catch { Pois = []; }
+    }
+
+    public async Task<IActionResult> OnPostAsync()
+    {
+        var client = _http.CreateClient("API");
+        var payload = new { PoiId, Language, AudioUrl, Script };
+        HttpResponseMessage res;
+        if (Id == 0)
+        {
+            res = await client.PostAsJsonAsync("audio", payload);
+            Msg = res.IsSuccessStatusCode ? "Đã thêm audio thành công." : "Thêm thất bại.";
+        }
+        else
+        {
+            res = await client.PutAsJsonAsync($"audio/{Id}", payload);
+            Msg = res.IsSuccessStatusCode ? "Đã cập nhật audio." : "Cập nhật thất bại.";
+        }
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync()
+    {
+        var client = _http.CreateClient("API");
+        await client.DeleteAsync($"audio/{DeleteId}");
+        Msg = "Đã xoá audio.";
+        return RedirectToPage();
+    }
+}
