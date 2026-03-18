@@ -243,7 +243,7 @@
     });
 
     // ── TTS core ───────────────────────────────────────────────────────────────
-    // Map lang code → BCP-47 prefix để match voice
+
     const langBcp = {
         vi: 'vi',
         en: 'en',
@@ -252,25 +252,18 @@
         ko: 'ko'
     };
 
-    /**
-     * Chọn voice phù hợp nhất cho langCode.
-     * Ưu tiên: exact match lang → prefix match → fallback default.
-     */
     function pickVoice(langCode) {
         const voices = window.speechSynthesis.getVoices();
         if (!voices.length) return null;
 
         const prefix = (langBcp[langCode] || langCode).toLowerCase();
 
-        // 1. Tìm voice có lang bắt đầu bằng prefix (vd: "vi-VN", "vi")
         const matched = voices.filter(v => v.lang.toLowerCase().startsWith(prefix));
         if (matched.length) {
-            // Ưu tiên voice local (không phải remote/network)
             const local = matched.find(v => v.localService);
             return local || matched[0];
         }
 
-        // 2. Không có → trả null (dùng default của browser)
         return null;
     }
 
@@ -281,7 +274,6 @@
             u.voice = voice;
             u.lang  = voice.lang;
         } else {
-            // Đặt lang BCP-47 để browser chọn gần đúng
             u.lang = langCode === 'vi' ? 'vi-VN'
                    : langCode === 'en' ? 'en-US'
                    : langCode === 'ja' ? 'ja-JP'

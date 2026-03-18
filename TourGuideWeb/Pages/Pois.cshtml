@@ -3,6 +3,9 @@
 @{
     ViewData["Title"] = "Điểm thuyết minh (POI)"; ViewData["Active"] = "pois";
 }
+@section Styles {
+    <link rel="stylesheet" href="~/css/pois.css" />
+}
 
 @if (!string.IsNullOrEmpty(Model.Msg))
 {
@@ -116,7 +119,6 @@
                     </button>
                 </div>
 
-                <!-- Tab: Thông tin -->
                 <div id="tab-basic" class="tab-pane">
                     <div class="form-group">
                         <label class="form-label">Tên điểm <span class="req">*</span></label>
@@ -143,7 +145,6 @@
                     </div>
                 </div>
 
-                <!-- Tab: Vị trí -->
                 <div id="tab-loc" class="tab-pane" style="display:none">
                     <div class="form-row">
                         <div class="form-group">
@@ -225,246 +226,8 @@
     </div>
 </div>
 
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<style>
-    /* ── Chỉ override những gì POIS cần thêm, không reset toàn bộ ── */
-
-    /* Coord link màu accent */
-    .coord-link {
-        font-size: 13px;
-        color: var(--accent2);
-        text-decoration: none;
-        font-family: var(--mono);
-    }
-
-        .coord-link:hover {
-            text-decoration: underline;
-            color: var(--accent);
-        }
-
-    /* Tab nav — dark theme */
-    .tab-nav {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 1.25rem;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .tab-btn {
-        background: none;
-        border: none;
-        padding: .5rem .875rem;
-        font-size: 13px;
-        cursor: pointer;
-        color: var(--text2);
-        border-bottom: 2px solid transparent;
-        margin-bottom: -1px;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        font-family: var(--font);
-        transition: color .15s;
-    }
-
-        .tab-btn:hover {
-            color: var(--text);
-        }
-
-        .tab-btn.active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-            font-weight: 600;
-        }
-
-    /* form-row 2 cột */
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-    }
-
-    /* req star */
-    .req {
-        color: var(--danger);
-    }
-
-    /* map toolbar */
-    .map-toolbar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: .75rem;
-        flex-wrap: wrap;
-    }
-
-    /* Modal — DARK, không phải trắng */
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.65);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-    }
-
-    .modal-box {
-        background: var(--bg2); /* dark card */
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        width: 100%;
-        max-width: 600px;
-        max-height: 90vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-
-        .modal-box.modal-lg {
-            max-width: 740px;
-        }
-
-        .modal-box.modal-sm {
-            max-width: 420px;
-        }
-
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--border);
-        flex-shrink: 0;
-    }
-
-        .modal-header h4 {
-            margin: 0;
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text);
-            font-family: var(--font);
-        }
-
-    .modal-body {
-        padding: 1.25rem;
-        overflow-y: auto;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-    }
-
-    .modal-footer {
-        padding: .875rem 1.25rem;
-        border-top: 1px solid var(--border);
-        display: flex;
-        justify-content: flex-end;
-        gap: .5rem;
-        flex-shrink: 0;
-    }
-
-    /* Form controls — DARK, chữ TRẮNG */
-    .form-label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: var(--text2);
-        margin-bottom: 5px;
-        text-transform: uppercase;
-        letter-spacing: .5px;
-        font-family: var(--font);
-    }
-
-    .form-group {
-        margin-bottom: 1rem;
-    }
-
-    .form-control {
-        width: 100%;
-        padding: .5rem .75rem;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        font-size: 14px;
-        background: var(--bg3) !important; /* nền tối */
-        color: var(--text) !important; /* chữ trắng */
-        -webkit-text-fill-color: var(--text) !important;
-        box-sizing: border-box;
-        font-family: var(--font);
-        transition: border-color .15s, box-shadow .15s;
-    }
-
-        .form-control::placeholder {
-            color: var(--text2) !important;
-            opacity: 1;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
-            color: var(--text) !important;
-            -webkit-text-fill-color: var(--text) !important;
-        }
-        /* Fix Chrome autofill trắng xoá */
-        .form-control:-webkit-autofill,
-        .form-control:-webkit-autofill:focus {
-            -webkit-box-shadow: 0 0 0 1000px var(--bg3) inset !important;
-            -webkit-text-fill-color: var(--text) !important;
-        }
-
-    select.form-control option {
-        background: var(--bg3);
-        color: var(--text);
-    }
-
-    textarea.form-control {
-        resize: vertical;
-    }
-
-    .form-hint {
-        font-size: 11px;
-        color: var(--text2);
-        margin-top: 4px;
-        font-family: var(--font);
-    }
-
-    /* Btn override cho modal (vì modal tự có style riêng) */
-    .modal-box .btn-ghost {
-        border-color: var(--border);
-        color: var(--text2);
-    }
-
-        .modal-box .btn-ghost:hover {
-            background: var(--bg3);
-            color: var(--text);
-            border-color: var(--accent);
-        }
-
-    .modal-box .btn-outline {
-        background: transparent;
-        border-color: var(--accent);
-        color: var(--accent);
-    }
-
-        .modal-box .btn-outline:hover {
-            background: rgba(59,130,246,.1);
-        }
-
-    .modal-box .btn-icon {
-        padding: 6px;
-        border: 1px solid var(--border);
-        color: var(--text2);
-    }
-
-        .modal-box .btn-icon:hover {
-            background: var(--bg3);
-            color: var(--text);
-        }
-</style>
 
 <script>
     var _pm = null, _pmk = null, _pmc = null;
