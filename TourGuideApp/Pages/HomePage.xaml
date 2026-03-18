@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="TourGuideApp.Pages.HomePage"
+    Title="Tour Guide"
+    BackgroundColor="#f8f9fa">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+
+            <Grid HeightRequest="260" BackgroundColor="#16213e">
+                <Image Source="map_preview.png" Aspect="AspectFill" Opacity="0.3"/>
+                <VerticalStackLayout VerticalOptions="Center" Padding="30,0">
+                    <Label Text="📍 Vị trí hiện tại" TextColor="White" FontSize="16" HorizontalOptions="Center"/>
+                    <Label x:Name="LocationLabel" Text="Đang xác định..." TextColor="#e94560" FontSize="26" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,5,0,15"/>
+                    <Button Text="Mở bản đồ" BackgroundColor="#e94560" TextColor="White" CornerRadius="25" HeightRequest="50" WidthRequest="200" FontAttributes="Bold" Clicked="OnMapButtonClicked" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Grid>
+
+            <Grid Padding="20" ColumnSpacing="10" Margin="0,-30,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Frame Grid.Column="0" BackgroundColor="White" CornerRadius="15" Padding="15">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="📍" FontSize="24" HorizontalOptions="Center"/>
+                        <Label Text="24" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Địa điểm" FontSize="12" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame Grid.Column="1" BackgroundColor="White" CornerRadius="15" Padding="15">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="🎧" FontSize="24" HorizontalOptions="Center"/>
+                        <Label Text="24" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Audio Guide" FontSize="12" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame Grid.Column="2" BackgroundColor="White" CornerRadius="15" Padding="15">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="🗺️" FontSize="24" HorizontalOptions="Center"/>
+                        <Label Text="2.5km" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        <Label Text="Lộ trình" FontSize="12" HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+                </Frame>
+            </Grid>
+
+            <Grid Padding="20,10">
+                <Label Text="⭐ Địa điểm nổi bật" FontSize="22" FontAttributes="Bold" TextColor="#1a1a2e"/>
+            </Grid>
+
+            <CollectionView Margin="20,0,20,20" SelectionMode="Single" SelectionChanged="OnPlaceSelected">
+                <CollectionView.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Nhà thờ Đức Bà</x:String>
+                        <x:String>Dinh Độc Lập</x:String>
+                        <x:String>Chợ Bến Thành</x:String>
+                        <x:String>Bưu điện Thành phố</x:String>
+                        <x:String>Bảo tàng lịch sử</x:String>
+                    </x:Array>
+                </CollectionView.ItemsSource>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="0,0,0,15" CornerRadius="20" BackgroundColor="White" HeightRequest="110">
+                            <Grid Padding="15">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding .}" FontSize="18" FontAttributes="Bold" TextColor="#1a1a2e"/>
+                                    <Label Text="⭐ 4.8 • 500m" FontSize="12" TextColor="#64748b"/>
+                                    <Label Text="Địa điểm du lịch nổi bật" FontSize="13" TextColor="#475569"/>
+                                </VerticalStackLayout>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
