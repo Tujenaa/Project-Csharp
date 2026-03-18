@@ -10,7 +10,7 @@
     --danger: #ef4444;
     --text: #e2e8f0;
     --text2: #8b9ab3;
-    --font: 'DM Sans', sans-serif;
+    --font: 'Times New Roman', Times, serif;
     --mono: 'Space Mono', monospace;
     --radius: 10px;
     --sidebar-w: 230px;
@@ -96,6 +96,7 @@ body {
     transition: all .15s;
     margin-bottom: 2px;
     font-weight: 500;
+    font-family: var(--font);
 }
 
     .nav-item:hover {
@@ -148,6 +149,7 @@ body {
 .page-title {
     font-weight: 600;
     font-size: 16px;
+    font-family: var(--font);
 }
 
 .top-actions {
@@ -197,6 +199,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    font-family: var(--font);
 }
 
 .card-body {
@@ -232,6 +235,7 @@ body {
     font-size: 12px;
     color: var(--text2);
     margin-top: 4px;
+    font-family: var(--font);
 }
 
 .stat-icon {
@@ -259,6 +263,7 @@ body {
 .tg-table {
     width: 100%;
     border-collapse: collapse;
+    font-family: var(--font);
 }
 
     .tg-table th {
@@ -270,12 +275,15 @@ body {
         color: var(--text2);
         text-transform: uppercase;
         border-bottom: 1px solid var(--border);
+        font-family: var(--font);
     }
 
     .tg-table td {
         padding: 12px 16px;
         border-bottom: 1px solid rgba(42,51,72,.5);
         vertical-align: middle;
+        color: var(--text);
+        font-family: var(--font);
     }
 
     .tg-table tr:last-child td {
@@ -294,6 +302,7 @@ body {
     border-radius: 20px;
     font-size: 11px;
     font-weight: 600;
+    font-family: var(--font);
 }
 
 .badge-blue {
@@ -339,12 +348,12 @@ body {
 
 .btn-primary {
     background: var(--accent);
-    color: #fff;
+    color: #fff !important;
 }
 
     .btn-primary:hover {
         background: #2563eb;
-        color: #fff;
+        color: #fff !important;
     }
 
 .btn-ghost {
@@ -356,6 +365,17 @@ body {
     .btn-ghost:hover {
         border-color: var(--accent);
         color: var(--accent);
+    }
+
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+}
+
+    .btn-outline:hover {
+        background: var(--accent);
+        color: #fff;
     }
 
 .btn-danger {
@@ -377,6 +397,10 @@ body {
 .btn-icon {
     padding: 7px;
     border-radius: 7px;
+}
+
+.text-danger {
+    color: var(--danger) !important;
 }
 
 /* ── FORMS ── */
@@ -403,35 +427,58 @@ body {
     gap: 6px;
 }
 
-    .form-group label {
+    .form-group label,
+    .form-label {
         font-size: 12px;
         font-weight: 600;
         color: var(--text2);
         text-transform: uppercase;
         letter-spacing: .6px;
+        font-family: var(--font);
     }
 
-    .form-group .hint {
+    .form-group .hint,
+    .form-hint {
         font-size: 11px;
         color: var(--text2);
+        font-family: var(--font);
     }
 
+/* ── FIX: Input / select / textarea text color ── */
 .form-control {
     background: var(--bg3);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 9px 13px;
-    color: var(--text);
+    color: var(--text); /* ← trắng, không đen */
     font-family: var(--font);
     font-size: 14px;
     transition: border-color .15s;
     width: 100%;
+    -webkit-text-fill-color: var(--text); /* override autofill */
 }
 
     .form-control:focus {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(59,130,246,.1);
+        color: var(--text);
+        -webkit-text-fill-color: var(--text);
+    }
+
+    /* Placeholder màu muted */
+    .form-control::placeholder {
+        color: var(--text2);
+        opacity: 1;
+    }
+
+    /* Fix autofill Chrome đổi nền trắng */
+    .form-control:-webkit-autofill,
+    .form-control:-webkit-autofill:hover,
+    .form-control:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px var(--bg3) inset !important;
+        -webkit-text-fill-color: var(--text) !important;
+        border-color: var(--border);
     }
 
 textarea.form-control {
@@ -441,6 +488,21 @@ textarea.form-control {
 
 select.form-control option {
     background: var(--bg3);
+    color: var(--text);
+}
+
+/* Bootstrap validation colors override */
+.form-control.is-invalid {
+    border-color: var(--danger);
+}
+
+.form-control.is-valid {
+    border-color: var(--success);
+}
+
+/* Required star */
+.required {
+    color: var(--danger);
 }
 
 /* ── PAGE HEADER ── */
@@ -454,12 +516,14 @@ select.form-control option {
     .page-header h2 {
         font-size: 20px;
         font-weight: 700;
+        font-family: var(--font);
     }
 
     .page-header .sub {
         font-size: 13px;
         color: var(--text2);
         margin-top: 2px;
+        font-family: var(--font);
     }
 
 /* ── ALERT ── */
@@ -471,6 +535,7 @@ select.form-control option {
     display: flex;
     align-items: center;
     gap: 8px;
+    font-family: var(--font);
 }
 
 .alert-success {
@@ -486,6 +551,21 @@ select.form-control option {
 }
 
 /* ── MODAL ── */
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+}
+
+    .modal-backdrop.open {
+        display: flex;
+    }
+
+/* Keep old class name working too */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -509,6 +589,10 @@ select.form-control option {
     overflow-y: auto;
 }
 
+.modal-sm {
+    width: 420px;
+}
+
 .modal-header {
     padding: 18px 22px;
     border-bottom: 1px solid var(--border);
@@ -516,11 +600,29 @@ select.form-control option {
     align-items: center;
     justify-content: space-between;
     font-weight: 600;
+    font-family: var(--font);
 }
+
+    .modal-header h4 {
+        font-family: var(--font);
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0;
+    }
 
 .modal-body {
     padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-family: var(--font);
 }
+
+    .modal-body p {
+        color: var(--text);
+        font-family: var(--font);
+    }
 
 .modal-footer {
     padding: 16px 22px;
@@ -538,6 +640,13 @@ select.form-control option {
     font-size: 18px;
 }
 
+/* ── ACTION GROUP ── */
+.action-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
 /* ── MISC ── */
 .gap-2 {
     display: flex;
@@ -546,6 +655,14 @@ select.form-control option {
 
 .mt-4 {
     margin-top: 20px;
+}
+
+.ms-2 {
+    margin-left: 8px;
+}
+
+.me-2 {
+    margin-right: 8px;
 }
 
 .text-muted {
@@ -563,6 +680,7 @@ select.form-control option {
     text-align: center;
     padding: 48px;
     color: var(--text2);
+    font-family: var(--font);
 }
 
     .empty-state i {

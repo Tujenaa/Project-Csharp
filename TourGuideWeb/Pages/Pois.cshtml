@@ -10,7 +10,7 @@
 }
 @if (!string.IsNullOrEmpty(Model.Error))
 {
-    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
+    <div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
 }
 
 <div class="page-header">
@@ -105,7 +105,6 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="Id" id="fId" value="0" />
             <div class="modal-body">
-                <!-- Tabs -->
                 <div class="tab-nav">
                     <button type="button" class="tab-btn active" id="btnTabBasic"
                             onclick="showTab('tab-basic','btnTabBasic')">
@@ -168,14 +167,14 @@
                         <span class="form-hint" style="margin:0">Hoặc click vào bản đồ để chọn tọa độ</span>
                     </div>
                     <div id="pickMap"
-                         style="height:300px;border-radius:8px;border:1px solid #ddd;
+                         style="height:300px;border-radius:8px;border:1px solid var(--border);
                                 margin-top:10px;overflow:hidden"></div>
                     <div class="form-hint" style="margin-top:6px">
                         <i class="bi bi-info-circle"></i>
                         Kéo marker để điều chỉnh vị trí. Vòng xanh = bán kính kích hoạt.
                     </div>
                 </div>
-            </div><!-- /modal-body -->
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
                 <button type="submit" class="btn btn-primary" id="submitBtn">
@@ -211,7 +210,7 @@
         </div>
         <div class="modal-body">
             <p>Bạn có chắc muốn xoá <strong id="delName"></strong>?</p>
-            <p class="text-muted" style="font-size:13px">Thao tác này không thể hoàn tác.</p>
+            <p class="text-muted" style="font-size:13px;margin-top:6px">Thao tác này không thể hoàn tác.</p>
         </div>
         <div class="modal-footer">
             <button class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
@@ -231,148 +230,27 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 1.5rem
-    }
+    /* ── Chỉ override những gì POIS cần thêm, không reset toàn bộ ── */
 
-        .page-header .sub {
-            color: #888;
-            font-size: 13px;
-            margin-top: 4px
-        }
-
-    .action-group {
-        display: flex;
-        gap: 4px
-    }
-
+    /* Coord link màu accent */
     .coord-link {
         font-size: 13px;
-        color: #2563eb;
-        text-decoration: none
+        color: var(--accent2);
+        text-decoration: none;
+        font-family: var(--mono);
     }
 
         .coord-link:hover {
-            text-decoration: underline
+            text-decoration: underline;
+            color: var(--accent);
         }
 
-    .empty-state {
-        text-align: center;
-        padding: 2.5rem 1rem;
-        color: #888
-    }
-
-    .badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: 500
-    }
-
-    .badge-blue {
-        background: #e0f0ff;
-        color: #1a6bbf
-    }
-
-    .text-muted {
-        color: #888
-    }
-
-    .text-danger {
-        color: #dc2626
-    }
-
-    .alert {
-        padding: .75rem 1rem;
-        border-radius: 8px;
-        margin-bottom: 1rem;
-        display: flex;
-        align-items: center;
-        gap: .5rem
-    }
-
-    .alert-success {
-        background: #f0fdf4;
-        border: 1px solid #bbf7d0;
-        color: #166534
-    }
-
-    .alert-danger {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #991b1b
-    }
-
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.45);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1rem
-    }
-
-    .modal-box {
-        background: #fff;
-        border-radius: 12px;
-        width: 100%;
-        max-width: 600px;
-        max-height: 90vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 20px 60px rgba(0,0,0,.2)
-    }
-
-        .modal-box.modal-lg {
-            max-width: 740px
-        }
-
-        .modal-box.modal-sm {
-            max-width: 420px
-        }
-
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid #e5e7eb;
-        flex-shrink: 0
-    }
-
-        .modal-header h4 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600
-        }
-
-    .modal-body {
-        padding: 1.25rem;
-        overflow-y: auto;
-        flex: 1
-    }
-
-    .modal-footer {
-        padding: .875rem 1.25rem;
-        border-top: 1px solid #e5e7eb;
-        display: flex;
-        justify-content: flex-end;
-        gap: .5rem;
-        flex-shrink: 0
-    }
-
+    /* Tab nav — dark theme */
     .tab-nav {
         display: flex;
         gap: 4px;
         margin-bottom: 1.25rem;
-        border-bottom: 1px solid #e5e7eb
+        border-bottom: 1px solid var(--border);
     }
 
     .tab-btn {
@@ -381,147 +259,214 @@
         padding: .5rem .875rem;
         font-size: 13px;
         cursor: pointer;
-        color: #888;
+        color: var(--text2);
         border-bottom: 2px solid transparent;
         margin-bottom: -1px;
         display: flex;
         align-items: center;
-        gap: 5px
+        gap: 5px;
+        font-family: var(--font);
+        transition: color .15s;
     }
 
         .tab-btn:hover {
-            color: #222
+            color: var(--text);
         }
 
         .tab-btn.active {
-            color: #2563eb;
-            border-bottom-color: #2563eb;
-            font-weight: 500
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            font-weight: 600;
         }
 
-    .form-group {
-        margin-bottom: 1rem
-    }
-
-    .form-label {
-        display: block;
-        font-size: 13px;
-        font-weight: 500;
-        margin-bottom: 5px
-    }
-
-    .req {
-        color: #e03
-    }
-
-    .form-control {
-        width: 100%;
-        padding: .45rem .75rem;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-size: 14px;
-        background: #fff;
-        color: inherit;
-        box-sizing: border-box
-    }
-
-        .form-control:focus {
-            outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37,99,235,.1)
-        }
-
-    .form-hint {
-        font-size: 12px;
-        color: #9ca3af;
-        margin-top: 4px
-    }
-
+    /* form-row 2 cột */
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 12px
+        gap: 12px;
     }
 
+    /* req star */
+    .req {
+        color: var(--danger);
+    }
+
+    /* map toolbar */
     .map-toolbar {
         display: flex;
         align-items: center;
         gap: 12px;
         margin-top: .75rem;
-        flex-wrap: wrap
+        flex-wrap: wrap;
     }
 
-    .btn {
-        display: inline-flex;
+    /* Modal — DARK, không phải trắng */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.65);
+        z-index: 1000;
+        display: flex;
         align-items: center;
-        gap: 5px;
-        padding: .45rem .9rem;
-        border-radius: 6px;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .modal-box {
+        background: var(--bg2); /* dark card */
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        width: 100%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+        .modal-box.modal-lg {
+            max-width: 740px;
+        }
+
+        .modal-box.modal-sm {
+            max-width: 420px;
+        }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+
+        .modal-header h4 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            font-family: var(--font);
+        }
+
+    .modal-body {
+        padding: 1.25rem;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .modal-footer {
+        padding: .875rem 1.25rem;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: flex-end;
+        gap: .5rem;
+        flex-shrink: 0;
+    }
+
+    /* Form controls — DARK, chữ TRẮNG */
+    .form-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text2);
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        font-family: var(--font);
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: .5rem .75rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
         font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition: background .15s
+        background: var(--bg3) !important; /* nền tối */
+        color: var(--text) !important; /* chữ trắng */
+        -webkit-text-fill-color: var(--text) !important;
+        box-sizing: border-box;
+        font-family: var(--font);
+        transition: border-color .15s, box-shadow .15s;
     }
 
-    .btn-primary {
-        background: #2563eb;
-        color: #fff;
-        border-color: #2563eb
-    }
-
-        .btn-primary:hover {
-            background: #1d4ed8
+        .form-control::placeholder {
+            color: var(--text2) !important;
+            opacity: 1;
         }
 
-    .btn-ghost {
-        background: none;
-        border-color: #d1d5db;
-        color: inherit
-    }
-
-        .btn-ghost:hover {
-            background: #f3f4f6
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+            color: var(--text) !important;
+            -webkit-text-fill-color: var(--text) !important;
+        }
+        /* Fix Chrome autofill trắng xoá */
+        .form-control:-webkit-autofill,
+        .form-control:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px var(--bg3) inset !important;
+            -webkit-text-fill-color: var(--text) !important;
         }
 
-    .btn-outline {
-        background: none;
-        border-color: #2563eb;
-        color: #2563eb
+    select.form-control option {
+        background: var(--bg3);
+        color: var(--text);
     }
 
-        .btn-outline:hover {
-            background: #eff6ff
+    textarea.form-control {
+        resize: vertical;
+    }
+
+    .form-hint {
+        font-size: 11px;
+        color: var(--text2);
+        margin-top: 4px;
+        font-family: var(--font);
+    }
+
+    /* Btn override cho modal (vì modal tự có style riêng) */
+    .modal-box .btn-ghost {
+        border-color: var(--border);
+        color: var(--text2);
+    }
+
+        .modal-box .btn-ghost:hover {
+            background: var(--bg3);
+            color: var(--text);
+            border-color: var(--accent);
         }
 
-    .btn-danger {
-        background: #dc2626;
-        color: #fff;
-        border-color: #dc2626
+    .modal-box .btn-outline {
+        background: transparent;
+        border-color: var(--accent);
+        color: var(--accent);
     }
 
-        .btn-danger:hover {
-            background: #b91c1c
+        .modal-box .btn-outline:hover {
+            background: rgba(59,130,246,.1);
         }
 
-    .btn-sm {
-        padding: .3rem .65rem;
-        font-size: 13px
+    .modal-box .btn-icon {
+        padding: 6px;
+        border: 1px solid var(--border);
+        color: var(--text2);
     }
 
-    .btn-icon {
-        padding: .35rem;
-        border: none
-    }
-
-        .btn-icon:hover {
-            background: #f3f4f6;
-            border-radius: 6px
+        .modal-box .btn-icon:hover {
+            background: var(--bg3);
+            color: var(--text);
         }
 </style>
 
 <script>
-    /* ── Pick map ─────────────────────────────── */
     var _pm = null, _pmk = null, _pmc = null;
 
     function initPickMap(lat, lng, radius) {
@@ -560,7 +505,7 @@
     function drawCircle(lat, lng, radius) {
         if (_pmc) _pm.removeLayer(_pmc);
         _pmc = L.circle([lat, lng], {
-            radius: radius, color: '#2563eb', fillColor: '#93c5fd', fillOpacity: 0.25
+            radius: radius, color: '#3b82f6', fillColor: '#93c5fd', fillOpacity: 0.25
         }).addTo(_pm);
     }
 
@@ -574,7 +519,6 @@
         }, function(err) { alert('Không lấy được vị trí: ' + err.message); });
     }
 
-    /* ── Preview map ──────────────────────────── */
     var _preMap = null;
     function openPreview(lat, lng, name, radius) {
         document.getElementById('previewTitle').textContent = name;
@@ -587,7 +531,7 @@
             }).addTo(_preMap);
             L.marker([lat, lng]).addTo(_preMap).bindPopup('<b>' + name + '</b>').openPopup();
             L.circle([lat, lng], {
-                radius: radius, color: '#2563eb', fillColor: '#93c5fd', fillOpacity: 0.25
+                radius: radius, color: '#3b82f6', fillColor: '#93c5fd', fillOpacity: 0.25
             }).addTo(_preMap);
         }, 120);
     }
@@ -596,7 +540,6 @@
         if (_preMap) { _preMap.remove(); _preMap = null; }
     }
 
-    /* ── Modal open/close ─────────────────────── */
     function openModal() {
         document.getElementById('poiForm').reset();
         document.getElementById('fId').value = '0';
@@ -629,7 +572,6 @@
         setTimeout(function() { initPickMap(parseFloat(lat), parseFloat(lng), parseInt(radius)); }, 150);
     }
 
-    /* ── Tabs ─────────────────────────────────── */
     function showTab(tabId, btnId) {
         document.querySelectorAll('.tab-pane').forEach(function(p) { p.style.display = 'none'; });
         document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -640,7 +582,6 @@
         }
     }
 
-    /* ── Delete ───────────────────────────────── */
     function confirmDelete(id, name) {
         document.getElementById('fDelId').value = id;
         document.getElementById('delName').textContent = name;
@@ -650,7 +591,6 @@
         document.getElementById('deleteModal').style.display = 'none';
     }
 
-    /* ── Keyboard ─────────────────────────────── */
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') { closeModal(); closePreview(); closeDelete(); }
     });
