@@ -7,7 +7,6 @@
     Title="Bản đồ lộ trình">
 
     <Grid RowSpacing="0">
-
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="260"/>
@@ -18,7 +17,6 @@
                 x:Name="map"
                 HorizontalOptions="Fill"
                 VerticalOptions="Fill"/>
-
             <Frame
                 BackgroundColor="#e94560"
                 CornerRadius="30"
@@ -86,30 +84,32 @@
                         <DataTemplate>
 
                             <Frame BackgroundColor="White"
-                           CornerRadius="20"
-                           WidthRequest="260"
-                           Margin="0,0,15,0">   
+                               CornerRadius="20"
+                               WidthRequest="260"
+                               Margin="0,0,15,0">
 
                                 <VerticalStackLayout Padding="15">
 
-                                    <Label
-                        Text="{Binding Name}"
-                        FontSize="18"
-                        FontAttributes="Bold"
-                        TextColor="#1a1a2e"/>
+                                   <Label
+                                    Text="{Binding Name}"
+                                    FontSize="18"
+                                    FontAttributes="Bold"
+                                    TextColor="#1a1a2e"/>   
 
-                                    <Label
-                        Text="📍 Địa điểm gần bạn"
-                        FontSize="13"
-                        TextColor="#64748b"
-                        Margin="0,0,0,10"/>
+                                   <Label
+                                    Text="📍 Địa điểm gần bạn"
+                                    FontSize="13"
+                                    TextColor="#64748b"
+                                    Margin="0,0,0,10"/>
 
-                                    <Button
-                        Text="▶ Audio giới thiệu"
-                        BackgroundColor="#fef3f2"
-                        TextColor="#e94560"
-                        CornerRadius="10"
-                        HeightRequest="40"/>
+                                   <Button
+                                    Text="▶ Audio giới thiệu"
+                                    BackgroundColor="#fef3f2"
+                                    TextColor="#e94560"
+                                    CornerRadius="10"
+                                    HeightRequest="40"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
+                                    CommandParameter="{Binding .}" />       
 
                                 </VerticalStackLayout>
 

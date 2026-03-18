@@ -11,5 +11,7 @@ namespace TourGuideAPI.Data
         }
 
         public DbSet<POI> POI { get; set; }
+        public DbSet<Audio> Audio { get; set; }
+        public DbSet<History> History { get; set; }
     }
 }

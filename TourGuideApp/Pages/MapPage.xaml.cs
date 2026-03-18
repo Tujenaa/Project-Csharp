@@ -1,13 +1,15 @@
 ﻿using Mapsui;
-using Mapsui.UI.Maui;
+using Mapsui.UI;
+using Mapsui.Projections;
 using Microsoft.Maui.Devices.Sensors;
 using TourGuideApp.ViewModels;
+using TourGuideApp.Models; 
 
 namespace TourGuideApp.Pages;
 
 public partial class MapPage : ContentPage
 {
-    MapViewModel viewModel;
+    readonly MapViewModel viewModel;
 
     public MapPage()
     {
@@ -18,6 +20,7 @@ public partial class MapPage : ContentPage
         BindingContext = viewModel;
 
         map.Map = viewModel.Map;
+        map.Info += Map_Info;
     }
 
     protected override async void OnAppearing()
@@ -28,10 +31,13 @@ public partial class MapPage : ContentPage
 
         if (location != null)
         {
-            var point = new MPoint(location.Longitude, location.Latitude);
+            viewModel.AddCurrentLocationMarker(location.Longitude, location.Latitude);
 
-            map.Map.Navigator.CenterOn(point);
-            map.Map.Navigator.ZoomTo(1000);
+            var (x, y) = SphericalMercator.FromLonLat(location.Longitude, location.Latitude);
+
+            var point = new MPoint(x, y);
+
+            map.Map.Navigator.CenterOnAndZoomTo(point, 5);
         }
     }
 
@@ -44,9 +50,13 @@ public partial class MapPage : ContentPage
 
             if (location != null)
             {
-                var point = new MPoint(location.Longitude, location.Latitude);
-                map.Map.Navigator.CenterOn(point);
-                map.Map.Navigator.ZoomTo(1000);
+                viewModel.AddCurrentLocationMarker(location.Longitude, location.Latitude);
+
+                var (x, y) = SphericalMercator.FromLonLat(location.Longitude, location.Latitude);
+
+                var point = new MPoint(x, y);
+
+                map.Map.Navigator.CenterOnAndZoomTo(point, 5);
             }
         }
         catch (Exception ex)
@@ -54,4 +64,18 @@ public partial class MapPage : ContentPage
             await DisplayAlert("Lỗi", ex.Message, "OK");
         }
     }
+
+    private void Map_Info(object? sender, Mapsui.MapInfoEventArgs e)
+    {
+        if (e.MapInfo?.Feature == null)
+            return;
+
+        var poi = e.MapInfo.Feature["POI"] as POI;
+
+        if (poi != null)
+        {
+            viewModel.PlayPOIManually(poi);
+        }
+    }
+
 }

@@ -15,4 +15,6 @@ public class POI
 
     public int Radius { get; set; }
 
+    public string? AudioUrl { get; set; }
+
 }
