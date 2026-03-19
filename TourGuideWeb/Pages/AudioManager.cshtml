@@ -12,7 +12,6 @@
 <div class="page-header">
     <div>
         <h2>Quản lý Audio</h2>
-        <div class="sub">Script TTS và file âm thanh cho từng điểm POI</div>
     </div>
     <button class="btn btn-primary" onclick="openModal()">
         <i class="bi bi-plus-lg"></i> Thêm Audio
@@ -24,7 +23,7 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Điểm POI</th>
+                <th>Điểm</th>
                 <th>Ngôn ngữ</th>
                 <th>Script</th>
                 <th>Audio URL</th>
@@ -36,7 +35,7 @@
             {
                 <tr>
                     <td class="text-muted">#@a.Id</td>
-                    <td style="font-weight:600">@(a.PoiName ?? $"POI #{a.PoiId}")</td>
+                    <td style="font-weight:600">@(a.PoiName ?? $"#{a.PoiId}")</td>
                     <td><span class="badge badge-blue">@a.Language</span></td>
                     <td class="text-muted"
                         style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
@@ -52,9 +51,11 @@
                             @if (!string.IsNullOrEmpty(a.Script))
                             {
                                 <button class="btn btn-ghost btn-sm btn-icon" title="Nghe thử"
-                                        onclick="quickTts(this)"
+                                        id="ttsBtn-@a.Id"
+                                        onclick="toggleTts(this)"
                                         data-script="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(a.Script))"
-                                        data-lang="@a.Language">
+                                        data-lang="@a.Language"
+                                        data-playing="false">
                                     <i class="bi bi-play-circle"></i>
                                 </button>
                             }
@@ -69,7 +70,7 @@
                             </button>
                             <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
                                     data-del-id="@a.Id"
-                                    data-del-name="@(a.PoiName ?? $"POI #{a.PoiId}")"
+                                    data-del-name="@(a.PoiName ?? $"#{a.PoiId}")"
                                     onclick="confirmDeleteFromData(this)">
                                 <i class="bi bi-trash"></i>
                             </button>
@@ -105,9 +106,9 @@
             <input type="hidden" name="Id" id="fId" value="0" />
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Điểm POI <span class="required">*</span></label>
+                    <label class="form-label">Điểm <span class="required">*</span></label>
                     <select name="PoiId" id="fPoiId" class="form-control" required>
-                        <option value="">-- Chọn POI --</option>
+                        <option value="">-- Chọn điểm --</option>
                         @foreach (var p in Model.Pois)
                         {
                             <option value="@p.Id">@p.Name</option>
@@ -159,7 +160,7 @@
     </div>
 </div>
 
-<!-- ── MODAL XÁC NHẬN XOÁ ── -->
+<!-- ── MODAL XOÁ ── -->
 <div id="deleteModal" class="modal-backdrop" style="display:none"
      onclick="if(event.target===this)closeDelete()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
@@ -186,7 +187,7 @@
 </div>
 
 <script>
-    // ── Modal helpers ──────────────────────────────────────────────────────────
+    // ── Modal ──────────────────────────────────────────────────────────────────
     function openModal() {
         document.getElementById('fId').value = '0';
         document.getElementById('fPoiId').value = '';
@@ -198,11 +199,7 @@
         document.getElementById('scriptCount').textContent = '0';
         document.getElementById('audioModal').style.display = 'flex';
     }
-
-    function closeModal() {
-        stopTts();
-        document.getElementById('audioModal').style.display = 'none';
-    }
+    function closeModal() { stopTts(); document.getElementById('audioModal').style.display = 'none'; }
 
     function editFromData(btn) {
         document.getElementById('fId').value       = btn.dataset.editId;
@@ -222,110 +219,100 @@
         document.getElementById('delName').textContent = btn.dataset.delName;
         document.getElementById('deleteModal').style.display = 'flex';
     }
+    function closeDelete() { document.getElementById('deleteModal').style.display = 'none'; }
 
-    function closeDelete() {
-        document.getElementById('deleteModal').style.display = 'none';
-    }
-
-    // Script char count
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('fScript').addEventListener('input', function () {
             document.getElementById('scriptCount').textContent = this.value.length;
         });
-
-        // Tải sẵn danh sách voice khi trang load (Chrome cần trigger này)
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => {
-                window.speechSynthesis.getVoices(); // cache
-            };
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
     });
 
-    // ── TTS core ───────────────────────────────────────────────────────────────
-
-    const langBcp = {
-        vi: 'vi',
-        en: 'en',
-        ja: 'ja',
-        zh: 'zh',
-        ko: 'ko'
-    };
+    // ── TTS ────────────────────────────────────────────────────────────────────
+    const langBcp = { vi:'vi', en:'en', ja:'ja', zh:'zh', ko:'ko' };
+    let _tts = null;
+    let _playingBtn = null;
 
     function pickVoice(langCode) {
         const voices = window.speechSynthesis.getVoices();
         if (!voices.length) return null;
-
         const prefix = (langBcp[langCode] || langCode).toLowerCase();
-
         const matched = voices.filter(v => v.lang.toLowerCase().startsWith(prefix));
-        if (matched.length) {
-            const local = matched.find(v => v.localService);
-            return local || matched[0];
-        }
-
+        if (matched.length) { return matched.find(v => v.localService) || matched[0]; }
         return null;
     }
 
     function makeTtsUtterance(text, langCode) {
         const u = new SpeechSynthesisUtterance(text);
         const voice = pickVoice(langCode);
-        if (voice) {
-            u.voice = voice;
-            u.lang  = voice.lang;
-        } else {
-            u.lang = langCode === 'vi' ? 'vi-VN'
-                   : langCode === 'en' ? 'en-US'
-                   : langCode === 'ja' ? 'ja-JP'
-                   : langCode === 'zh' ? 'zh-CN'
-                   : langCode === 'ko' ? 'ko-KR'
-                   : 'vi-VN';
+        if (voice) { u.voice = voice; u.lang = voice.lang; }
+        else {
+            u.lang = langCode==='vi'?'vi-VN':langCode==='en'?'en-US':
+                     langCode==='ja'?'ja-JP':langCode==='zh'?'zh-CN':
+                     langCode==='ko'?'ko-KR':'vi-VN';
         }
         return u;
     }
 
-    let _tts = null;
+    // Toggle play/stop trên từng dòng bảng
+    function toggleTts(btn) {
+        if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
 
-    /** Nút nghe thử ở từng dòng bảng */
-    function quickTts(btn) {
-        if (!('speechSynthesis' in window)) {
-            alert('Trình duyệt không hỗ trợ TTS.');
+        // Nếu đang play chính nó → stop
+        if (btn.dataset.playing === 'true') {
+            stopAllTts();
             return;
         }
-        window.speechSynthesis.cancel();
+
+        // Stop cái đang chạy (nếu có)
+        stopAllTts();
+
         const text = JSON.parse(btn.dataset.script);
         const lang = btn.dataset.lang || 'vi';
-        const u = makeTtsUtterance(text, lang);
-        window.speechSynthesis.speak(u);
+        _tts = makeTtsUtterance(text, lang);
+        _playingBtn = btn;
+
+        btn.dataset.playing = 'true';
+        btn.querySelector('i').className = 'bi bi-stop-circle';
+        btn.style.color = 'var(--accent)';
+
+        _tts.onend = _tts.onerror = () => resetTtsBtn(btn);
+        window.speechSynthesis.speak(_tts);
     }
 
-    /** Nút "Nghe thử" trong modal */
+    function stopAllTts() {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        if (_playingBtn) resetTtsBtn(_playingBtn);
+        _tts = null; _playingBtn = null;
+    }
+
+    function resetTtsBtn(btn) {
+        btn.dataset.playing = 'false';
+        btn.querySelector('i').className = 'bi bi-play-circle';
+        btn.style.color = '';
+    }
+
+    // Nghe thử trong modal
     function previewTtsModal() {
         const s = document.getElementById('fScript').value.trim();
         if (!s) { alert('Chưa có script.'); return; }
-        if (!('speechSynthesis' in window)) {
-            alert('Trình duyệt không hỗ trợ TTS.');
-            return;
-        }
+        if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
         stopTts();
         const lang = document.getElementById('fLanguage').value || 'vi';
         _tts = makeTtsUtterance(s, lang);
         _tts.onstart = () => document.getElementById('stopBtn').style.display = 'inline-flex';
-        _tts.onend = _tts.onerror = () => {
-            document.getElementById('stopBtn').style.display = 'none';
-            _tts = null;
-        };
+        _tts.onend = _tts.onerror = () => { document.getElementById('stopBtn').style.display = 'none'; _tts = null; };
         window.speechSynthesis.speak(_tts);
     }
 
     function stopTts() {
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        stopAllTts();
         const s = document.getElementById('stopBtn');
         if (s) s.style.display = 'none';
-        _tts = null;
     }
 
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') { closeModal(); closeDelete(); }
-    });
+    document.addEventListener('keydown', e => { if (e.key==='Escape') { closeModal(); closeDelete(); } });
 </script>

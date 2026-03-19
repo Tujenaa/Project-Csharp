@@ -30,8 +30,6 @@ public class PoisModel : PageModel
     {
         try
         {
-            // BaseAddress đã là http://localhost:5266/api/
-            // nên chỉ cần "poi", không phải "api/poi"
             Pois = await Api.GetFromJsonAsync<List<POI>>("poi") ?? new List<POI>();
         }
         catch (Exception ex)
@@ -42,19 +40,21 @@ public class PoisModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid)
-        {
-            await OnGetAsync();
-            return Page();
-        }
+        // Fix dấu thập phân — đọc thẳng từ form, parse bằng InvariantCulture
+        var latStr = Request.Form["Latitude"].ToString().Replace(',', '.');
+        var lngStr = Request.Form["Longitude"].ToString().Replace(',', '.');
+        double lat = double.TryParse(latStr, System.Globalization.NumberStyles.Any,
+                         System.Globalization.CultureInfo.InvariantCulture, out var lv) ? lv : Latitude;
+        double lng = double.TryParse(lngStr, System.Globalization.NumberStyles.Any,
+                         System.Globalization.CultureInfo.InvariantCulture, out var lgv) ? lgv : Longitude;
 
         var body = new POI
         {
             Id = Id,
             Name = Name,
             Description = Description ?? "",
-            Latitude = Latitude,
-            Longitude = Longitude,
+            Latitude = lat,
+            Longitude = lng,
             Radius = Radius,
             OwnerId = OwnerId
         };
@@ -74,7 +74,10 @@ public class PoisModel : PageModel
             }
 
             if (!resp.IsSuccessStatusCode)
-                Error = $"API lỗi {(int)resp.StatusCode}: {resp.ReasonPhrase}";
+            {
+                var detail = await resp.Content.ReadAsStringAsync();
+                Error = $"API lỗi {(int)resp.StatusCode}: {detail}";
+            }
         }
         catch (Exception ex)
         {

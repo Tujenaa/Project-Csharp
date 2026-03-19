@@ -12,7 +12,6 @@
 <div class="page-header">
     <div>
         <h2>Người dùng</h2>
-        <div class="sub">Quản lý tài khoản và phân quyền</div>
     </div>
     <button class="btn btn-primary" onclick="openModal()">
         <i class="bi bi-person-plus"></i> Thêm người dùng
@@ -22,7 +21,13 @@
 <div class="card">
     <table class="tg-table">
         <thead>
-            <tr><th>ID</th><th>Tên đăng nhập</th><th>Vai trò</th><th>Hành động</th></tr>
+            <tr>
+                <th>ID</th>
+                <th>Tên đăng nhập</th>
+                <th>Vai trò</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
         </thead>
         <tbody>
             @foreach (var u in Model.Users)
@@ -30,7 +35,7 @@
                 <tr>
                     <td class="text-muted">#@u.Id</td>
                     <td>
-                        <span class="avatar">@u.Username.Substring(0, 1).ToUpper()</span>
+                        <span class="u-avatar">@u.Username.Substring(0, 1).ToUpper()</span>
                         <strong>@u.Username</strong>
                     </td>
                     <td>
@@ -44,6 +49,15 @@
                         }
                     </td>
                     <td>
+                        <!-- Toggle active/inactive -->
+                        <label class="toggle-switch" title="Bật/tắt tài khoản">
+                            <input type="checkbox" checked onchange="toggleActive(this, @u.Id)" />
+                            <span class="toggle-track">
+                                <span class="toggle-thumb"></span>
+                            </span>
+                        </label>
+                    </td>
+                    <td>
                         <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
                                 data-del-id="@u.Id" data-del-name="@u.Username"
                                 onclick="confirmDelete(this)">
@@ -54,17 +68,21 @@
             }
             @if (!Model.Users.Any())
             {
-                <tr><td colspan="4" class="empty-state">Chưa có người dùng nào.</td></tr>
+                <tr><td colspan="5" class="empty-state">Chưa có người dùng nào.</td></tr>
             }
         </tbody>
     </table>
 </div>
 
-<div id="userModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeModal()">
+<!-- Modal thêm -->
+<div id="userModal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeModal()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h4>Thêm người dùng</h4>
-            <button type="button" class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeModal()">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
         <form method="post">
             @Html.AntiForgeryToken()
@@ -88,62 +106,128 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
-                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Tạo</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Tạo
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<div id="delModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeDelete()">
+<!-- Modal xoá -->
+<div id="delModal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeDelete()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h4>Xác nhận xoá</h4>
-            <button type="button" class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeDelete()">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
         <div class="modal-body">
             <p>Xoá người dùng <strong id="delName"></strong>?</p>
-            <p class="text-muted" style="font-size:13px">POI của người dùng này sẽ mất owner.</p>
+            <p class="text-muted" style="font-size:12px;margin-top:6px">
+                POI của người dùng này sẽ mất owner.
+            </p>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
             <form method="post" style="display:inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="DeleteId" id="fDelId" />
-                <button type="submit" asp-page-handler="Delete" class="btn btn-danger"><i class="bi bi-trash"></i> Xoá</button>
+                <button type="submit" asp-page-handler="Delete" class="btn btn-danger">
+                    <i class="bi bi-trash"></i> Xoá
+                </button>
             </form>
         </div>
     </div>
 </div>
 
 <style>
-    .avatar {
+    /* Avatar */
+    .u-avatar {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         width: 26px;
         height: 26px;
         border-radius: 50%;
-        background: #dbeafe;
-        color: #1d4ed8;
+        background: rgba(233,69,96,.15);
+        color: var(--accent);
         font-size: 12px;
-        font-weight: 600;
-        margin-right: 6px;
-        vertical-align: middle
+        font-weight: 700;
+        margin-right: 8px;
+        vertical-align: middle;
     }
 
+    /* Badge đỏ cho ADMIN */
     .badge-red {
-        background: #fee2e2;
-        color: #b91c1c
+        background: rgba(239,68,68,.15);
+        color: var(--danger);
+    }
+
+    /* Toggle switch */
+    .toggle-switch {
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        gap: 8px;
+    }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+    .toggle-track {
+        width: 38px;
+        height: 20px;
+        background: var(--border);
+        border-radius: 20px;
+        position: relative;
+        transition: background .2s;
+    }
+
+    .toggle-switch input:checked + .toggle-track {
+        background: var(--accent);
+    }
+
+    .toggle-thumb {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 14px;
+        height: 14px;
+        background: #fff;
+        border-radius: 50%;
+        transition: transform .2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,.3);
+    }
+
+    .toggle-switch input:checked + .toggle-track .toggle-thumb {
+        transform: translateX(18px);
     }
 </style>
+
 <script>
-    function openModal(){ document.getElementById('userModal').style.display='flex'; }
-    function closeModal(){ document.getElementById('userModal').style.display='none'; }
-    function confirmDelete(btn){
-        document.getElementById('fDelId').value=btn.dataset.delId;
-        document.getElementById('delName').textContent=btn.dataset.delName;
-        document.getElementById('delModal').style.display='flex';
+    function openModal()  { document.getElementById('userModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('userModal').style.display = 'none'; }
+
+    function confirmDelete(btn) {
+        document.getElementById('fDelId').value          = btn.dataset.delId;
+        document.getElementById('delName').textContent   = btn.dataset.delName;
+        document.getElementById('delModal').style.display = 'flex';
     }
-    function closeDelete(){ document.getElementById('delModal').style.display='none'; }
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeDelete();}});
+    function closeDelete() { document.getElementById('delModal').style.display = 'none'; }
+
+    // Toggle active — hiện tại chỉ UI, chưa có API endpoint cho active/inactive
+    function toggleActive(checkbox, userId) {
+        const label  = checkbox.closest('.toggle-switch');
+        const active = checkbox.checked;
+        // TODO: gọi API PATCH /api/users/{userId}/active khi có endpoint
+        console.log(`User ${userId} active = ${active}`);
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeModal(); closeDelete(); }
+    });
 </script>

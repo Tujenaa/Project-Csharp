@@ -1,10 +1,7 @@
 ﻿@page
 @model GPSGuide.Web.Pages.PoisModel
 @{
-    ViewData["Title"] = "Điểm thuyết minh (POI)"; ViewData["Active"] = "pois";
-}
-@section Styles {
-    <link rel="stylesheet" href="~/css/pois.css" />
+    ViewData["Title"] = "Điểm thuyết minh"; ViewData["Active"] = "pois";
 }
 
 @if (!string.IsNullOrEmpty(Model.Msg))
@@ -16,187 +13,172 @@
     <div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
 }
 
-<div class="page-header">
-    <div>
-        <h2>Điểm thuyết minh</h2>
-        <div class="sub">Quản lý toàn bộ POI — tọa độ, bán kính, nội dung TTS</div>
-    </div>
-    <button class="btn btn-primary" onclick="openModal()">
-        <i class="bi bi-plus-lg"></i> Thêm POI
-    </button>
-</div>
+<div class="poi-shell">
 
-<div class="card">
-    <table class="tg-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Tên điểm</th>
-                <th>Mô tả</th>
-                <th>Tọa độ</th>
-                <th>Bán kính</th>
-                <th>Chủ sở hữu</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
+    <!-- ── LEFT: MAP ── -->
+    <div class="poi-map-wrap">
+        <div class="map-topbar">
+            <span class="map-count"><i class="bi bi-geo-alt-fill"></i> @Model.Pois.Count điểm thuyết minh</span>
+            <button class="btn btn-primary btn-sm" onclick="openModal()">
+                <i class="bi bi-plus-lg"></i> Thêm POI
+            </button>
+        </div>
+        <div id="mainMap"></div>
+    </div>
+
+    <!-- ── RIGHT TOP: DANH SÁCH ── -->
+    <div class="poi-list-wrap">
+        <div class="poi-list-header">
+            <div style="display:flex;gap:6px;align-items:center">
+                <input class="poi-search" id="poiSearch" placeholder="🔍  Tìm địa điểm..."
+                       oninput="filterList(this.value)" style="flex:1" />
+                <button class="btn btn-ghost btn-icon btn-sm" title="Xem tất cả trên map"
+                        onclick="resetMap()" style="flex-shrink:0;padding:6px 8px">
+                    <i class="bi bi-fullscreen"></i>
+                </button>
+            </div>
+        </div>
+        <div class="poi-list" id="poiList">
             @foreach (var p in Model.Pois)
             {
-                var lat = p.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
-                var lng = p.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture);
-                var nJs = p.Name.Replace("\\", "\\\\").Replace("'", "\\'");
-                var dJs = (p.Description ?? "").Replace("\\", "\\\\").Replace("'", "\\'");
-                var oArg = p.OwnerId.HasValue ? p.OwnerId.Value.ToString() : "null";
-
-                <tr>
-                    <td class="text-muted">#@p.Id</td>
-                    <td style="font-weight:600">@p.Name</td>
-                    <td class="text-muted"
-                        style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
-                        title="@p.Description">
-                        @p.Description
-                    </td>
-                    <td>
-                        <a class="coord-link"
-                           href="https://maps.google.com/?q=@lat,@lng" target="_blank">
-                            @p.Latitude.ToString("F4"), @p.Longitude.ToString("F4")
-                        </a>
-                    </td>
-                    <td><span class="badge badge-blue">@p.Radius m</span></td>
-                    <td class="text-muted">@(p.OwnerId.HasValue ? "#" + p.OwnerId.Value : "—")</td>
-                    <td>
-                        <div class="action-group">
-                            <button class="btn btn-ghost btn-sm btn-icon" title="Bản đồ"
-                                    onclick="openPreview(@lat,@lng,'@nJs',@p.Radius)">
-                                <i class="bi bi-map"></i>
-                            </button>
-                            <button class="btn btn-ghost btn-sm btn-icon" title="Sửa"
-                                    onclick="editPoi(@p.Id,'@nJs','@dJs',@lat,@lng,@p.Radius,@oArg)">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
-                                    onclick="confirmDelete(@p.Id,'@nJs')">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                <div class="poi-item" id="item-@p.Id"
+                     data-id="@p.Id"
+                     data-name-lower="@p.Name.ToLower()"
+                     onclick="selectPoiById(@p.Id)">
+                    <div class="poi-item-dot"></div>
+                    <div class="poi-item-body">
+                        <div class="poi-item-name">@p.Name</div>
+                        <div class="poi-item-meta">
+                            <span class="poi-item-coord">@p.Latitude.ToString("F4"), @p.Longitude.ToString("F4")</span>
+                            <span class="poi-item-r">@p.Radius m</span>
                         </div>
-                    </td>
-                </tr>
+                    </div>
+                    <i class="bi bi-chevron-right poi-item-arrow"></i>
+                </div>
             }
             @if (!Model.Pois.Any())
             {
-                <tr>
-                    <td colspan="7" class="empty-state">
-                        Chưa có điểm thuyết minh nào.
-                        <a href="#" onclick="openModal();return false;">Thêm POI đầu tiên</a>
-                    </td>
-                </tr>
+                <div class="poi-empty">
+                    <i class="bi bi-geo-alt" style="font-size:36px;opacity:.25;display:block;margin-bottom:10px"></i>
+                    Chưa có điểm nào.<br />
+                    <a href="#" onclick="openModal();return false;" style="color:var(--accent)">Thêm POI đầu tiên</a>
+                </div>
             }
-        </tbody>
-    </table>
+        </div>
+    </div>
+
+    <!-- ── RIGHT BOTTOM: CHI TIẾT ── -->
+    <div class="poi-detail" id="poiDetail">
+        <div class="detail-placeholder" id="detailPlaceholder">
+            <i class="bi bi-cursor" style="font-size:32px;opacity:.2"></i>
+            <p>Chọn một địa điểm<br />để xem chi tiết</p>
+        </div>
+        <div class="detail-content" id="detailContent" style="display:none">
+            <div class="detail-img-wrap">
+                <img id="detailImg" src="" alt="" />
+                <div class="detail-img-overlay">
+                    <span class="detail-badge" id="detailRadius"></span>
+                </div>
+            </div>
+            <div class="detail-body">
+                <h3 id="detailName"></h3>
+                <p class="detail-desc" id="detailDesc"></p>
+                <div class="detail-info-grid">
+                    <div class="detail-info-item">
+                        <span class="dii-label">Vĩ độ</span>
+                        <span class="dii-val mono" id="detailLat"></span>
+                    </div>
+                    <div class="detail-info-item">
+                        <span class="dii-label">Kinh độ</span>
+                        <span class="dii-val mono" id="detailLng"></span>
+                    </div>
+                    <div class="detail-info-item">
+                        <span class="dii-label">Bán kính</span>
+                        <span class="dii-val" id="detailR"></span>
+                    </div>
+                    <div class="detail-info-item">
+                        <span class="dii-label">Chủ sở hữu</span>
+                        <span class="dii-val" id="detailOwner"></span>
+                    </div>
+                </div>
+                <div class="detail-actions">
+                    <button class="btn btn-outline btn-sm" onclick="editCurrentPoi()">
+                        <i class="bi bi-pencil"></i> Sửa
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteCurrentPoi()">
+                        <i class="bi bi-trash"></i> Xoá
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ===== MODAL TẠO / SỬA ===== -->
-<div id="poiModal" class="modal-backdrop" style="display:none" onclick="handleBackdropClick(event)">
+<div id="poiModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h4 id="modalTitle">Thêm điểm thuyết minh</h4>
-            <button class="btn btn-ghost btn-icon" onclick="closeModal()">
-                <i class="bi bi-x-lg"></i>
-            </button>
+            <button class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <form id="poiForm" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="Id" id="fId" value="0" />
             <div class="modal-body">
                 <div class="tab-nav">
-                    <button type="button" class="tab-btn active" id="btnTabBasic"
-                            onclick="showTab('tab-basic','btnTabBasic')">
+                    <button type="button" class="tab-btn active" id="btnTabBasic" onclick="showTab('tab-basic','btnTabBasic')">
                         <i class="bi bi-info-circle"></i> Thông tin
                     </button>
-                    <button type="button" class="tab-btn" id="btnTabLoc"
-                            onclick="showTab('tab-loc','btnTabLoc')">
+                    <button type="button" class="tab-btn" id="btnTabLoc" onclick="showTab('tab-loc','btnTabLoc')">
                         <i class="bi bi-geo-alt"></i> Vị trí
                     </button>
                 </div>
-
                 <div id="tab-basic" class="tab-pane">
                     <div class="form-group">
                         <label class="form-label">Tên điểm <span class="req">*</span></label>
-                        <input type="text" name="Name" id="fName" class="form-control"
-                               placeholder="VD: Phở Hòa Pasteur" required maxlength="255" />
+                        <input type="text" name="Name" id="fName" class="form-control" placeholder="VD: Phở Hòa Pasteur" required maxlength="255" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Mô tả</label>
-                        <textarea name="Description" id="fDescription" class="form-control"
-                                  rows="3" placeholder="Mô tả ngắn về điểm tham quan..."></textarea>
+                        <textarea name="Description" id="fDescription" class="form-control" rows="3" placeholder="Mô tả ngắn..."></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Bán kính (m) <span class="req">*</span></label>
-                            <input type="number" name="Radius" id="fRadius" class="form-control"
-                                   min="5" max="5000" value="80" required />
+                            <input type="number" name="Radius" id="fRadius" class="form-control" min="5" max="5000" value="80" required />
                             <div class="form-hint">Vùng kích hoạt thuyết minh</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Owner ID</label>
-                            <input type="number" name="OwnerId" id="fOwnerId" class="form-control"
-                                   placeholder="Để trống = không có" />
+                            <input type="number" name="OwnerId" id="fOwnerId" class="form-control" placeholder="Để trống = không có" />
                         </div>
                     </div>
                 </div>
-
                 <div id="tab-loc" class="tab-pane" style="display:none">
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Vĩ độ <span class="req">*</span></label>
-                            <input type="number" name="Latitude" id="fLat" class="form-control"
-                                   step="0.000001" min="-90" max="90"
-                                   placeholder="VD: 10.7812" required />
+                            <input type="number" name="Latitude" id="fLat" class="form-control" step="0.000001" min="-90" max="90" placeholder="VD: 10.7812" required />
                         </div>
                         <div class="form-group">
                             <label class="form-label">Kinh độ <span class="req">*</span></label>
-                            <input type="number" name="Longitude" id="fLng" class="form-control"
-                                   step="0.000001" min="-180" max="180"
-                                   placeholder="VD: 106.6880" required />
+                            <input type="number" name="Longitude" id="fLng" class="form-control" step="0.000001" min="-180" max="180" placeholder="VD: 106.6880" required />
                         </div>
                     </div>
                     <div class="map-toolbar">
-                        <button type="button" class="btn btn-sm btn-outline"
-                                onclick="getMyLocation()">
+                        <button type="button" class="btn btn-sm btn-outline" onclick="getMyLocation()">
                             <i class="bi bi-crosshair"></i> Vị trí hiện tại
                         </button>
-                        <span class="form-hint" style="margin:0">Hoặc click vào bản đồ để chọn tọa độ</span>
+                        <span class="form-hint" style="margin:0">Hoặc click bản đồ để chọn</span>
                     </div>
-                    <div id="pickMap"
-                         style="height:300px;border-radius:8px;border:1px solid var(--border);
-                                margin-top:10px;overflow:hidden"></div>
-                    <div class="form-hint" style="margin-top:6px">
-                        <i class="bi bi-info-circle"></i>
-                        Kéo marker để điều chỉnh vị trí. Vòng xanh = bán kính kích hoạt.
-                    </div>
+                    <div id="pickMap" style="height:280px;border-radius:8px;border:1px solid var(--border);margin-top:10px;overflow:hidden"></div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
-                <button type="submit" class="btn btn-primary" id="submitBtn">
-                    <i class="bi bi-check-lg"></i> Lưu
-                </button>
+                <button type="submit" class="btn btn-primary" id="submitBtn"><i class="bi bi-check-lg"></i> Lưu</button>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- ===== MODAL XEM BẢN ĐỒ ===== -->
-<div id="previewModal" class="modal-backdrop" style="display:none" onclick="closePreview()">
-    <div class="modal-box modal-lg" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h4 id="previewTitle">Xem bản đồ</h4>
-            <button class="btn btn-ghost btn-icon" onclick="closePreview()">
-                <i class="bi bi-x-lg"></i>
-            </button>
-        </div>
-        <div id="previewMapDiv"
-             style="height:420px;border-radius:0 0 12px 12px;overflow:hidden"></div>
     </div>
 </div>
 
@@ -205,9 +187,7 @@
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h4>Xác nhận xoá</h4>
-            <button class="btn btn-ghost btn-icon" onclick="closeDelete()">
-                <i class="bi bi-x-lg"></i>
-            </button>
+            <button class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
             <p>Bạn có chắc muốn xoá <strong id="delName"></strong>?</p>
@@ -218,9 +198,7 @@
             <form method="post" asp-page-handler="Delete" style="display:inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="DeleteId" id="fDelId" />
-                <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-trash"></i> Xoá
-                </button>
+                <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Xoá</button>
             </form>
         </div>
     </div>
@@ -229,132 +207,256 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+<style>
+    .poi-shell {
+        display: grid;
+        grid-template-columns: 1fr 290px;
+        grid-template-rows: 1fr 1fr;
+        grid-template-areas: "map list" "map detail";
+        height: calc(100vh - 65px);
+        margin: -28px;
+        overflow: hidden;
+    }
+    .poi-map-wrap { grid-area: map; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+    .map-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .map-count { font-size: 13px; color: var(--text2); }
+    .map-count i { color: var(--accent); margin-right: 5px; }
+    #mainMap { flex: 1; }
+    .poi-list-wrap { grid-area: list; display: flex; flex-direction: column; background: var(--bg2); border-bottom: 1px solid var(--border); overflow: hidden; }
+    .poi-list-header { padding: 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .poi-search { width: 100%; background: var(--bg3) !important; border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; font-size: 12px; font-family: var(--font); }
+    .poi-search:focus { outline: none; border-color: var(--accent); }
+    .poi-search::placeholder { color: var(--text2) !important; }
+    .poi-list { overflow-y: auto; flex: 1; }
+    .poi-item { display: flex; align-items: center; gap: 9px; padding: 10px 12px; cursor: pointer; border-bottom: 1px solid rgba(31,52,96,.4); transition: background .12s; user-select: none; }
+    .poi-item:hover { background: rgba(233,69,96,.07); }
+    .poi-item.selected { background: rgba(233,69,96,.14); }
+    .poi-item.hidden { display: none; }
+    .poi-item-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex-shrink: 0; box-shadow: 0 0 5px rgba(233,69,96,.5); transition: box-shadow .2s; }
+    .poi-item.selected .poi-item-dot { box-shadow: 0 0 10px rgba(233,69,96,.9); }
+    .poi-item-body { flex: 1; min-width: 0; }
+    .poi-item-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .poi-item-meta { display: flex; gap: 6px; margin-top: 2px; }
+    .poi-item-coord { font-size: 10px; color: var(--accent2); font-family: var(--mono); }
+    .poi-item-r { font-size: 10px; color: var(--text2); }
+    .poi-item-arrow { color: var(--border); font-size: 10px; flex-shrink: 0; transition: color .12s; }
+    .poi-item:hover .poi-item-arrow, .poi-item.selected .poi-item-arrow { color: var(--accent); }
+    .poi-empty { text-align: center; padding: 30px 16px; color: var(--text2); font-size: 12px; line-height: 1.8; }
+    .poi-detail { grid-area: detail; background: var(--bg); overflow-y: auto; display: flex; flex-direction: column; }
+    .detail-placeholder { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text2); font-size: 12px; text-align: center; gap: 8px; padding: 20px; }
+    .detail-content { display: flex; flex-direction: column; }
+    .detail-img-wrap { position: relative; height: 130px; overflow: hidden; flex-shrink: 0; }
+    #detailImg { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .detail-img-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(13,17,23,.85) 0%, transparent 55%); display: flex; align-items: flex-end; padding: 8px 12px; }
+    .detail-badge { font-size: 10px; font-family: var(--mono); background: var(--accent); color: #fff; padding: 2px 7px; border-radius: 20px; }
+    .detail-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .detail-body h3 { font-size: 14px; font-weight: 700; color: var(--text); font-family: var(--font); margin: 0; }
+    .detail-desc { font-size: 11px; color: var(--text2); line-height: 1.5; margin: 0; }
+    .detail-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .detail-info-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px; display: flex; flex-direction: column; gap: 2px; }
+    .dii-label { font-size: 9px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+    .dii-val { font-size: 11px; color: var(--text); font-weight: 600; }
+    .dii-val.mono { font-family: var(--mono); color: var(--accent2); font-size: 10px; }
+    .detail-actions { display: flex; gap: 5px; }
+    .detail-actions .btn { flex: 1; justify-content: center; font-size: 11px; padding: 5px 6px; }
+    .poi-pin { width: 22px; height: 22px; background: #e94560; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); transition: background .2s; }
+    .poi-pin.active { background: #fff; border: 2px solid #e94560; box-shadow: 0 0 0 3px #e94560; }
+    .tab-nav { display: flex; gap: 4px; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+    .tab-btn { background: none; border: none; padding: .45rem .8rem; font-size: 13px; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 5px; font-family: var(--font); transition: color .15s; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { margin-bottom: .9rem; }
+    .req { color: var(--accent); }
+    .map-toolbar { display: flex; align-items: center; gap: 10px; margin-top: .75rem; flex-wrap: wrap; }
+    .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; }
+    .form-control { width: 100%; padding: .45rem .7rem; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; font-family: var(--font); background: var(--bg3) !important; color: var(--text) !important; -webkit-text-fill-color: var(--text) !important; box-sizing: border-box; }
+    .form-control::placeholder { color: var(--text2) !important; opacity: 1; }
+    .form-control:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(233,69,96,.15); }
+    .form-control:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px var(--bg3) inset !important; -webkit-text-fill-color: var(--text) !important; }
+    textarea.form-control { resize: vertical; }
+    .form-hint { font-size: 11px; color: var(--text2); margin-top: 4px; }
+    .modal-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 580px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+    .modal-box.modal-sm { max-width: 420px; }
+    .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .modal-header h4 { font-family: var(--font); font-size: 15px; font-weight: 600; color: var(--text); margin: 0; }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; }
+</style>
+
 <script>
-    var _pm = null, _pmk = null, _pmc = null;
+    // FIX: dùng JSON.parse để tránh HTML encode khi render string tiếng Việt
+    const POIS = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pois.Select(p => new {
+        id       = p.Id,
+        name     = p.Name,
+        desc     = p.Description ?? "",
+        lat      = p.Latitude,
+        lng      = p.Longitude,
+        radius   = p.Radius,
+        owner    = p.OwnerId.HasValue ? "#" + p.OwnerId.Value : "—",
+        njs      = p.Name,
+        djs      = p.Description ?? "",
+        oarg     = p.OwnerId.HasValue ? p.OwnerId.Value.ToString() : "null"
+    })).Replace("'", "\\'"))');
 
-    function initPickMap(lat, lng, radius) {
-        if (_pm) { _pm.remove(); _pm = null; _pmk = null; _pmc = null; }
-        _pm = L.map('pickMap').setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors', maxZoom: 19
-        }).addTo(_pm);
-        placeMarker(lat, lng, radius);
-        _pm.on('click', function(e) {
-            placeMarker(e.latlng.lat, e.latlng.lng,
-                parseFloat(document.getElementById('fRadius').value) || 80);
+    const IMGS = [
+        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80',
+        'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80',
+        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400&q=80',
+        'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&q=80',
+        'https://images.unsplash.com/photo-1476224203421-9ac39bcb3df1?w=400&q=80',
+    ];
+
+    let mainMap, markers={}, circles={}, selectedId=null;
+
+    function mkIcon(active){
+        return L.divIcon({
+            className:'',
+            html:`<div class="poi-pin${active?' active':''}"></div>`,
+            iconSize:[22,22], iconAnchor:[11,22], popupAnchor:[0,-24]
         });
-        document.getElementById('fRadius').addEventListener('input', function() {
-            if (_pmk) {
-                var ll = _pmk.getLatLng();
-                drawCircle(ll.lat, ll.lng, parseFloat(this.value) || 80);
+    }
+
+    document.addEventListener('DOMContentLoaded',()=>{
+        let clat=10.7769, clng=106.7009;
+        if(POIS.length){ clat=POIS.reduce((s,p)=>s+p.lat,0)/POIS.length; clng=POIS.reduce((s,p)=>s+p.lng,0)/POIS.length; }
+        mainMap=L.map('mainMap').setView([clat,clng],14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(mainMap);
+        POIS.forEach(p=>{
+            const m=L.marker([p.lat,p.lng],{icon:mkIcon(false)}).addTo(mainMap);
+            m.bindTooltip(`<b>${p.name}</b>`,{direction:'top',offset:[0,-20]});
+            m.on('click',()=>selectPoiById(p.id));
+            markers[p.id]=m;
+            circles[p.id]=L.circle([p.lat,p.lng],{radius:p.radius,color:'#e94560',fillColor:'#e94560',fillOpacity:.08,weight:1.5}).addTo(mainMap);
+        });
+    });
+
+    function selectPoiById(id){
+        const poi=POIS.find(p=>p.id===id); if(!poi) return;
+        if(selectedId!==null){
+            const oldEl=document.getElementById('item-'+selectedId);
+            if(oldEl) oldEl.classList.remove('selected');
+            if(markers[selectedId]) markers[selectedId].setIcon(mkIcon(false));
+        }
+        selectedId=id;
+        const el=document.getElementById('item-'+id);
+        if(el){ el.classList.add('selected'); el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+        if(markers[id]){ markers[id].setIcon(mkIcon(true)); mainMap.flyTo([poi.lat,poi.lng],16,{duration:.8}); }
+        showDetail(poi);
+    }
+
+    function showDetail(poi){
+        document.getElementById('detailPlaceholder').style.display='none';
+        document.getElementById('detailContent').style.display='flex';
+        document.getElementById('detailImg').src=IMGS[(poi.id-1)%IMGS.length];
+        document.getElementById('detailImg').alt=poi.name;
+        document.getElementById('detailRadius').textContent=poi.radius+' m';
+        document.getElementById('detailName').textContent=poi.name;
+        document.getElementById('detailDesc').textContent=poi.desc||'Chưa có mô tả.';
+        document.getElementById('detailLat').textContent=poi.lat.toFixed(6);
+        document.getElementById('detailLng').textContent=poi.lng.toFixed(6);
+        document.getElementById('detailR').textContent=poi.radius+' m';
+        document.getElementById('detailOwner').textContent=poi.owner;
+    }
+
+    function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg); }
+    function deleteCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) confirmDelete(p.id,p.name); }
+
+    // Bỏ dấu tiếng Việt để tìm kiếm không phân biệt dấu
+    function removeDiacritics(str){
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+    }
+
+    function filterList(q){
+        const nq = removeDiacritics(q);
+        document.querySelectorAll('.poi-item').forEach(el=>{
+            const name = removeDiacritics(el.querySelector('.poi-item-name').textContent);
+            el.classList.toggle('hidden', nq.length > 0 && !name.includes(nq));
+        });
+    }
+
+    // Reset map về hiện tất cả POI
+    function resetMap(){
+        document.getElementById('poiSearch').value = '';
+        filterList('');
+        if(selectedId !== null){
+            const oldEl = document.getElementById('item-'+selectedId);
+            if(oldEl) oldEl.classList.remove('selected');
+            if(markers[selectedId]) markers[selectedId].setIcon(mkIcon(false));
+            selectedId = null;
+        }
+        document.getElementById('detailPlaceholder').style.display = '';
+        document.getElementById('detailContent').style.display = 'none';
+        if(mainMap && POIS.length){
+            if(POIS.length === 1){
+                mainMap.setView([POIS[0].lat, POIS[0].lng], 15);
+            } else {
+                const bounds = POIS.map(p=>[p.lat, p.lng]);
+                mainMap.fitBounds(bounds, {padding:[40,40]});
             }
-        });
-    }
-
-    function placeMarker(lat, lng, radius) {
-        if (_pmk) _pm.removeLayer(_pmk);
-        drawCircle(lat, lng, radius);
-        _pmk = L.marker([lat, lng], { draggable: true }).addTo(_pm);
-        document.getElementById('fLat').value = lat.toFixed(6);
-        document.getElementById('fLng').value = lng.toFixed(6);
-        _pmk.on('dragend', function(e) {
-            var p = e.target.getLatLng();
-            document.getElementById('fLat').value = p.lat.toFixed(6);
-            document.getElementById('fLng').value = p.lng.toFixed(6);
-            drawCircle(p.lat, p.lng, parseFloat(document.getElementById('fRadius').value) || 80);
-        });
-    }
-
-    function drawCircle(lat, lng, radius) {
-        if (_pmc) _pm.removeLayer(_pmc);
-        _pmc = L.circle([lat, lng], {
-            radius: radius, color: '#3b82f6', fillColor: '#93c5fd', fillOpacity: 0.25
-        }).addTo(_pm);
-    }
-
-    function getMyLocation() {
-        if (!navigator.geolocation) { alert('Trình duyệt không hỗ trợ định vị.'); return; }
-        navigator.geolocation.getCurrentPosition(function(pos) {
-            var r = parseFloat(document.getElementById('fRadius').value) || 80;
-            placeMarker(pos.coords.latitude, pos.coords.longitude, r);
-            _pm.setView([pos.coords.latitude, pos.coords.longitude], 16);
-            showTab('tab-loc', 'btnTabLoc');
-        }, function(err) { alert('Không lấy được vị trí: ' + err.message); });
-    }
-
-    var _preMap = null;
-    function openPreview(lat, lng, name, radius) {
-        document.getElementById('previewTitle').textContent = name;
-        document.getElementById('previewModal').style.display = 'flex';
-        setTimeout(function() {
-            if (_preMap) { _preMap.remove(); _preMap = null; }
-            _preMap = L.map('previewMapDiv').setView([lat, lng], 16);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors', maxZoom: 19
-            }).addTo(_preMap);
-            L.marker([lat, lng]).addTo(_preMap).bindPopup('<b>' + name + '</b>').openPopup();
-            L.circle([lat, lng], {
-                radius: radius, color: '#3b82f6', fillColor: '#93c5fd', fillOpacity: 0.25
-            }).addTo(_preMap);
-        }, 120);
-    }
-    function closePreview() {
-        document.getElementById('previewModal').style.display = 'none';
-        if (_preMap) { _preMap.remove(); _preMap = null; }
-    }
-
-    function openModal() {
-        document.getElementById('poiForm').reset();
-        document.getElementById('fId').value = '0';
-        document.getElementById('fRadius').value = 80;
-        document.getElementById('modalTitle').textContent = 'Thêm điểm thuyết minh';
-        document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Lưu';
-        showTab('tab-basic', 'btnTabBasic');
-        document.getElementById('poiModal').style.display = 'flex';
-        setTimeout(function() { initPickMap(10.7769, 106.7009, 80); }, 150);
-    }
-    function closeModal() {
-        document.getElementById('poiModal').style.display = 'none';
-    }
-    function handleBackdropClick(e) {
-        if (e.target === document.getElementById('poiModal')) closeModal();
-    }
-
-    function editPoi(id, name, desc, lat, lng, radius, ownerId) {
-        document.getElementById('fId').value = id;
-        document.getElementById('fName').value = name;
-        document.getElementById('fDescription').value = desc;
-        document.getElementById('fLat').value = lat;
-        document.getElementById('fLng').value = lng;
-        document.getElementById('fRadius').value = radius;
-        document.getElementById('fOwnerId').value = (ownerId === null) ? '' : ownerId;
-        document.getElementById('modalTitle').textContent = 'Chỉnh sửa: ' + name;
-        document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Cập nhật';
-        showTab('tab-basic', 'btnTabBasic');
-        document.getElementById('poiModal').style.display = 'flex';
-        setTimeout(function() { initPickMap(parseFloat(lat), parseFloat(lng), parseInt(radius)); }, 150);
-    }
-
-    function showTab(tabId, btnId) {
-        document.querySelectorAll('.tab-pane').forEach(function(p) { p.style.display = 'none'; });
-        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-        document.getElementById(tabId).style.display = 'block';
-        if (btnId) document.getElementById(btnId).classList.add('active');
-        if (tabId === 'tab-loc') {
-            setTimeout(function() { if (_pm) _pm.invalidateSize(); }, 80);
         }
     }
 
-    function confirmDelete(id, name) {
-        document.getElementById('fDelId').value = id;
-        document.getElementById('delName').textContent = name;
-        document.getElementById('deleteModal').style.display = 'flex';
+    var _pm=null,_pmk=null,_pmc=null;
+    function initPickMap(lat,lng,r){
+        if(_pm){_pm.remove();_pm=null;_pmk=null;_pmc=null;}
+        _pm=L.map('pickMap').setView([lat,lng],15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_pm);
+        placeMarker(lat,lng,r);
+        _pm.on('click',e=>placeMarker(e.latlng.lat,e.latlng.lng,parseFloat(document.getElementById('fRadius').value)||80));
+        document.getElementById('fRadius').addEventListener('input',function(){if(_pmk){const ll=_pmk.getLatLng();drawCircle(ll.lat,ll.lng,parseFloat(this.value)||80);}});
     }
-    function closeDelete() {
-        document.getElementById('deleteModal').style.display = 'none';
+    function placeMarker(lat,lng,r){
+        if(_pmk)_pm.removeLayer(_pmk);
+        drawCircle(lat,lng,r);
+        _pmk=L.marker([lat,lng],{draggable:true}).addTo(_pm);
+        document.getElementById('fLat').value=lat.toFixed(6);
+        document.getElementById('fLng').value=lng.toFixed(6);
+        _pmk.on('dragend',e=>{const p=e.target.getLatLng();document.getElementById('fLat').value=p.lat.toFixed(6);document.getElementById('fLng').value=p.lng.toFixed(6);drawCircle(p.lat,p.lng,parseFloat(document.getElementById('fRadius').value)||80);});
+    }
+    function drawCircle(lat,lng,r){if(_pmc)_pm.removeLayer(_pmc);_pmc=L.circle([lat,lng],{radius:r,color:'#e94560',fillColor:'#e94560',fillOpacity:.2}).addTo(_pm);}
+    function getMyLocation(){
+        if(!navigator.geolocation){alert('Không hỗ trợ định vị.');return;}
+        navigator.geolocation.getCurrentPosition(pos=>{const r=parseFloat(document.getElementById('fRadius').value)||80;placeMarker(pos.coords.latitude,pos.coords.longitude,r);_pm.setView([pos.coords.latitude,pos.coords.longitude],16);showTab('tab-loc','btnTabLoc');},err=>alert('Lỗi: '+err.message));
     }
 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') { closeModal(); closePreview(); closeDelete(); }
-    });
+    function openModal(){
+        document.getElementById('poiForm').reset();
+        document.getElementById('fId').value='0';
+        document.getElementById('fRadius').value=80;
+        document.getElementById('modalTitle').textContent='Thêm điểm thuyết minh';
+        document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Lưu';
+        showTab('tab-basic','btnTabBasic');
+        document.getElementById('poiModal').style.display='flex';
+        setTimeout(()=>initPickMap(10.7769,106.7009,80),150);
+    }
+    function closeModal(){document.getElementById('poiModal').style.display='none';}
+
+    function editPoi(id,name,desc,lat,lng,radius,ownerId){
+        document.getElementById('fId').value=id;
+        document.getElementById('fName').value=name;
+        document.getElementById('fDescription').value=desc;
+        document.getElementById('fLat').value=lat;
+        document.getElementById('fLng').value=lng;
+        document.getElementById('fRadius').value=radius;
+        document.getElementById('fOwnerId').value=(ownerId===null||ownerId==='null')?'':ownerId;
+        document.getElementById('modalTitle').textContent='Chỉnh sửa: '+name;
+        document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Cập nhật';
+        showTab('tab-basic','btnTabBasic');
+        document.getElementById('poiModal').style.display='flex';
+        setTimeout(()=>initPickMap(parseFloat(lat),parseFloat(lng),parseInt(radius)),150);
+    }
+
+    function showTab(tabId,btnId){
+        document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.getElementById(tabId).style.display='block';
+        if(btnId)document.getElementById(btnId).classList.add('active');
+        if(tabId==='tab-loc')setTimeout(()=>{if(_pm)_pm.invalidateSize();},80);
+    }
+
+    function confirmDelete(id,name){document.getElementById('fDelId').value=id;document.getElementById('delName').textContent=name;document.getElementById('deleteModal').style.display='flex';}
+    function closeDelete(){document.getElementById('deleteModal').style.display='none';}
+
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeDelete();}});
 </script>
