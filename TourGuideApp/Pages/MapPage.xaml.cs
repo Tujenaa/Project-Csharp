@@ -3,7 +3,7 @@ using Mapsui.UI;
 using Mapsui.Projections;
 using Microsoft.Maui.Devices.Sensors;
 using TourGuideApp.ViewModels;
-using TourGuideApp.Models; 
+using TourGuideApp.Models;
 
 namespace TourGuideApp.Pages;
 

@@ -4,47 +4,69 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:mapsui="clr-namespace:Mapsui.UI.Maui;assembly=Mapsui.UI.Maui"
     x:Class="TourGuideApp.Pages.MapPage"
-    Title="Bản đồ lộ trình">
+    Title="Bản đồ lộ trình"
+    Shell.NavBarIsVisible="False">
 
     <Grid RowSpacing="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="260"/>
+            <RowDefinition Height="270"/>
         </Grid.RowDefinitions>
 
+        <!-- Map + FAB -->
         <Grid Grid.Row="0">
             <mapsui:MapControl
                 x:Name="map"
                 HorizontalOptions="Fill"
                 VerticalOptions="Fill"/>
-            <Frame
-                BackgroundColor="#e94560"
-                CornerRadius="30"
-                Padding="15"
-                WidthRequest="60"
-                HeightRequest="60"
+
+            <!-- Nút vị trí hiện tại -->
+            <Border
+                BackgroundColor="#512BD4"
+                Stroke="Transparent"
+                StrokeThickness="0"
+                WidthRequest="52"
+                HeightRequest="52"
                 HorizontalOptions="End"
                 VerticalOptions="End"
-                Margin="20">
-
-                <Label
-                    Text="📍"
-                    FontSize="24"
+                Margin="16">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="16"/>
+                </Border.StrokeShape>
+                <Border.Shadow>
+                    <Shadow
+                        Brush="#50512BD4"
+                        Offset="0,4"
+                        Radius="12"/>
+                </Border.Shadow>
+                <Image
+                    Source="ic_my_location.svg"
+                    WidthRequest="22"
+                    HeightRequest="22"
                     HorizontalOptions="Center"
                     VerticalOptions="Center"/>
-
-                <Frame.GestureRecognizers>
+                <Border.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnCurrentLocationTapped"/>
-                </Frame.GestureRecognizers>
-
-            </Frame>
+                </Border.GestureRecognizers>
+            </Border>
         </Grid>
 
-        <Frame
+        <!-- Bottom panel -->
+        <Border
             Grid.Row="1"
             Padding="0"
-            CornerRadius="30"
-            BackgroundColor="White">
+            BackgroundColor="White"
+            Stroke="#E8E3F5"
+            StrokeThickness="0">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="28,28,0,0"/>
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow
+                    Brush="#20512BD4"
+                    Offset="0,-4"
+                    Radius="16"/>
+            </Border.Shadow>
 
             <Grid RowSpacing="0">
                 <Grid.RowDefinitions>
@@ -52,74 +74,100 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <VerticalStackLayout Grid.Row="0" Padding="0,10,0,15">
+                <!-- Handle + header -->
+                <VerticalStackLayout Grid.Row="0" Padding="0,10,0,12">
                     <BoxView
-                        BackgroundColor="#cbd5e1"
-                        WidthRequest="40"
+                        BackgroundColor="#DDD6F3"
+                        WidthRequest="36"
                         HeightRequest="4"
                         CornerRadius="2"
                         HorizontalOptions="Center"/>
-
                     <Label
-                        Text="📍 Địa điểm gần đây"
-                        FontSize="20"
+                        Text="Địa điểm gần đây"
+                        FontSize="17"
                         FontAttributes="Bold"
                         Margin="20,10,20,0"
-                        TextColor="#1a1a2e"/>
-
+                        TextColor="#1A1035"/>
                     <Label
-                        Text="Các địa điểm trong bán kính 500m"
-                        FontSize="13"
-                        Margin="20,5,20,0"
-                        TextColor="#64748b"/>
+                        Text="Trong bán kính 500m"
+                        FontSize="12"
+                        Margin="20,3,20,0"
+                        TextColor="#94A3B8"/>
                 </VerticalStackLayout>
 
+                <!-- POI list -->
                 <CollectionView
                     Grid.Row="1"
                     ItemsSource="{Binding NearbyPOI}"
                     ItemsLayout="HorizontalList"
-                    Margin="20,0,20,20">
+                    Margin="16,0,16,16">
 
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
+                            <Border
+                                BackgroundColor="#F4F2FB"
+                                Stroke="#E8E3F5"
+                                StrokeThickness="1"
+                                WidthRequest="240"
+                                Margin="0,0,12,0">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="18"/>
+                                </Border.StrokeShape>
 
-                            <Frame BackgroundColor="White"
-                               CornerRadius="20"
-                               WidthRequest="260"
-                               Margin="0,0,15,0">
+                                <VerticalStackLayout Padding="16" Spacing="6">
+                                    <Label
+                                        Text="{Binding Name}"
+                                        FontSize="15"
+                                        FontAttributes="Bold"
+                                        TextColor="#1A1035"
+                                        LineBreakMode="TailTruncation"/>
+                                    <Label
+                                        Text="Địa điểm gần bạn"
+                                        FontSize="12"
+                                        TextColor="#94A3B8"/>
 
-                                <VerticalStackLayout Padding="15">
-
-                                   <Label
-                                    Text="{Binding Name}"
-                                    FontSize="18"
-                                    FontAttributes="Bold"
-                                    TextColor="#1a1a2e"/>   
-
-                                   <Label
-                                    Text="📍 Địa điểm gần bạn"
-                                    FontSize="13"
-                                    TextColor="#64748b"
-                                    Margin="0,0,0,10"/>
-
-                                   <Button
-                                    Text="▶ Audio giới thiệu"
-                                    BackgroundColor="#fef3f2"
-                                    TextColor="#e94560"
-                                    CornerRadius="10"
-                                    HeightRequest="40"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
-                                    CommandParameter="{Binding .}" />       
-
+                                    <!-- Nút phát audio -->
+                                    <Border
+                                        BackgroundColor="#EDE7FF"
+                                        Stroke="Transparent"
+                                        StrokeThickness="0"
+                                        HeightRequest="38"
+                                        Margin="0,4,0,0">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="10"/>
+                                        </Border.StrokeShape>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Image
+                                                Grid.Column="0"
+                                                Source="ic_play.svg"
+                                                WidthRequest="16"
+                                                HeightRequest="16"
+                                                Margin="14,0,8,0"
+                                                VerticalOptions="Center"/>
+                                            <Label
+                                                Grid.Column="1"
+                                                Text="Audio giới thiệu"
+                                                FontSize="13"
+                                                FontAttributes="Bold"
+                                                TextColor="#512BD4"
+                                                VerticalOptions="Center"/>
+                                        </Grid>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
+                                                CommandParameter="{Binding .}"/>
+                                        </Border.GestureRecognizers>
+                                    </Border>
                                 </VerticalStackLayout>
-
-                            </Frame>
-
+                            </Border>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
-
                 </CollectionView>
             </Grid>
-        </Frame>
+        </Border>
     </Grid>
 </ContentPage>

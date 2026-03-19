@@ -4,81 +4,202 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="TourGuideApp.Pages.SettingsPage"
     Title="Cài đặt"
-    BackgroundColor="#f8f9fa">
+    BackgroundColor="#F4F2FB"
+    Shell.NavBarIsVisible="False">
 
     <ScrollView>
-        <VerticalStackLayout Padding="0,20,0,30" Spacing="0">
+        <VerticalStackLayout Spacing="0">
 
-            <Frame Margin="20,0,20,20" BackgroundColor="White" CornerRadius="20" Padding="20">
-                <Grid ColumnSpacing="15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="70"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+            <!-- Header -->
+            <Grid
+                BackgroundColor="#1A1035"
+                Padding="22,52,22,26">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                    <Image Grid.Column="0" Source="profile.png" WidthRequest="70" HeightRequest="70">
-                        <Image.Clip>
-                            <EllipseGeometry Center="35,35" RadiusX="35" RadiusY="35"/>
-                        </Image.Clip>
-                    </Image>
+                <Label
+                    Grid.Row="0"
+                    Text="Cài đặt"
+                    FontSize="22"
+                    FontAttributes="Bold"
+                    TextColor="White"
+                    Margin="0,0,0,16"/>
 
-                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center">
-                        <Label Text="Người dùng" FontSize="18" FontAttributes="Bold" TextColor="#1a1a2e"/>
-                        <Label Text="tourguide@email.com" FontSize="13" TextColor="#64748b"/>
-                    </VerticalStackLayout>
-                </Grid>
-            </Frame>
+                <!-- Profile card -->
+                <Border
+                    Grid.Row="1"
+                    BackgroundColor="#2D1B6E"
+                    Stroke="#512BD4"
+                    StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="18"/>
+                    </Border.StrokeShape>
+                    <Grid Padding="16" ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="52"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border
+                            Grid.Column="0"
+                            BackgroundColor="#512BD4"
+                            WidthRequest="52"
+                            HeightRequest="52"
+                            StrokeThickness="0">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="16"/>
+                            </Border.StrokeShape>
+                            <Label
+                                Text="U"
+                                FontSize="20"
+                                FontAttributes="Bold"
+                                TextColor="White"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"/>
+                        </Border>
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            VerticalOptions="Center"
+                            Spacing="3">
+                            <Label
+                                Text="Người dùng"
+                                FontSize="16"
+                                FontAttributes="Bold"
+                                TextColor="White"/>
+                            <Label
+                                Text="tourguide@email.com"
+                                FontSize="12"
+                                TextColor="#9B7FEA"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </Border>
+            </Grid>
 
-            <Label Text="Cài đặt ứng dụng" Margin="25,10,20,10" FontSize="14" FontAttributes="Bold" TextColor="#64748b"/>
+            <!-- Settings group -->
+            <Label
+                Text="ỨNG DỤNG"
+                Margin="22,20,20,8"
+                FontSize="11"
+                FontAttributes="Bold"
+                TextColor="#94A3B8"
+                CharacterSpacing="1"/>
 
-            <Frame Margin="20,0,20,20" BackgroundColor="White" CornerRadius="20" Padding="0">
+            <Border
+                Margin="18,0,18,0"
+                BackgroundColor="White"
+                Stroke="#E8E3F5"
+                StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="18"/>
+                </Border.StrokeShape>
                 <VerticalStackLayout>
 
-                    <Grid Padding="20">
+                    <Grid Padding="18,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Label Text="Sử dụng GPS" FontSize="16" FontAttributes="Bold" VerticalOptions="Center"/>
-                        <Switch Grid.Column="1" IsToggled="True" OnColor="#e94560"/>
+                        <Label
+                            Text="Sử dụng GPS"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            TextColor="#1A1035"
+                            VerticalOptions="Center"/>
+                        <Switch
+                            Grid.Column="1"
+                            IsToggled="True"
+                            OnColor="#512BD4"/>
                     </Grid>
 
-                    <BoxView HeightRequest="1" BackgroundColor="#e2e8f0"/>
+                    <BoxView HeightRequest="1" BackgroundColor="#F1EEF9" Margin="18,0"/>
 
-                    <Grid Padding="20">
+                    <Grid Padding="18,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Label Text="Audio hướng dẫn" FontSize="16" FontAttributes="Bold" VerticalOptions="Center"/>
-                        <Switch Grid.Column="1" IsToggled="True" OnColor="#e94560"/>
+                        <Label
+                            Text="Audio hướng dẫn"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            TextColor="#1A1035"
+                            VerticalOptions="Center"/>
+                        <Switch
+                            Grid.Column="1"
+                            IsToggled="True"
+                            OnColor="#512BD4"/>
                     </Grid>
 
-                    <BoxView HeightRequest="1" BackgroundColor="#e2e8f0"/>
+                    <BoxView HeightRequest="1" BackgroundColor="#F1EEF9" Margin="18,0"/>
 
-                    <Grid Padding="20">
+                    <Grid Padding="18,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Label Text="Ngôn ngữ" FontSize="16" FontAttributes="Bold" VerticalOptions="Center"/>
-                        <Label Grid.Column="1" Text="Tiếng Việt" TextColor="#64748b" VerticalOptions="Center"/>
+                        <Label
+                            Text="Ngôn ngữ"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            TextColor="#1A1035"
+                            VerticalOptions="Center"/>
+                        <Label
+                            Grid.Column="1"
+                            Text="Tiếng Việt"
+                            FontSize="13"
+                            TextColor="#6B7280"
+                            VerticalOptions="Center"/>
                     </Grid>
 
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
-            <Label Text="Thông tin" Margin="25,10,20,10" FontSize="14" FontAttributes="Bold" TextColor="#64748b"/>
+            <Label
+                Text="THÔNG TIN"
+                Margin="22,20,20,8"
+                FontSize="11"
+                FontAttributes="Bold"
+                TextColor="#94A3B8"
+                CharacterSpacing="1"/>
 
-            <Frame Margin="20,0,20,20" BackgroundColor="White" CornerRadius="20" Padding="20">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Tour Guide App" FontSize="16" FontAttributes="Bold"/>
-                    <Label Text="Phiên bản 1.0" FontSize="13" TextColor="#64748b"/>
-                    <Label Text="Ứng dụng hướng dẫn du lịch sử dụng bản đồ và GPS để khám phá các địa điểm." FontSize="13" TextColor="#64748b"/>
+            <Border
+                Margin="18,0,18,0"
+                BackgroundColor="White"
+                Stroke="#E8E3F5"
+                StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="18"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Padding="18" Spacing="6">
+                    <Label
+                        Text="Tour Guide App"
+                        FontSize="15"
+                        FontAttributes="Bold"
+                        TextColor="#1A1035"/>
+                    <Label
+                        Text="Phiên bản 1.0"
+                        FontSize="13"
+                        TextColor="#6B7280"/>
+                    <Label
+                        Text="Ứng dụng hướng dẫn du lịch sử dụng bản đồ và GPS để khám phá các địa điểm."
+                        FontSize="13"
+                        TextColor="#94A3B8"
+                        LineHeight="1.5"/>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
-            <Button Text="Đăng xuất" BackgroundColor="#e94560" TextColor="White" CornerRadius="15" HeightRequest="50" Margin="20,10,20,0"/>
+            <Button
+                Text="Đăng xuất"
+                BackgroundColor="#FEF0F3"
+                TextColor="#E94560"
+                BorderColor="#FCA5A5"
+                BorderWidth="1"
+                CornerRadius="14"
+                HeightRequest="50"
+                FontSize="14"
+                FontAttributes="Bold"
+                Margin="18,16,18,32"/>
 
         </VerticalStackLayout>
     </ScrollView>

@@ -1,0 +1,236 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="TourGuideApp.Pages.HistoryPage"
+    Title="Lịch sử"
+    BackgroundColor="#F4F2FB"
+    Shell.NavBarIsVisible="False">
+
+	<Grid RowSpacing="0">
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<!-- Header -->
+		<Grid
+            Grid.Row="0"
+            BackgroundColor="#1A1035"
+            Padding="20,52,20,22">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+
+			<Grid Grid.Row="0" Margin="0,0,0,14">
+				<Label
+                    Text="Lịch sử nghe"
+                    FontSize="22"
+                    FontAttributes="Bold"
+                    TextColor="White"
+                    VerticalOptions="Center"/>
+				<Button
+                    Text="Xoá tất cả"
+                    BackgroundColor="Transparent"
+                    TextColor="#9B7FEA"
+                    FontSize="13"
+                    FontAttributes="Bold"
+                    HorizontalOptions="End"
+                    VerticalOptions="Center"
+                    Padding="0"
+                    Clicked="OnClearHistoryClicked"/>
+			</Grid>
+
+			<HorizontalStackLayout Grid.Row="1" Spacing="10">
+				<Border
+                    BackgroundColor="#2D1B6E"
+                    Stroke="#512BD4"
+                    StrokeThickness="1">
+					<Border.StrokeShape>
+						<RoundRectangle CornerRadius="20"/>
+					</Border.StrokeShape>
+					<Label
+                        Text="{Binding TotalListened, StringFormat='{}{0} địa điểm'}"
+                        TextColor="#C4B0FF"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        Padding="12,6"/>
+				</Border>
+				<Border
+                    BackgroundColor="#2D1B6E"
+                    Stroke="#512BD4"
+                    StrokeThickness="1">
+					<Border.StrokeShape>
+						<RoundRectangle CornerRadius="20"/>
+					</Border.StrokeShape>
+					<Label
+                        Text="{Binding TotalDuration, StringFormat='{}{0} phút'}"
+                        TextColor="#C4B0FF"
+                        FontSize="12"
+                        FontAttributes="Bold"
+                        Padding="12,6"/>
+				</Border>
+			</HorizontalStackLayout>
+		</Grid>
+
+		<!-- List -->
+		<ScrollView Grid.Row="1">
+			<VerticalStackLayout Padding="18,16,18,24" Spacing="0">
+
+				<!-- Empty state -->
+				<VerticalStackLayout
+                    x:Name="EmptyState"
+                    IsVisible="{Binding IsHistoryEmpty}"
+                    HorizontalOptions="Center"
+                    Margin="0,60,0,0"
+                    Spacing="14">
+					<Border
+                        BackgroundColor="#EDE7FF"
+                        Stroke="Transparent"
+                        StrokeThickness="0"
+                        WidthRequest="64"
+                        HeightRequest="64"
+                        HorizontalOptions="Center">
+						<Border.StrokeShape>
+							<RoundRectangle CornerRadius="20"/>
+						</Border.StrokeShape>
+						<Image
+                            Source="ic_headphones.svg"
+                            WidthRequest="32"
+                            HeightRequest="32"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"/>
+					</Border>
+					<Label
+                        Text="Chưa có lịch sử nghe"
+                        FontSize="17"
+                        FontAttributes="Bold"
+                        TextColor="#1A1035"
+                        HorizontalOptions="Center"/>
+					<Label
+                        Text="Hãy ghé thăm các địa điểm&#10;để bắt đầu hành trình!"
+                        FontSize="13"
+                        TextColor="#6B7280"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center"
+                        LineHeight="1.5"/>
+				</VerticalStackLayout>
+
+				<!-- History grouped -->
+				<CollectionView
+                    ItemsSource="{Binding HistoryGroups}"
+                    IsGrouped="True">
+
+					<CollectionView.GroupHeaderTemplate>
+						<DataTemplate>
+							<Label
+                                Text="{Binding Key}"
+                                FontSize="11"
+                                FontAttributes="Bold"
+                                TextColor="#94A3B8"
+                                Margin="4,16,0,8"
+                                CharacterSpacing="1"/>
+						</DataTemplate>
+					</CollectionView.GroupHeaderTemplate>
+
+					<CollectionView.ItemTemplate>
+						<DataTemplate>
+							<Border
+                                BackgroundColor="White"
+                                Stroke="#E8E3F5"
+                                StrokeThickness="1"
+                                Margin="0,0,0,10">
+								<Border.StrokeShape>
+									<RoundRectangle CornerRadius="18"/>
+								</Border.StrokeShape>
+
+								<Grid Padding="14" ColumnSpacing="14">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="62"/>
+										<ColumnDefinition Width="*"/>
+										<ColumnDefinition Width="Auto"/>
+									</Grid.ColumnDefinitions>
+
+									<!-- Thumbnail -->
+									<Border
+                                        Grid.Column="0"
+                                        WidthRequest="62"
+                                        HeightRequest="62"
+                                        StrokeThickness="0">
+										<Border.StrokeShape>
+											<RoundRectangle CornerRadius="14"/>
+										</Border.StrokeShape>
+										<Image
+                                            Source="{Binding ImageUrl}"
+                                            Aspect="AspectFill"/>
+									</Border>
+
+									<!-- Info -->
+									<VerticalStackLayout
+                                        Grid.Column="1"
+                                        VerticalOptions="Center"
+                                        Spacing="4">
+										<Label
+                                            Text="{Binding Name}"
+                                            FontSize="14"
+                                            FontAttributes="Bold"
+                                            TextColor="#1A1035"
+                                            LineBreakMode="TailTruncation"/>
+										<Label
+                                            Text="{Binding ListenedAt, StringFormat='{0:HH:mm}'}"
+                                            FontSize="12"
+                                            TextColor="#6B7280"/>
+										<Border
+                                            BackgroundColor="#EDE7FF"
+                                            Stroke="Transparent"
+                                            StrokeThickness="0"
+                                            HorizontalOptions="Start">
+											<Border.StrokeShape>
+												<RoundRectangle CornerRadius="8"/>
+											</Border.StrokeShape>
+											<Label
+                                                Text="Đã nghe"
+                                                FontSize="10"
+                                                FontAttributes="Bold"
+                                                TextColor="#512BD4"
+                                                Padding="8,3"/>
+										</Border>
+									</VerticalStackLayout>
+
+									<!-- Replay button với SVG icon -->
+									<Border
+                                        Grid.Column="2"
+                                        BackgroundColor="#F4F2FB"
+                                        Stroke="#E8E3F5"
+                                        StrokeThickness="1"
+                                        WidthRequest="38"
+                                        HeightRequest="38"
+                                        VerticalOptions="Center">
+										<Border.StrokeShape>
+											<RoundRectangle CornerRadius="12"/>
+										</Border.StrokeShape>
+										<Image
+                                            Source="ic_play.svg"
+                                            WidthRequest="18"
+                                            HeightRequest="18"
+                                            HorizontalOptions="Center"
+                                            VerticalOptions="Center"/>
+										<Border.GestureRecognizers>
+											<TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ReplayCommand}"
+                                                CommandParameter="{Binding .}"/>
+										</Border.GestureRecognizers>
+									</Border>
+
+								</Grid>
+							</Border>
+						</DataTemplate>
+					</CollectionView.ItemTemplate>
+				</CollectionView>
+
+			</VerticalStackLayout>
+		</ScrollView>
+
+	</Grid>
+</ContentPage>

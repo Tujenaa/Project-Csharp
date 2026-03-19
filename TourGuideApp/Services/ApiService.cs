@@ -11,7 +11,7 @@ public class ApiService
     public async Task<List<POI>> GetPOI()
     {
         var pois = await client.GetFromJsonAsync<List<POI>>(
-            "http://10.0.2.2:5266/api/POI");
+            "http://192.168.1.125:5266/api/POI");
 
         return pois ?? new List<POI>();
     }
@@ -27,6 +27,6 @@ public class ApiService
         var content = new StringContent(json);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
-        await client.PostAsync("http://10.0.2.2:5266/api/POI/history", content);
+        await client.PostAsync("http://192.168.1.125:5266/api/POI/history", content);
     }
 }

@@ -4,80 +4,276 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="TourGuideApp.Pages.PlaceDetailPage"
     Title="Chi tiết địa điểm"
-    BackgroundColor="#f8f9fa">
+    BackgroundColor="#F4F2FB"
+    Shell.NavBarIsVisible="False">
 
     <ScrollView>
         <VerticalStackLayout Spacing="0">
 
+            <!-- Hero image -->
             <Grid HeightRequest="300">
-                <Image Source="{Binding Image}" Aspect="AspectFill"/>
+                <Image
+                    Source="{Binding ImageUrl}"
+                    Aspect="AspectFill"/>
 
                 <BoxView>
                     <BoxView.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="#00000000" Offset="0"/>
-                            <GradientStop Color="#80000000" Offset="1"/>
+                            <GradientStop Color="#22000000" Offset="0"/>
+                            <GradientStop Color="#CC000000" Offset="1"/>
                         </LinearGradientBrush>
                     </BoxView.Background>
                 </BoxView>
 
-                <Frame BackgroundColor="#80000000" CornerRadius="20" Padding="10" WidthRequest="40" HeightRequest="40" Margin="15,50,0,0" HorizontalOptions="Start" VerticalOptions="Start">
-                    <Label Text="←" FontSize="20" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
-                    <Frame.GestureRecognizers>
+                <!-- Back -->
+                <Border
+                    BackgroundColor="#40FFFFFF"
+                    Stroke="#30FFFFFF"
+                    StrokeThickness="1"
+                    WidthRequest="40"
+                    HeightRequest="40"
+                    Margin="16,52,0,0"
+                    HorizontalOptions="Start"
+                    VerticalOptions="Start">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="12"/>
+                    </Border.StrokeShape>
+                    <Label
+                        Text="←"
+                        FontSize="18"
+                        TextColor="White"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center"/>
+                    <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnBackTapped"/>
-                    </Frame.GestureRecognizers>
-                </Frame>
+                    </Border.GestureRecognizers>
+                </Border>
 
-                <VerticalStackLayout VerticalOptions="End" Padding="20,20,20,25">
-                    <Label Text="{Binding Name}" FontSize="30" FontAttributes="Bold" TextColor="White"/>
-                    <Label Text="{Binding Address}" FontSize="14" TextColor="White" Opacity="0.9"/>
+                <!-- Name / address -->
+                <VerticalStackLayout
+                    VerticalOptions="End"
+                    Padding="20,0,20,22">
+                    <Border
+                        BackgroundColor="#40FFFFFF"
+                        Stroke="#40FFFFFF"
+                        StrokeThickness="1"
+                        HorizontalOptions="Start"
+                        Margin="0,0,0,8">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="20"/>
+                        </Border.StrokeShape>
+                        <Label
+                            Text="{Binding Category}"
+                            TextColor="White"
+                            FontSize="11"
+                            FontAttributes="Bold"
+                            Padding="10,4"/>
+                    </Border>
+                    <Label
+                        Text="{Binding Name}"
+                        FontSize="26"
+                        FontAttributes="Bold"
+                        TextColor="White"
+                        LineBreakMode="WordWrap"/>
+                    <Label
+                        Text="{Binding Address}"
+                        FontSize="13"
+                        TextColor="#CCffffff"
+                        Margin="0,4,0,0"/>
                 </VerticalStackLayout>
             </Grid>
 
-            <Frame Margin="20,20,20,0" BackgroundColor="White" CornerRadius="20" Padding="20">
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="🎧 Thuyết minh" FontSize="18" FontAttributes="Bold" TextColor="#1a1a2e"/>
-                    <Button Text="▶ Phát audio" BackgroundColor="#e94560" TextColor="White" CornerRadius="15" HeightRequest="45"/>
-                </VerticalStackLayout>
-            </Frame>
+            <!-- Gallery strip -->
+            <CollectionView
+                ItemsSource="{Binding GalleryImages}"
+                ItemsLayout="HorizontalList"
+                HeightRequest="96"
+                BackgroundColor="#1A1035">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Margin="10,10,0,10"
+                            WidthRequest="116"
+                            HeightRequest="76"
+                            StrokeThickness="0">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="12"/>
+                            </Border.StrokeShape>
+                            <Image Source="{Binding .}" Aspect="AspectFill"/>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
 
-            <Grid Margin="20,20,20,0" ColumnSpacing="10">
+            <!-- Audio card -->
+            <Border
+                Margin="18,16,18,0"
+                BackgroundColor="#EDE7FF"
+                Stroke="#D4C4FF"
+                StrokeThickness="1.5">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Padding="16" Spacing="12">
+                    <Label
+                        Text="Thuyết minh"
+                        FontSize="15"
+                        FontAttributes="Bold"
+                        TextColor="#1A1035"/>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Play button dùng SVG icon -->
+                        <Border
+                            Grid.Column="0"
+                            BackgroundColor="#512BD4"
+                            WidthRequest="50"
+                            HeightRequest="50"
+                            StrokeThickness="0">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14"/>
+                            </Border.StrokeShape>
+                            <Border.Shadow>
+                                <Shadow
+                                    Brush="#50512BD4"
+                                    Offset="0,4"
+                                    Radius="10"/>
+                            </Border.Shadow>
+                            <Image
+                                Source="ic_play.svg"
+                                WidthRequest="20"
+                                HeightRequest="20"
+                                HorizontalOptions="Center"
+                                VerticalOptions="Center"/>
+                        </Border>
+
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            VerticalOptions="Center"
+                            Spacing="6">
+                            <Label
+                                Text="{Binding AudioTitle}"
+                                FontSize="13"
+                                FontAttributes="Bold"
+                                TextColor="#1A1035"/>
+                            <Label
+                                Text="{Binding AudioDuration}"
+                                FontSize="11"
+                                TextColor="#6B7280"/>
+                            <ProgressBar
+                                Progress="{Binding AudioProgress}"
+                                ProgressColor="#512BD4"
+                                HeightRequest="3"/>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Stats -->
+            <Grid Margin="18,14,18,0" ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <Frame Grid.Column="0" BackgroundColor="White" CornerRadius="15" Padding="20">
-                    <VerticalStackLayout>
-                        <Label Text="📏" FontSize="28" HorizontalOptions="Center"/>
-                        <Label Text="{Binding Distance}" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
-                        <Label Text="Khoảng cách" FontSize="13" HorizontalOptions="Center"/>
+                <Border
+                    Grid.Column="0"
+                    BackgroundColor="White"
+                    Stroke="#E8E3F5"
+                    StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Padding="16" Spacing="4">
+                        <Label
+                            Text="{Binding Distance}"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            HorizontalOptions="Center"
+                            TextColor="#1A1035"/>
+                        <Label
+                            Text="Khoảng cách"
+                            FontSize="11"
+                            HorizontalOptions="Center"
+                            TextColor="#6B7280"/>
                     </VerticalStackLayout>
-                </Frame>
+                </Border>
 
-                <Frame Grid.Column="1" BackgroundColor="White" CornerRadius="15" Padding="20">
-                    <VerticalStackLayout>
-                        <Label Text="🚶" FontSize="28" HorizontalOptions="Center"/>
-                        <Label Text="5 phút" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center"/>
-                        <Label Text="Đi bộ" FontSize="13" HorizontalOptions="Center"/>
+                <Border
+                    Grid.Column="1"
+                    BackgroundColor="White"
+                    Stroke="#E8E3F5"
+                    StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="16"/>
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Padding="16" Spacing="4">
+                        <Label
+                            Text="5 phút"
+                            FontSize="18"
+                            FontAttributes="Bold"
+                            HorizontalOptions="Center"
+                            TextColor="#1A1035"/>
+                        <Label
+                            Text="Đi bộ"
+                            FontSize="11"
+                            HorizontalOptions="Center"
+                            TextColor="#6B7280"/>
                     </VerticalStackLayout>
-                </Frame>
+                </Border>
             </Grid>
 
-            <Frame Margin="20,20,20,0" BackgroundColor="White" CornerRadius="20" Padding="20">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Mô tả" FontSize="18" FontAttributes="Bold"/>
-                    <Label Text="{Binding Description}" FontSize="15" TextColor="#475569" LineHeight="1.5"/>
+            <!-- Description -->
+            <Border
+                Margin="18,14,18,0"
+                BackgroundColor="White"
+                Stroke="#E8E3F5"
+                StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Padding="18" Spacing="10">
+                    <Label
+                        Text="Mô tả"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="#1A1035"/>
+                    <Label
+                        Text="{Binding Description}"
+                        FontSize="14"
+                        TextColor="#475569"
+                        LineHeight="1.6"/>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
-            <Frame Margin="20,20,20,20" BackgroundColor="White" CornerRadius="20" Padding="20">
-                <VerticalStackLayout Spacing="12">
-                    <Label Text="📍 Thông tin" FontSize="18" FontAttributes="Bold"/>
-                    <Label Text="{Binding Address}" FontSize="14" TextColor="#475569"/>
-                    <Label Text="{Binding Phone}" FontSize="14" TextColor="#475569"/>
+            <!-- Info -->
+            <Border
+                Margin="18,14,18,28"
+                BackgroundColor="White"
+                Stroke="#E8E3F5"
+                StrokeThickness="1">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20"/>
+                </Border.StrokeShape>
+                <VerticalStackLayout Padding="18" Spacing="8">
+                    <Label
+                        Text="Thông tin"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        TextColor="#1A1035"/>
+                    <Label
+                        Text="{Binding Address}"
+                        FontSize="13"
+                        TextColor="#475569"/>
+                    <Label
+                        Text="{Binding Phone}"
+                        FontSize="13"
+                        TextColor="#475569"/>
                 </VerticalStackLayout>
-            </Frame>
+            </Border>
 
         </VerticalStackLayout>
     </ScrollView>

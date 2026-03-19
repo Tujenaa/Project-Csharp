@@ -1,0 +1,278 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="TourGuideApp.Pages.LoginPage"
+    Title=""
+    BackgroundColor="#1A1035"
+    Shell.NavBarIsVisible="False">
+
+	<ScrollView>
+		<Grid MinimumHeightRequest="800">
+
+			<!-- Vòng trang trí nền -->
+			<Ellipse
+                Fill="#2D1B6E"
+                WidthRequest="340"
+                HeightRequest="340"
+                HorizontalOptions="End"
+                VerticalOptions="Start"
+                Margin="0,-80,-80,0"
+                Opacity="0.45"/>
+			<Ellipse
+                Fill="#2D1B6E"
+                WidthRequest="220"
+                HeightRequest="220"
+                HorizontalOptions="Start"
+                VerticalOptions="End"
+                Margin="-60,0,0,-60"
+                Opacity="0.35"/>
+
+			<VerticalStackLayout Padding="32,0" VerticalOptions="Center">
+
+				<!-- Brand -->
+				<VerticalStackLayout
+                    HorizontalOptions="Center"
+                    Spacing="10"
+                    Margin="0,80,0,0">
+
+					<Border
+                        BackgroundColor="#512BD4"
+                        WidthRequest="68"
+                        HeightRequest="68"
+                        HorizontalOptions="Center"
+                        StrokeThickness="0">
+						<Border.StrokeShape>
+							<RoundRectangle CornerRadius="20"/>
+						</Border.StrokeShape>
+						<Label
+                            Text="TG"
+                            FontSize="24"
+                            FontAttributes="Bold"
+                            TextColor="White"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center"/>
+					</Border>
+
+					<Label
+                        Text="Tour Guide"
+                        FontSize="28"
+                        FontAttributes="Bold"
+                        TextColor="White"
+                        HorizontalOptions="Center"/>
+					<Label
+                        Text="Khám phá địa điểm xung quanh bạn"
+                        FontSize="13"
+                        TextColor="#9B7FEA"
+                        HorizontalOptions="Center"
+                        HorizontalTextAlignment="Center"/>
+				</VerticalStackLayout>
+
+				<!-- Form card -->
+				<Border
+                    BackgroundColor="White"
+                    Stroke="Transparent"
+                    StrokeThickness="0"
+                    Margin="0,32,0,0">
+					<Border.StrokeShape>
+						<RoundRectangle CornerRadius="28"/>
+					</Border.StrokeShape>
+
+					<VerticalStackLayout Padding="24,26" Spacing="0">
+
+						<Label
+                            Text="Đăng nhập"
+                            FontSize="21"
+                            FontAttributes="Bold"
+                            TextColor="#1A1035"
+                            Margin="0,0,0,3"/>
+						<Label
+                            Text="Chào mừng trở lại!"
+                            FontSize="13"
+                            TextColor="#6B7280"
+                            Margin="0,0,0,22"/>
+
+						<!-- Email -->
+						<Label
+                            Text="Email"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#6B7280"
+                            Margin="0,0,0,6"
+                            CharacterSpacing="0.4"/>
+						<Border
+                            BackgroundColor="#F4F2FB"
+                            Stroke="#E8E3F5"
+                            StrokeThickness="1.5"
+                            Margin="0,0,0,14">
+							<Border.StrokeShape>
+								<RoundRectangle CornerRadius="13"/>
+							</Border.StrokeShape>
+							<Entry
+                                x:Name="EmailEntry"
+                                Placeholder="email@example.com"
+                                PlaceholderColor="#B0ADBB"
+                                TextColor="#1A1035"
+                                FontSize="15"
+                                Keyboard="Email"
+                                BackgroundColor="Transparent"
+                                Margin="6,0"
+                                HeightRequest="48"/>
+						</Border>
+
+						<!-- Password -->
+						<Label
+                            Text="Mật khẩu"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#6B7280"
+                            Margin="0,0,0,6"
+                            CharacterSpacing="0.4"/>
+						<Border
+                            BackgroundColor="#F4F2FB"
+                            Stroke="#E8E3F5"
+                            StrokeThickness="1.5"
+                            Margin="0,0,0,8">
+							<Border.StrokeShape>
+								<RoundRectangle CornerRadius="13"/>
+							</Border.StrokeShape>
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="Auto"/>
+								</Grid.ColumnDefinitions>
+								<Entry
+                                    x:Name="PasswordEntry"
+                                    Grid.Column="0"
+                                    Placeholder="••••••••"
+                                    PlaceholderColor="#B0ADBB"
+                                    TextColor="#1A1035"
+                                    FontSize="15"
+                                    IsPassword="True"
+                                    BackgroundColor="Transparent"
+                                    Margin="6,0,0,0"
+                                    HeightRequest="48"/>
+								<Label
+                                    x:Name="TogglePasswordLabel"
+                                    Grid.Column="1"
+                                    Text="Hiện"
+                                    FontSize="12"
+                                    FontAttributes="Bold"
+                                    TextColor="#512BD4"
+                                    VerticalOptions="Center"
+                                    Margin="0,0,14,0">
+									<Label.GestureRecognizers>
+										<TapGestureRecognizer Tapped="OnTogglePasswordTapped"/>
+									</Label.GestureRecognizers>
+								</Label>
+							</Grid>
+						</Border>
+
+						<!-- Quên mật khẩu -->
+						<Label
+                            Text="Quên mật khẩu?"
+                            FontSize="12"
+                            FontAttributes="Bold"
+                            TextColor="#512BD4"
+                            HorizontalOptions="End"
+                            Margin="0,0,0,20">
+							<Label.GestureRecognizers>
+								<TapGestureRecognizer Tapped="OnForgotPasswordTapped"/>
+							</Label.GestureRecognizers>
+						</Label>
+
+						<!-- Lỗi -->
+						<Label
+                            x:Name="ErrorLabel"
+                            Text=""
+                            FontSize="12"
+                            TextColor="#E94560"
+                            HorizontalOptions="Center"
+                            IsVisible="False"
+                            Margin="0,0,0,10"/>
+
+						<!-- Nút đăng nhập -->
+						<Button
+                            x:Name="LoginButton"
+                            Text="Đăng nhập"
+                            BackgroundColor="#512BD4"
+                            TextColor="White"
+                            FontSize="15"
+                            FontAttributes="Bold"
+                            CornerRadius="13"
+                            HeightRequest="50"
+                            Clicked="OnLoginClicked">
+							<Button.Shadow>
+								<Shadow
+                                    Brush="#40512BD4"
+                                    Offset="0,6"
+                                    Radius="16"/>
+							</Button.Shadow>
+						</Button>
+
+						<!-- Divider -->
+						<Grid Margin="0,18,0,18">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="Auto"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+							<BoxView
+                                Grid.Column="0"
+                                HeightRequest="1"
+                                BackgroundColor="#E8E3F5"
+                                VerticalOptions="Center"/>
+							<Label
+                                Grid.Column="1"
+                                Text="hoặc"
+                                FontSize="12"
+                                TextColor="#A0AEC0"
+                                Margin="12,0"/>
+							<BoxView
+                                Grid.Column="2"
+                                HeightRequest="1"
+                                BackgroundColor="#E8E3F5"
+                                VerticalOptions="Center"/>
+						</Grid>
+
+						<!-- Tiếp tục không đăng nhập -->
+						<Button
+                            Text="Tiếp tục không đăng nhập"
+                            BackgroundColor="#F4F2FB"
+                            TextColor="#512BD4"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            CornerRadius="13"
+                            HeightRequest="48"
+                            BorderColor="#E8E3F5"
+                            BorderWidth="1"
+                            Clicked="OnGuestLoginClicked"/>
+
+						<!-- Đăng ký -->
+						<HorizontalStackLayout
+                            HorizontalOptions="Center"
+                            Spacing="4"
+                            Margin="0,18,0,0">
+							<Label
+                                Text="Chưa có tài khoản?"
+                                FontSize="13"
+                                TextColor="#6B7280"/>
+							<Label
+                                Text="Đăng ký"
+                                FontSize="13"
+                                FontAttributes="Bold"
+                                TextColor="#512BD4">
+								<Label.GestureRecognizers>
+									<TapGestureRecognizer Tapped="OnSignUpTapped"/>
+								</Label.GestureRecognizers>
+							</Label>
+						</HorizontalStackLayout>
+
+					</VerticalStackLayout>
+				</Border>
+
+				<BoxView HeightRequest="40" Color="Transparent"/>
+			</VerticalStackLayout>
+		</Grid>
+	</ScrollView>
+</ContentPage>
