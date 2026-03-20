@@ -157,17 +157,9 @@
             <!-- Place list -->
             <CollectionView
                 Margin="18,0,18,24"
+                ItemsSource="{Binding TopPOIs}"
                 SelectionMode="Single"
                 SelectionChanged="OnPlaceSelected">
-                <CollectionView.ItemsSource>
-                    <x:Array Type="{x:Type x:String}">
-                        <x:String>Nhà thờ Đức Bà</x:String>
-                        <x:String>Dinh Độc Lập</x:String>
-                        <x:String>Chợ Bến Thành</x:String>
-                        <x:String>Bưu điện Thành phố</x:String>
-                        <x:String>Bảo tàng lịch sử</x:String>
-                    </x:Array>
-                </CollectionView.ItemsSource>
 
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
@@ -176,9 +168,11 @@
                             BackgroundColor="White"
                             Stroke="#E8E3F5"
                             StrokeThickness="1">
+
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="18"/>
                             </Border.StrokeShape>
+
                             <Grid Padding="16,14" ColumnSpacing="14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -189,34 +183,38 @@
                                     Grid.Column="0"
                                     VerticalOptions="Center"
                                     Spacing="3">
+
+                                    <!-- 🔥 SỬA Ở ĐÂY -->
                                     <Label
-                                        Text="{Binding .}"
-                                        FontSize="15"
-                                        FontAttributes="Bold"
-                                        TextColor="#1A1035"
-                                        LineBreakMode="TailTruncation"/>
+                                    Text="{Binding Name}"
+                                    FontSize="15"
+                                    FontAttributes="Bold"
+                                    TextColor="#1A1035"
+                                    LineBreakMode="TailTruncation"/>
+
                                     <Label
-                                        Text="4.8  ·  500m"
-                                        FontSize="12"
-                                        TextColor="#6B7280"/>
+                                    Text="4.8  ·  500m"
+                                    FontSize="12"
+                                    TextColor="#6B7280"/>
+
                                     <Label
-                                        Text="Địa điểm du lịch nổi bật"
-                                        FontSize="12"
-                                        TextColor="#94A3B8"/>
+                                    Text="Địa điểm du lịch nổi bật"
+                                    FontSize="12"
+                                    TextColor="#94A3B8"/>
                                 </VerticalStackLayout>
 
-                                <!-- Play icon từ SVG asset -->
+                                <!-- Play icon -->
                                 <Border
                                     Grid.Column="1"
                                     BackgroundColor="#EDE7FF"
-                                    Stroke="Transparent"
-                                    StrokeThickness="0"
                                     WidthRequest="38"
                                     HeightRequest="38"
                                     VerticalOptions="Center">
+
                                     <Border.StrokeShape>
                                         <RoundRectangle CornerRadius="12"/>
                                     </Border.StrokeShape>
+
                                     <Image
                                         Source="ic_play.svg"
                                         WidthRequest="18"
@@ -224,6 +222,7 @@
                                         HorizontalOptions="Center"
                                         VerticalOptions="Center"/>
                                 </Border>
+
                             </Grid>
                         </Border>
                     </DataTemplate>

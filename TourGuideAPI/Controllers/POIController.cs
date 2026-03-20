@@ -48,6 +48,23 @@ namespace TourGuideAPI.Controllers
             return Ok("Lưu thành công");
         }
 
+        [HttpGet("top")]
+        public IActionResult GetTopPOI()
+        {
+            var topPoiIds = _context.History
+                .GroupBy(h => h.PoiId)
+                .OrderByDescending(g => g.Count())
+                .Take(5)
+                .Select(g => g.Key)
+                .ToList();
+
+            var pois = _context.POI
+                .Where(p => topPoiIds.Contains(p.Id))
+                .ToList();
+
+            return Ok(pois);
+        }
+
         // ── WEB: GET /api/poi/{id} — lấy 1 POI theo id ──
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
