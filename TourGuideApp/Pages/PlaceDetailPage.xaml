@@ -35,15 +35,18 @@
                     Margin="16,52,0,0"
                     HorizontalOptions="Start"
                     VerticalOptions="Start">
+
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="12"/>
                     </Border.StrokeShape>
-                    <Label
-                        Text="←"
-                        FontSize="18"
-                        TextColor="White"
+
+                    <Image
+                        Source="ic_back.svg"
+                        WidthRequest="18"
+                        HeightRequest="18"
                         HorizontalOptions="Center"
                         VerticalOptions="Center"/>
+
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnBackTapped"/>
                     </Border.GestureRecognizers>
@@ -54,20 +57,16 @@
                     VerticalOptions="End"
                     Padding="20,0,20,22">
                     <Border
-                        BackgroundColor="#40FFFFFF"
-                        Stroke="#40FFFFFF"
-                        StrokeThickness="1"
+                        BackgroundColor="Transparent"
+                        Stroke="Transparent"
+                        StrokeThickness="0"
                         HorizontalOptions="Start"
-                        Margin="0,0,0,8">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="20"/>
-                        </Border.StrokeShape>
-                        <Label
-                            Text="{Binding Category}"
-                            TextColor="White"
-                            FontSize="11"
-                            FontAttributes="Bold"
-                            Padding="10,4"/>
+                        Margin="0,0,0,10">
+                        <Image
+                            Source="ic_category_restaurant.png"  
+                            WidthRequest="30"  
+                            HeightRequest="30"
+                            Aspect="AspectFit"/>
                     </Border>
                     <Label
                         Text="{Binding Name}"
@@ -143,7 +142,7 @@
                                     Radius="10"/>
                             </Border.Shadow>
                             <Image
-                                Source="ic_play.svg"
+                                Source="ic_white_play.svg"
                                 WidthRequest="20"
                                 HeightRequest="20"
                                 HorizontalOptions="Center"

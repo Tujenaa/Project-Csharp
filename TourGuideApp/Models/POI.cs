@@ -9,4 +9,5 @@ public class POI
     public double Longitude { get; set; }
     public int Radius { get; set; }
     public string? AudioUrl { get; set; }
+    public string? Script { get; set; }
 }

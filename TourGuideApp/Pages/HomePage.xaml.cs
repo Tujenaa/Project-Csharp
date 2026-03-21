@@ -1,4 +1,7 @@
-﻿using TourGuideApp.Pages;
+﻿using System.Linq;
+using Microsoft.Maui.ApplicationModel;
+
+using TourGuideApp.Pages;
 using TourGuideApp.Services;
 using TourGuideApp.Models;
 
@@ -18,24 +21,73 @@ public partial class HomePage : ContentPage
     {
         base.OnAppearing();
         await _vm.LoadData();
+
+        if (DeviceInfo.Platform == DevicePlatform.Android ||
+            DeviceInfo.Platform == DevicePlatform.iOS)
+        {
+            await LoadLocation();
+        }
     }
 
     private async void OnMapButtonClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("//map");
     }
+
+    public Command<POI> GoToDetailCommand { get; }
+
+  
     private async void OnPlaceSelected(object sender, SelectionChangedEventArgs e)
     {
         if (e.CurrentSelection.Count == 0)
             return;
 
-        var poi = e.CurrentSelection[0] as POI;
+        // Sử dụng ép kiểu an toàn và kiểm tra null
+        if (e.CurrentSelection[0] is POI poi)
+        {
+            var api = new ApiService();
+            await api.SaveHistory(poi.Id);
+            await DisplayAlert("Địa điểm", poi.Name, "OK");
+        }
+    }
 
- 
-        var api = new ApiService();
-        await api.SaveHistory(poi.Id);
+    // Lấy vị trí hiện tại và hiển thị địa chỉ
+    async Task LoadLocation()
+    {
+        if (DeviceInfo.Platform != DevicePlatform.Android &&
+            DeviceInfo.Platform != DevicePlatform.iOS)
+            return;
 
-        await DisplayAlert("Địa điểm", poi.Name, "OK");
+        try
+        {
+            var status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+
+            if (status != PermissionStatus.Granted)
+            {
+                LocationLabel.Text = "Chưa cấp quyền";
+                return;
+            }
+
+            var location = await Geolocation.GetLocationAsync(
+                new GeolocationRequest(GeolocationAccuracy.Medium));
+
+            if (location != null)
+            {
+                var placemarks = await Geocoding.GetPlacemarksAsync(location);
+                var place = placemarks?.FirstOrDefault();
+
+                if (place != null)
+                {
+                    string street = place.Thoroughfare ?? "";
+                    string city = place.Locality ?? "";
+                    LocationLabel.Text = $"{street}, {city}".TrimStart(',', ' ');
+                }
+            }
+        }
+        catch
+        {
+            LocationLabel.Text = "Lỗi GPS";
+        }
     }
 
 }

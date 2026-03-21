@@ -1,130 +1,152 @@
-﻿using Mapsui;
-using Mapsui.Layers;
-using Mapsui.Nts;
-using Mapsui.Projections;
-using Mapsui.Providers;
-using Mapsui.Styles;
-using Mapsui.Tiling;
-using Mapsui.Utilities;
-using NetTopologySuite.Geometries;
-using TourGuideApp.Models;
+﻿namespace TourGuideApp.Services;
 
-using MapsuiMap = Mapsui.Map;
-using Point = NetTopologySuite.Geometries.Point;
-using MapsuiColor = Mapsui.Styles.Color;
-
-namespace TourGuideApp.Services;
-
+/// <summary>
+/// Tạo nội dung HTML nhúng Leaflet.js.
+///
+/// JS API (gọi từ C# qua EvaluateJavaScriptAsync):
+///   setUserLocation(lat, lon)
+///   flyTo(lat, lon, zoom)
+///   setPOIs(jsonArray)              – đặt markers + vẽ đường giữa các POI theo thứ tự
+///                                     + tự động gọi drawNavigationRoute user→poi[0]
+///   clearRoutes()                   – xóa tất cả layers (markers + đường)
+///   drawNavigationRoute(fLat,fLon,tLat,tLon) – vẽ đường OSRM (đỏ) từ điểm A → B
+///
+/// C# nhận sự kiện từ JS qua URL scheme: "tourguide://poi/{id}"
+/// </summary>
 public class MapService
 {
-    // Layer dùng chung để chứa tất cả marker (tránh tạo nhiều layer gây lag)
-    private readonly MemoryLayer markerLayer = new MemoryLayer
-    {
-        Features = new List<Mapsui.IFeature>()
-    };
+    public string BuildLeafletHtml() => """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body, #map { width:100%; height:100%; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── Map init ──────────────────────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true }).setView([10.7769, 106.7009], 13);
 
-    // Tạo bản đồ và thêm layer nền + layer marker
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap'
+}).addTo(map);
 
-    public MapsuiMap CreateMap()
-    {
-        var map = new MapsuiMap();
+// ── State ─────────────────────────────────────────────────────────────────────
+let userMarker  = null;
+let userLatLng  = null;
+let poiMarkers  = [];      // marker của từng POI
+let routeLayer  = null;    // đường nối giữa các POI (tím, nét đứt)
+let navLayer    = null;    // đường chỉ đường user → POI đầu (đỏ, OSRM)
 
-        // Layer bản đồ (OpenStreetMap)
-        map.Layers.Add(OpenStreetMap.CreateTileLayer());
+// ── Icons ─────────────────────────────────────────────────────────────────────
+const userIcon = L.divIcon({
+  className: '',
+  html: '<div style="width:20px;height:20px;border-radius:50%;background:#2563EB;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.5);"></div>',
+  iconSize: [20, 20], iconAnchor: [10, 10]
+});
 
-        // Layer chứa marker (POI + vị trí user)
-        map.Layers.Add(markerLayer);
+function makePOIIcon(label) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:36px;height:36px;border-radius:50%;background:#512BD4;border:3px solid white;
+           box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+           color:white;font-size:13px;font-weight:bold;">${label}</div>`,
+    iconSize: [36, 36], iconAnchor: [18, 18]
+  });
+}
 
-        return map;
+// ── Public API ────────────────────────────────────────────────────────────────
+
+function setUserLocation(lat, lon) {
+  userLatLng = [lat, lon];
+  if (userMarker) userMarker.setLatLng(userLatLng);
+  else userMarker = L.marker(userLatLng, { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+}
+
+function flyTo(lat, lon, zoom) {
+  map.flyTo([lat, lon], zoom || 15, { animate: true, duration: 0.8 });
+}
+
+/// Xóa toàn bộ markers POI + cả 2 đường, giữ lại marker user
+function clearRoutes() {
+  map.eachLayer(layer => {
+    if (layer !== userMarker && !(layer instanceof L.TileLayer)) {
+      map.removeLayer(layer);
     }
+  });
 
-    // Thêm marker POI lên bản đồ
-    public void AddMarker(MapsuiMap map, POI poi)
-    {
-        var (x, y) = SphericalMercator.FromLonLat(poi.Longitude, poi.Latitude);
+  poiMarkers = [];
+  routeLayer = null;
+  navLayer = null;
+}
 
-        var feature = new GeometryFeature
-        {
-            Geometry = new Point(x, y)
-        };
+/// Đặt markers theo thứ tự mảng POI, vẽ đường nối giữa chúng,
+/// rồi tự gọi drawNavigationRoute từ user → poi[0].
+function setPOIs(jsonArray) {
+  clearRoutes();
 
-        //  Gắn POI vào marker để xử lý khi click
-        feature["POI"] = poi;
+  const pois = typeof jsonArray === 'string' ? JSON.parse(jsonArray) : jsonArray;
+  if (!pois || pois.length === 0) return;
 
-        feature.Styles.Add(new SymbolStyle
-        {
-            SymbolScale = 0.8
-        });
+  pois.forEach((poi, idx) => {
+    const m = L.marker([poi.latitude, poi.longitude], { icon: makePOIIcon(idx + 1) })
+      .addTo(map)
+      .bindTooltip(poi.name, { permanent: false, direction: 'top' });
 
-        ((List<Mapsui.IFeature>)markerLayer.Features).Add(feature);
+    m.on('click', () => {
+      window.location.href = 'tourguide://poi/' + poi.id;
+    });
+    poiMarkers.push(m);
+  });
 
-        //  cập nhật lại map
-        markerLayer.DataHasChanged();
+  // Đường nối giữa các POI (tím, nét đứt)
+  if (pois.length >= 2) {
+    const latlngs = pois.map(p => [p.latitude, p.longitude]);
+    routeLayer = L.polyline(latlngs, {
+      color: '#512BD4', weight: 4, opacity: 0.75, dashArray: '8,5'
+    }).addTo(map);
+  }
+
+  // Đường chỉ đường từ user → poi đầu tiên (đỏ)
+  if (userLatLng) {
+    drawNavigationRoute(userLatLng[0], userLatLng[1], pois[0].latitude, pois[0].longitude);
+  }
+}
+
+/// Vẽ đường thực tế (OSRM) từ (fLat,fLon) → (tLat,tLon).
+/// Xóa navLayer cũ trước khi vẽ.
+async function drawNavigationRoute(fLat, fLon, tLat, tLon) {
+  if (navLayer) { map.removeLayer(navLayer); navLayer = null; }
+
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${fLon},${fLat};${tLon},${tLat}?overview=full&geometries=geojson`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.code === 'Ok' && data.routes.length > 0) {
+      navLayer = L.geoJSON(data.routes[0].geometry, {
+        style: { color: '#EF4444', weight: 5, opacity: 0.9 }
+      }).addTo(map);
+    } else {
+      throw new Error('no route');
     }
-
-    /// Zoom tới 1 vị trí 
-    public void ZoomToLocation(MapsuiMap map, double lon, double lat)
-    {
-        var (x, y) = SphericalMercator.FromLonLat(lon, lat);
-
-        var center = new MPoint(x, y);
-
-        map.Navigator.CenterOnAndZoomTo(center, 5);
-    }
-
-    // Vẽ đường nối giữa các điểm 
-    public void DrawRoute(MapsuiMap map, List<(double lon, double lat)> points)
-    {
-        var coordinates = new List<Coordinate>();
-
-        foreach (var p in points)
-        {
-            var (x, y) = SphericalMercator.FromLonLat(p.lon, p.lat);
-            coordinates.Add(new Coordinate(x, y));
-        }
-
-        var line = new LineString(coordinates.ToArray());
-
-        var feature = new GeometryFeature
-        {
-            Geometry = line
-        };
-
-        feature.Styles.Add(new VectorStyle
-        {
-            Line = new Pen
-            {
-                Color = MapsuiColor.Red,
-                Width = 4
-            }
-        });
-
-        var layer = new MemoryLayer
-        {
-            Features = new[] { feature }
-        };
-
-        map.Layers.Add(layer);
-    }
-
-    /// Thêm marker vị trí hiện tại của người dùng (màu xanh)
-    public void AddCurrentLocationMarker(MapsuiMap map, double lon, double lat)
-    {
-        var (x, y) = SphericalMercator.FromLonLat(lon, lat);
-
-        var feature = new GeometryFeature
-        {
-            Geometry = new Point(x, y)
-        };
-
-        feature.Styles.Add(new SymbolStyle
-        {
-            SymbolScale = 1.2,
-            Fill = new Mapsui.Styles.Brush(MapsuiColor.Blue) // khác POI
-        });
-
-        ((List<Mapsui.IFeature>)markerLayer.Features).Add(feature);
-
-        markerLayer.DataHasChanged();
-    }
+  } catch {
+    // Fallback: đường thẳng đỏ nét đứt
+    navLayer = L.polyline([[fLat, fLon], [tLat, tLon]], {
+      color: '#EF4444', weight: 4, opacity: 0.7, dashArray: '6,4'
+    }).addTo(map);
+  }
+}
+</script>
+</body>
+</html>
+""";
 }

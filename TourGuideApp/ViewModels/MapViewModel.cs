@@ -1,107 +1,228 @@
 ﻿using System.Collections.ObjectModel;
+using System.Text.Json;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
-using TourGuideApp.ViewModels; // for HistoryStore
+using TourGuideApp.Utils;
+
+namespace TourGuideApp.ViewModels;
 
 public class MapViewModel
 {
-    public Mapsui.Map Map { get; set; }
-
-    // Command to play audio from UI
-    public Command<POI> PlayAudioCommand { get; }
-
-    readonly AudioService audioService = new();
-
-    public ObservableCollection<POI> NearbyPOI { get; set; } = new();
-
+    // ── Services ──────────────────────────────────────────────────────────────
     readonly MapService mapService = new();
     readonly LocationService locationService = new();
     readonly ApiService apiService = new();
+    readonly AudioService audioService = new();
 
-    // Anti-spam guard
+    // ── Raw list – dùng để re-sort khi đổi điểm đầu ──────────────────────────
+    readonly List<POI> allPOIs = new();
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    public ObservableCollection<POI> NearbyPOI { get; } = new();
+
+    double? userLat;
+    double? userLon;
+
+    public string MapHtml { get; }
+
+    // ── Commands ──────────────────────────────────────────────────────────────
+    public Command<POI> PlayAudioCommand { get; }
+    public Command<POI> GoToDetailCommand { get; }
+    public Command<POI> ChangeDestinationCommand { get; }
+
+    public Func<string, Task<string?>>? EvalJs { get; set; }
+
     bool isPlaying = false;
+    readonly TextToSpeechService ttsService = new();
+
+   
 
     public MapViewModel()
     {
-        Map = mapService.CreateMap();
+        MapHtml = mapService.BuildLeafletHtml();
 
-        LoadMap();
+        PlayAudioCommand = new Command<POI>(poi => PlayPOIAudio(poi));
 
-        PlayAudioCommand = new Command<POI>(poi =>
+        GoToDetailCommand = new Command<POI>(async poi =>
         {
-            PlayPOIManually(poi);
+            if (poi == null) return;
+            await Shell.Current.GoToAsync("placeDetail",
+                new Dictionary<string, object> { { "poi", poi } });
         });
 
-        _ = TrackUserLocation();
+        // Đổi điểm đầu: re-sort list + xóa đường cũ + vẽ đường mới
+        ChangeDestinationCommand = new Command<POI>(async poi =>
+        {
+            if (poi == null) return;
+            await ApplyNewStartPOI(poi);
+        });
+
+        _ = InitAsync();
     }
 
-    /// Load POI list, show markers and draw route
-    async Task LoadMap()
+    // ── Init ──────────────────────────────────────────────────────────────────
+
+    async Task InitAsync()
     {
-        var routePoints = new List<(double lon, double lat)>();
+        var locationTask = locationService.GetCurrentLocationAsync();
+        var poisTask = apiService.GetPOI();
 
-        var pois = await apiService.GetPOI();
+        await Task.WhenAll(locationTask, poisTask);
 
-        if (pois == null) return;
+        var location = locationTask.Result;
+        var pois = poisTask.Result;
 
-        foreach (var poi in pois)
+        if (location != null)
         {
-            NearbyPOI.Add(poi);
-            mapService.AddMarker(Map, poi);
-            routePoints.Add((poi.Longitude, poi.Latitude));
+            userLat = location.Latitude;
+            userLon = location.Longitude;
         }
 
-        mapService.DrawRoute(Map, routePoints);
+        if (pois == null || pois.Count == 0) return;
+
+        allPOIs.AddRange(pois);
+
+        // Mặc định: sort bắt đầu từ POI gần user nhất
+        double startLat = userLat ?? pois[0].Latitude;
+        double startLon = userLon ?? pois[0].Longitude;
+
+        RebuildNearbyPOI(SortByNearestNeighbor(allPOIs, startLat, startLon));
+
+        await PushMapDataAsync();
+        _ = TrackUserLocationAsync();
     }
 
-    // Add current location marker for user
-    public void AddCurrentLocationMarker(double lon, double lat)
+    // ── Đổi điểm đầu ─────────────────────────────────────────────────────────
+
+    async Task ApplyNewStartPOI(POI startPoi)
     {
-        mapService.AddCurrentLocationMarker(Map, lon, lat);
+        // Re-sort: startPoi cố định đứng đầu, các POI còn lại nearest-neighbor
+        var sorted = SortByNearestNeighbor(allPOIs, startPoi.Latitude, startPoi.Longitude,
+                                           forcedFirst: startPoi);
+        RebuildNearbyPOI(sorted);
+
+        if (EvalJs == null) return;
+
+        // Xóa tất cả đường + marker cũ, vẽ lại theo thứ tự mới
+        await EvalJs("clearRoutes()");
+
+        await EvalJs($"setPOIs({BuildPOIJson(sorted)})");
+
+        // Vẽ đường chỉ đường từ user → startPoi (đường đỏ OSRM)
+        if (userLat.HasValue && userLon.HasValue)
+        {
+            var uLat = userLat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var uLon = userLon.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var dLat = startPoi.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var dLon = startPoi.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            await EvalJs($"drawNavigationRoute({uLat},{uLon},{dLat},{dLon})");
+        }
     }
 
-    // Haversine distance in metres
-    double GetDistance(double lat1, double lon1, double lat2, double lon2)
+    // ── Push data to WebView (lần đầu) ───────────────────────────────────────
+
+    public async Task PushMapDataAsync()
     {
-        double R = 6371e3;
-        double φ1 = lat1 * Math.PI / 180;
-        double φ2 = lat2 * Math.PI / 180;
-        double Δφ = (lat2 - lat1) * Math.PI / 180;
-        double Δλ = (lon2 - lon1) * Math.PI / 180;
+        if (EvalJs == null) return;
 
-        double a = Math.Sin(Δφ / 2) * Math.Sin(Δφ / 2) +
-                   Math.Cos(φ1) * Math.Cos(φ2) *
-                   Math.Sin(Δλ / 2) * Math.Sin(Δλ / 2);
+        if (userLat.HasValue && userLon.HasValue)
+        {
+            var lat = userLat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lon = userLon.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            await EvalJs($"setUserLocation({lat},{lon})");
+            await EvalJs($"flyTo({lat},{lon},14)");
+        }
 
-        double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-
-        return R * c;
+        if (NearbyPOI.Count > 0)
+            await EvalJs($"setPOIs({BuildPOIJson(NearbyPOI)})");
     }
 
-    // Continuously track user location (every 5 s)
-    async Task TrackUserLocation()
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    void RebuildNearbyPOI(IEnumerable<POI> sorted)
+    {
+        NearbyPOI.Clear();
+        foreach (var p in sorted)
+            NearbyPOI.Add(p);
+    }
+
+    static string BuildPOIJson(IEnumerable<POI> pois) =>
+        JsonSerializer.Serialize(pois.Select(p => new
+        {
+            id = p.Id,
+            name = p.Name,
+            latitude = p.Latitude,
+            longitude = p.Longitude
+        }));
+
+    /// Nearest-neighbor sort.
+    /// Nếu <paramref name="forcedFirst"/> != null, POI đó luôn đứng vị trí 0.
+    static List<POI> SortByNearestNeighbor(
+        IEnumerable<POI> source,
+        double startLat, double startLon,
+        POI? forcedFirst = null)
+    {
+        var remaining = new List<POI>(source);
+        var sorted = new List<POI>(remaining.Count);
+
+        if (forcedFirst != null)
+        {
+            var match = remaining.FirstOrDefault(p => p.Id == forcedFirst.Id);
+            if (match != null)
+            {
+                sorted.Add(match);
+                remaining.Remove(match);
+                startLat = match.Latitude;
+                startLon = match.Longitude;
+            }
+        }
+
+        double curLat = startLat, curLon = startLon;
+
+        while (remaining.Count > 0)
+        {
+            var nearest = remaining
+                .OrderBy(p => DistanceHelper.GetDistance(curLat, curLon, p.Latitude, p.Longitude))
+                .First();
+
+            sorted.Add(nearest);
+            remaining.Remove(nearest);
+            curLat = nearest.Latitude;
+            curLon = nearest.Longitude;
+        }
+
+        return sorted;
+    }
+
+    // ── Location tracking ─────────────────────────────────────────────────────
+
+    async Task TrackUserLocationAsync()
     {
         while (true)
         {
-            var location = await locationService.GetCurrentLocationAsync();
+            await Task.Delay(5000);
+            var loc = await locationService.GetCurrentLocationAsync();
+            if (loc == null) continue;
 
-            if (location != null)
+            userLat = loc.Latitude;
+            userLon = loc.Longitude;
+
+            if (EvalJs != null)
             {
-                CheckNearbyPOI(location.Latitude, location.Longitude);
+                var lat = loc.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var lon = loc.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                await EvalJs($"setUserLocation({lat},{lon})");
             }
 
-            await Task.Delay(5000);
+            CheckNearbyPOI(loc.Latitude, loc.Longitude);
         }
     }
 
-    // Check nearest POI and auto-play audio
     void CheckNearbyPOI(double lat, double lon)
     {
         foreach (var poi in NearbyPOI)
         {
-            var distance = GetDistance(lat, lon, poi.Latitude, poi.Longitude);
-
-            if (distance < poi.Radius)
+            if (DistanceHelper.GetDistance(lat, lon, poi.Latitude, poi.Longitude) < poi.Radius)
             {
                 PlayPOIAudio(poi);
                 break;
@@ -109,12 +230,13 @@ public class MapViewModel
         }
     }
 
-    // Play POI audio (with anti-spam)
+    // ── Audio ─────────────────────────────────────────────────────────────────
+
+    CancellationTokenSource? ttsToken;
+
     async void PlayPOIAudio(POI poi)
     {
-        if (isPlaying) return;
-        if (poi == null) return;
-
+        if (isPlaying || poi == null) return;
         isPlaying = true;
 
         try
@@ -123,14 +245,14 @@ public class MapViewModel
             {
                 await audioService.PlayAudio(poi.AudioUrl);
             }
-
-            if (poi.Id > 0)
+            else
             {
-                // Save to remote API (existing behaviour)
-                await apiService.SaveHistory(poi.Id);
+                string text = poi.Script ?? poi.Description ?? "Không có dữ liệu";
 
-                // Also record locally for HistoryPage (new – no logic change)
-                HistoryStore.Add(poi);
+                ttsToken?.Cancel();
+                ttsToken = new CancellationTokenSource();
+
+                await TextToSpeech.SpeakAsync(text, cancelToken: ttsToken.Token);
             }
         }
         catch (Exception ex)
@@ -138,14 +260,18 @@ public class MapViewModel
             Console.WriteLine(ex.Message);
         }
 
-        await Task.Delay(10000);
-
+        await Task.Delay(5000);
         isPlaying = false;
     }
 
-    /// Play audio when user taps manually
-    public void PlayPOIManually(POI poi)
+    public void PlayPOIManually(POI poi) => PlayPOIAudio(poi);
+
+    public async Task<(double Lat, double Lon)?> GetCurrentLocationFastAsync()
     {
-        PlayPOIAudio(poi);
+        var loc = await locationService.GetCurrentLocationAsync();
+        if (loc == null) return null;
+        userLat = loc.Latitude;
+        userLon = loc.Longitude;
+        return (loc.Latitude, loc.Longitude);
     }
 }

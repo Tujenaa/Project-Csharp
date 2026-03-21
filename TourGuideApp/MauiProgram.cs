@@ -1,10 +1,9 @@
-﻿using Mapsui;
-using Microsoft.Extensions.Logging;
-using SkiaSharp.Views.Maui.Controls.Hosting;
+﻿using Microsoft.Extensions.Logging;
 using TourGuideApp.Services;
 using TourGuideApp.ViewModels;
 
 namespace TourGuideApp;
+
 public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
@@ -13,7 +12,6 @@ public static class MauiProgram
 
         builder
             .UseMauiApp<App>()
-            .UseSkiaSharp()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -30,6 +28,9 @@ public static class MauiProgram
 
         // VIEWMODELS
         builder.Services.AddSingleton<MapViewModel>();
+
+        // PAGES – đăng ký để DI inject ViewModel
+        builder.Services.AddTransient<TourGuideApp.Pages.MapPage>();
 
         return builder.Build();
     }

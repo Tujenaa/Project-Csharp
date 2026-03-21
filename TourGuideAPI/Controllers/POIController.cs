@@ -48,6 +48,7 @@ namespace TourGuideAPI.Controllers
             return Ok("Lưu thành công");
         }
 
+        // ── APP: GET  /api/POI/top - Lấy top 5 POI được nghe nhiều nhất -
         [HttpGet("top")]
         public IActionResult GetTopPOI()
         {
@@ -64,6 +65,22 @@ namespace TourGuideAPI.Controllers
 
             return Ok(pois);
         }
+
+        // ── APP: GET /api/poi/count — đếm tổng số POI ──
+        [HttpGet("count")]
+        public IActionResult GetPoiCount()
+        {
+            var count = _context.POI.Count();
+            return Ok(count);
+        }
+        // ── APP: GET /api/poi/audio-count — đếm tổng số audio ──
+        [HttpGet("audio-count")]
+        public IActionResult GetAudioCount()
+        {
+            var count = _context.History.Count();
+            return Ok(count);
+        }
+
 
         // ── WEB: GET /api/poi/{id} — lấy 1 POI theo id ──
         [HttpGet("{id}")]

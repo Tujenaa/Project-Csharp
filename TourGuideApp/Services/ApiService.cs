@@ -12,7 +12,7 @@ public class ApiService
     public async Task<List<POI>> GetPOI()
     {
         var pois = await client.GetFromJsonAsync<List<POI>>(
-            "http://192.168.1.142:5266/api/POI");
+            "http://192.168.1.168:5266/api/POI");
 
         return pois ?? new List<POI>();
     }
@@ -30,14 +30,28 @@ public class ApiService
         var content = new StringContent(json);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
-        await client.PostAsync("http://192.168.1.142:5266/api/POI/history", content);
+        await client.PostAsync("http://192.168.1.168:5266/api/POI/history", content);
     }
 
     // Lấy top 5 POI được nghe nhiều nhất
     public async Task<List<POI>> GetTopPOI()
     {
         return await client.GetFromJsonAsync<List<POI>>(
-            "http://192.168.1.142:5266/api/POI/top")
+            "http://192.168.1.168:5266/api/POI/top")
             ?? new List<POI>();
+    }
+
+    // Lấy tổng số POI
+    public async Task<int> GetPoiCount()
+    {
+        return await client.GetFromJsonAsync<int>(
+            "http://192.168.1.168:5266/api/POI/count");
+    }
+
+    // Lấy tổng số audio 
+    public async Task<int> GetAudioCount()
+    {
+        return await client.GetFromJsonAsync<int>(
+            "http://192.168.1.168:5266/api/POI/audio-count");
     }
 }

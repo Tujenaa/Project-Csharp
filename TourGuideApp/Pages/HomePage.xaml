@@ -64,55 +64,62 @@
                 </VerticalStackLayout>
             </Grid>
 
-            <!-- Stats row (overlap hero) -->
             <Grid
                 Padding="18,0"
                 ColumnSpacing="10"
                 Margin="0,-22,0,0">
+
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- POI -->
                 <Border
                     Grid.Column="0"
                     BackgroundColor="White"
                     Stroke="#E8E3F5"
-                    StrokeThickness="1">
+                    StrokeThickness="1">    
+
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="16"/>
                     </Border.StrokeShape>
+
                     <VerticalStackLayout Padding="12,14" Spacing="4">
                         <Label
-                            Text="24"
+                            Text="{Binding PoiCount}"
                             FontSize="20"
                             FontAttributes="Bold"
                             TextColor="#1A1035"
                             HorizontalOptions="Center"/>
+
                         <Label
                             Text="Địa điểm"
                             FontSize="11"
                             TextColor="#6B7280"
-                            HorizontalOptions="Center"/>
+                            HorizontalOptions="Center"/>    
                     </VerticalStackLayout>
                 </Border>
 
+                <!-- AUDIO -->
                 <Border
                     Grid.Column="1"
                     BackgroundColor="White"
                     Stroke="#E8E3F5"
                     StrokeThickness="1">
+
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="16"/>
                     </Border.StrokeShape>
+
                     <VerticalStackLayout Padding="12,14" Spacing="4">
                         <Label
-                            Text="24"
+                            Text="{Binding AudioCount}"
                             FontSize="20"
                             FontAttributes="Bold"
                             TextColor="#1A1035"
                             HorizontalOptions="Center"/>
+
                         <Label
                             Text="Audio"
                             FontSize="11"
@@ -121,28 +128,6 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <Border
-                    Grid.Column="2"
-                    BackgroundColor="White"
-                    Stroke="#E8E3F5"
-                    StrokeThickness="1">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="16"/>
-                    </Border.StrokeShape>
-                    <VerticalStackLayout Padding="12,14" Spacing="4">
-                        <Label
-                            Text="2.5 km"
-                            FontSize="20"
-                            FontAttributes="Bold"
-                            TextColor="#1A1035"
-                            HorizontalOptions="Center"/>
-                        <Label
-                            Text="Lộ trình"
-                            FontSize="11"
-                            TextColor="#6B7280"
-                            HorizontalOptions="Center"/>
-                    </VerticalStackLayout>
-                </Border>
             </Grid>
 
             <!-- Section title -->
@@ -173,6 +158,13 @@
                                 <RoundRectangle CornerRadius="18"/>
                             </Border.StrokeShape>
 
+                            <!-- 🔥 ĐẶT Ở ĐÂY -->
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GoToDetailCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+
                             <Grid Padding="16,14" ColumnSpacing="14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -184,7 +176,6 @@
                                     VerticalOptions="Center"
                                     Spacing="3">
 
-                                    <!-- 🔥 SỬA Ở ĐÂY -->
                                     <Label
                                     Text="{Binding Name}"
                                     FontSize="15"
@@ -200,10 +191,10 @@
                                     <Label
                                     Text="Địa điểm du lịch nổi bật"
                                     FontSize="12"
-                                    TextColor="#94A3B8"/>
+                                    TextColor="#94A3B8"/>   
                                 </VerticalStackLayout>
 
-                                <!-- Play icon -->
+                                <!-- Play icon (KHÔNG có command nữa) -->
                                 <Border
                                     Grid.Column="1"
                                     BackgroundColor="#EDE7FF"

@@ -32,5 +32,4 @@
             <ShellContent Route="settings" ContentTemplate="{DataTemplate pages:SettingsPage}"/>
         </Tab>
     </TabBar>
-
 </Shell>
