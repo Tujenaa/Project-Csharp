@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using TourGuideApp.Models;
 
@@ -8,50 +9,53 @@ public class ApiService
 {
     readonly HttpClient client = new();
 
-    // Lấy danh sách POI từ API
+    public static class ApiConfig
+    {
+        public const string BaseUrl = "http://192.168.1.182:5266/api/";
+       // public const string BaseUrl = "http://10.0.2.2:5266/api/";
+    }
+
+    // Lấy danh sách POI
     public async Task<List<POI>> GetPOI()
     {
         var pois = await client.GetFromJsonAsync<List<POI>>(
-            "http://192.168.1.168:5266/api/POI");
+            $"{ApiConfig.BaseUrl}POI");
 
         return pois ?? new List<POI>();
     }
 
-    // Lưu lịch sử nghe POI
+    // Lưu lịch sử
     public async Task SaveHistory(int poiId)
     {
-        var client = new HttpClient();
-
         var json = JsonSerializer.Serialize(new
         {
             poiId = poiId
         });
 
-        var content = new StringContent(json);
-        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        await client.PostAsync("http://192.168.1.168:5266/api/POI/history", content);
+        await client.PostAsync($"{ApiConfig.BaseUrl}POI/history", content);
     }
 
-    // Lấy top 5 POI được nghe nhiều nhất
+    // Top POI
     public async Task<List<POI>> GetTopPOI()
     {
         return await client.GetFromJsonAsync<List<POI>>(
-            "http://192.168.1.168:5266/api/POI/top")
+            $"{ApiConfig.BaseUrl}POI/top")
             ?? new List<POI>();
     }
 
-    // Lấy tổng số POI
+    // Count POI
     public async Task<int> GetPoiCount()
     {
         return await client.GetFromJsonAsync<int>(
-            "http://192.168.1.168:5266/api/POI/count");
+            $"{ApiConfig.BaseUrl}POI/count");
     }
 
-    // Lấy tổng số audio 
+    // Count Audio
     public async Task<int> GetAudioCount()
     {
         return await client.GetFromJsonAsync<int>(
-            "http://192.168.1.168:5266/api/POI/audio-count");
+            $"{ApiConfig.BaseUrl}POI/audio-count");
     }
 }

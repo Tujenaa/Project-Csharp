@@ -4,22 +4,40 @@
     ViewData["Title"] = "Người dùng"; ViewData["Active"] = "users";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/users.css" />
+}
+
 @if (!string.IsNullOrEmpty(Model.Msg))
 {
     <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
 }
 
 <div class="page-header">
-    <div>
-        <h2>Người dùng</h2>
-    </div>
+    <div><h2>Người dùng</h2></div>
     <button class="btn btn-primary" onclick="openModal()">
         <i class="bi bi-person-plus"></i> Thêm người dùng
     </button>
 </div>
 
+<!-- Tabs lọc theo role -->
+<div class="user-tabs">
+    <button class="utab active" onclick="filterRole('ALL', this)">
+        Tất cả <span class="utab-count">@Model.Users.Count</span>
+    </button>
+    <button class="utab" onclick="filterRole('ADMIN', this)">
+        Admin <span class="utab-count">@Model.Users.Count(u => u.Role == "ADMIN")</span>
+    </button>
+    <button class="utab" onclick="filterRole('OWNER', this)">
+        Owner <span class="utab-count">@Model.Users.Count(u => u.Role == "OWNER")</span>
+    </button>
+    <button class="utab" onclick="filterRole('CUSTOMER', this)">
+        Customer <span class="utab-count">@Model.Users.Count(u => u.Role == "CUSTOMER")</span>
+    </button>
+</div>
+
 <div class="card">
-    <table class="tg-table">
+    <table class="tg-table" id="userTable">
         <thead>
             <tr>
                 <th>ID</th>
@@ -32,10 +50,12 @@
         <tbody>
             @foreach (var u in Model.Users)
             {
-                <tr>
+                <tr data-role="@u.Role">
                     <td class="text-muted">#@u.Id</td>
                     <td>
-                        <span class="u-avatar">@u.Username.Substring(0, 1).ToUpper()</span>
+                        <span class="u-avatar u-avatar-@u.Role.ToLower()">
+                            @u.Username.Substring(0, 1).ToUpper()
+                        </span>
                         <strong>@u.Username</strong>
                     </td>
                     <td>
@@ -43,23 +63,26 @@
                         {
                             <span class="badge badge-red">ADMIN</span>
                         }
-                        else
+                        else if (u.Role == "OWNER")
                         {
                             <span class="badge badge-blue">OWNER</span>
                         }
+                        else
+                        {
+                            <span class="badge badge-green">CUSTOMER</span>
+                        }
                     </td>
                     <td>
-                        <!-- Toggle active/inactive -->
                         <label class="toggle-switch" title="Bật/tắt tài khoản">
                             <input type="checkbox" checked onchange="toggleActive(this, @u.Id)" />
-                            <span class="toggle-track">
-                                <span class="toggle-thumb"></span>
-                            </span>
+                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
                         </label>
                     </td>
                     <td>
                         <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
-                                data-del-id="@u.Id" data-del-name="@u.Username"
+                                data-del-id="@u.Id"
+                                data-del-name="@u.Username"
+                                data-del-role="@u.Role"
                                 onclick="confirmDelete(this)">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -99,8 +122,9 @@
                 <div class="form-group">
                     <label class="form-label">Vai trò</label>
                     <select name="Role" class="form-control">
-                        <option value="OWNER">OWNER</option>
-                        <option value="ADMIN">ADMIN</option>
+                        <option value="OWNER">OWNER — Chủ cửa hàng</option>
+                        <option value="ADMIN">ADMIN — Quản trị viên</option>
+                        <option value="CUSTOMER">CUSTOMER — Khách hàng</option>
                     </select>
                 </div>
             </div>
@@ -126,9 +150,7 @@
         </div>
         <div class="modal-body">
             <p>Xoá người dùng <strong id="delName"></strong>?</p>
-            <p class="text-muted" style="font-size:12px;margin-top:6px">
-                POI của người dùng này sẽ mất owner.
-            </p>
+            <p class="text-muted" style="font-size:12px;margin-top:6px" id="delNote"></p>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
@@ -143,88 +165,32 @@
     </div>
 </div>
 
-<style>
-    /* Avatar */
-    .u-avatar {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        background: rgba(233,69,96,.15);
-        color: var(--accent);
-        font-size: 12px;
-        font-weight: 700;
-        margin-right: 8px;
-        vertical-align: middle;
-    }
-
-    /* Badge đỏ cho ADMIN */
-    .badge-red {
-        background: rgba(239,68,68,.15);
-        color: var(--danger);
-    }
-
-    /* Toggle switch */
-    .toggle-switch {
-        display: inline-flex;
-        align-items: center;
-        cursor: pointer;
-        gap: 8px;
-    }
-
-        .toggle-switch input {
-            display: none;
-        }
-
-    .toggle-track {
-        width: 38px;
-        height: 20px;
-        background: var(--border);
-        border-radius: 20px;
-        position: relative;
-        transition: background .2s;
-    }
-
-    .toggle-switch input:checked + .toggle-track {
-        background: var(--accent);
-    }
-
-    .toggle-thumb {
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 14px;
-        height: 14px;
-        background: #fff;
-        border-radius: 50%;
-        transition: transform .2s;
-        box-shadow: 0 1px 3px rgba(0,0,0,.3);
-    }
-
-    .toggle-switch input:checked + .toggle-track .toggle-thumb {
-        transform: translateX(18px);
-    }
-</style>
 
 <script>
     function openModal()  { document.getElementById('userModal').style.display = 'flex'; }
     function closeModal() { document.getElementById('userModal').style.display = 'none'; }
 
     function confirmDelete(btn) {
-        document.getElementById('fDelId').value          = btn.dataset.delId;
-        document.getElementById('delName').textContent   = btn.dataset.delName;
+        document.getElementById('fDelId').value        = btn.dataset.delId;
+        document.getElementById('delName').textContent = btn.dataset.delName;
+        const role = btn.dataset.delRole;
+        document.getElementById('delNote').textContent =
+            role === 'OWNER'    ? 'POI của owner này sẽ mất chủ sở hữu.' :
+            role === 'CUSTOMER' ? 'Lịch sử phát của khách hàng này sẽ bị ảnh hưởng.' : '';
         document.getElementById('delModal').style.display = 'flex';
     }
     function closeDelete() { document.getElementById('delModal').style.display = 'none'; }
 
-    // Toggle active — hiện tại chỉ UI, chưa có API endpoint cho active/inactive
+    function filterRole(role, btn) {
+        document.querySelectorAll('.utab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('#userTable tbody tr[data-role]').forEach(row => {
+            row.style.display = (role === 'ALL' || row.dataset.role === role) ? '' : 'none';
+        });
+    }
+
     function toggleActive(checkbox, userId) {
-        const label  = checkbox.closest('.toggle-switch');
-        const active = checkbox.checked;
-        // TODO: gọi API PATCH /api/users/{userId}/active khi có endpoint
-        console.log(`User ${userId} active = ${active}`);
+        console.log(`User ${userId} active = ${checkbox.checked}`);
     }
 
     document.addEventListener('keydown', e => {

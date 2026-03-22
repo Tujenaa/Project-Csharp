@@ -1,15 +1,16 @@
 ﻿:root {
-    --bg: #0d1117;
-    --bg2: #16213e; /* đúng màu nền header app */
-    --bg3: #1a2744; /* input */
-    --border: #1f3460;
-    --accent: #e94560; /* đỏ hồng — accent chính của app */
-    --accent2: #ff6b6b;
+    --bg: #1A1035; /* tím đậm — nền chính app */
+    --bg2: #2D1B6E; /* tím vừa — card/sidebar app */
+    --bg3: #0f0a24; /* tím rất đậm — input */
+    --border: #512BD4; /* tím sáng — border app */
+    --border2: #E8E3F5; /* tím nhạt — border card */
+    --accent: #512BD4; /* tím sáng — accent chính app */
+    --accent2: #9B7FEA; /* lavender — accent phụ app */
     --success: #10b981;
     --warning: #f59e0b;
-    --danger: #ef4444;
-    --text: #e2e8f0;
-    --text2: #8b9ab3;
+    --danger: #E94560;
+    --text: #f0eeff; /* trắng tím nhạt — dễ đọc trên nền tím */
+    --text2: #C4B0FF; /* lavender nhạt hơn */
     --font: 'Times New Roman', Times, serif;
     --mono: 'Space Mono', monospace;
     --radius: 10px;
@@ -26,7 +27,7 @@ body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--font);
-    font-size: 14px;
+    font-size: 16px; /* tăng từ 14px lên 16px */
     min-height: 100vh;
 }
 

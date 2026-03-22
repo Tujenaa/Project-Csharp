@@ -29,6 +29,7 @@ public partial class HomePage : ContentPage
         }
     }
 
+
     private async void OnMapButtonClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("//map");

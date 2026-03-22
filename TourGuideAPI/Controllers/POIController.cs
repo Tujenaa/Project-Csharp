@@ -13,7 +13,7 @@ namespace TourGuideAPI.Controllers
         private readonly AppDbContext _context;
         public POIController(AppDbContext context) => _context = context;
 
-        // ── APP: GET /api/poi — trả về POIDto kèm audio (dùng cho mobile app) ──
+        // ── APP: GET /api/poi — trả về POIDto kèm audio ──
         [HttpGet]
         public async Task<IActionResult> GetPOI()
         {
@@ -26,17 +26,19 @@ namespace TourGuideAPI.Controllers
                     Id = p.Id,
                     Name = p.Name,
                     Description = p.Description,
+                    Address = p.Address,
                     Latitude = p.Latitude,
                     Longitude = p.Longitude,
                     Radius = p.Radius,
-                    AudioUrl = a != null ? a.AudioUrl : null,
-                    Script = a != null ? a.Script : null
+                    Script = a != null && !string.IsNullOrWhiteSpace(a.Script)
+                    ? a.Script
+                    : p.Description
                 }
             ).ToListAsync();
             return Ok(data);
         }
 
-        // ── APP: POST /api/poi/history — app ghi lịch sử phát ──
+        // ── APP: POST /api/poi/history ──
         [HttpPost("history")]
         public async Task<IActionResult> SaveHistory([FromBody] HistoryRequest request)
         {
@@ -48,41 +50,54 @@ namespace TourGuideAPI.Controllers
             return Ok("Lưu thành công");
         }
 
-        // ── APP: GET  /api/POI/top - Lấy top 5 POI được nghe nhiều nhất -
+        // ── APP: GET /api/poi/top ──
         [HttpGet("top")]
-        public IActionResult GetTopPOI()
+        public async Task<IActionResult> GetTopPOI()
         {
             var topPoiIds = _context.History
                 .GroupBy(h => h.PoiId)
                 .OrderByDescending(g => g.Count())
                 .Take(5)
-                .Select(g => g.Key)
-                .ToList();
+                .Select(g => g.Key);
 
-            var pois = _context.POI
-                .Where(p => topPoiIds.Contains(p.Id))
-                .ToList();
+            var data = await (
+                from p in _context.POI
+                join a in _context.Audio on p.Id equals a.PoiId into pa
+                from a in pa.DefaultIfEmpty()
+                where topPoiIds.Contains(p.Id)
+                select new POIDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Address = p.Address,
+                    Latitude = p.Latitude,
+                    Longitude = p.Longitude,
+                    Radius = p.Radius,
+                    Script = a != null && !string.IsNullOrWhiteSpace(a.Script)
+                        ? a.Script
+                        : p.Description
+                }
+            ).ToListAsync();
 
-            return Ok(pois);
+            return Ok(data);
         }
 
-        // ── APP: GET /api/poi/count — đếm tổng số POI ──
+        // ── APP: GET /api/poi/count ──
         [HttpGet("count")]
-        public IActionResult GetPoiCount()
-        {
-            var count = _context.POI.Count();
-            return Ok(count);
-        }
-        // ── APP: GET /api/poi/audio-count — đếm tổng số audio ──
+        public IActionResult GetPoiCount() => Ok(_context.POI.Count());
+
+        // ── APP: GET /api/poi/audio-count ──
         [HttpGet("audio-count")]
-        public IActionResult GetAudioCount()
-        {
-            var count = _context.History.Count();
-            return Ok(count);
-        }
+        public IActionResult GetAudioCount() => Ok(_context.History.Count());
 
+        // ── WEB: GET /api/poi/owner/{ownerId} — POI của 1 owner ──
+        // Khai báo TRƯỚC {id} để tránh conflict route
+        [HttpGet("owner/{ownerId}")]
+        public async Task<IActionResult> GetByOwner(int ownerId) =>
+            Ok(await _context.POI.Where(p => p.OwnerId == ownerId).ToListAsync());
 
-        // ── WEB: GET /api/poi/{id} — lấy 1 POI theo id ──
+        // ── WEB: GET /api/poi/{id} ──
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -90,7 +105,7 @@ namespace TourGuideAPI.Controllers
             return poi == null ? NotFound() : Ok(poi);
         }
 
-        // ── WEB: POST /api/poi — thêm POI mới ──
+        // ── WEB: POST /api/poi ──
         [HttpPost]
         public async Task<IActionResult> Create()
         {
@@ -98,28 +113,18 @@ namespace TourGuideAPI.Controllers
             var raw = await new System.IO.StreamReader(Request.Body).ReadToEndAsync();
             if (string.IsNullOrWhiteSpace(raw))
                 return BadRequest($"Body rỗng. ContentType={Request.ContentType}");
-
             POI? poi;
-            try
-            {
-                poi = JsonSerializer.Deserialize<POI>(raw, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-            }
+            try { poi = JsonSerializer.Deserialize<POI>(raw, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); }
             catch (Exception ex) { return BadRequest($"JSON lỗi: {ex.Message}"); }
-
             if (poi == null) return BadRequest("Deserialize null");
             if (string.IsNullOrWhiteSpace(poi.Name)) return BadRequest("Name rỗng");
-
-            poi.Id = 0;
-            poi.OwnerName = null;
+            poi.Id = 0; poi.OwnerName = null;
             _context.POI.Add(poi);
             await _context.SaveChangesAsync();
             return Ok(poi);
         }
 
-        // ── WEB: PUT /api/poi/{id} — cập nhật POI ──
+        // ── WEB: PUT /api/poi/{id} ──
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] POI poi)
         {
@@ -127,6 +132,7 @@ namespace TourGuideAPI.Controllers
             if (existing == null) return NotFound();
             existing.Name = poi.Name;
             existing.Description = poi.Description;
+            existing.Address = poi.Address;
             existing.Latitude = poi.Latitude;
             existing.Longitude = poi.Longitude;
             existing.Radius = poi.Radius;
@@ -135,7 +141,7 @@ namespace TourGuideAPI.Controllers
             return Ok(existing);
         }
 
-        // ── WEB: DELETE /api/poi/{id} — xoá POI ──
+        // ── WEB: DELETE /api/poi/{id} ──
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

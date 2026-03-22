@@ -13,24 +13,15 @@
             <RowDefinition Height="270"/>
         </Grid.RowDefinitions>
 
-        <!-- ═══ Row 0: Bản đồ Leaflet + FAB ═══════════════════════════════════ -->
+        <!-- ═══ Row 0: Map + FAB ═══════════════════════════════════════════ -->
         <Grid Grid.Row="0">
+            <WebView x:Name="mapWebView"
+                     HorizontalOptions="Fill" VerticalOptions="Fill"
+                     Navigating="OnWebViewNavigating"/>
 
-            <!-- WebView nhúng Leaflet -->
-            <WebView
-                x:Name="mapWebView"
-                HorizontalOptions="Fill"
-                VerticalOptions="Fill"
-                Navigating="OnWebViewNavigating"/>
-
-            <!-- Nút vị trí hiện tại -->
-            <Border
-                BackgroundColor="#512BD4"
-                Stroke="Transparent"
-                StrokeThickness="0"
-                WidthRequest="52" HeightRequest="52"
-                HorizontalOptions="End" VerticalOptions="End"
-                Margin="16">
+            <Border BackgroundColor="#512BD4" Stroke="Transparent" StrokeThickness="0"
+                    WidthRequest="52" HeightRequest="52"
+                    HorizontalOptions="End" VerticalOptions="End" Margin="16">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="16"/>
                 </Border.StrokeShape>
@@ -45,14 +36,9 @@
             </Border>
         </Grid>
 
-        <!-- ═══ Row 1: Thanh lộ trình ══════════════════════════════════════════ -->
-        <Border
-            Grid.Row="1"
-            BackgroundColor="White"
-            Stroke="#E8E3F5"
-            StrokeThickness="1"
-            Margin="12,6"
-            Padding="12,10">
+        <!-- ═══ Row 1: Route bar ══════════════════════════════════════════ -->
+        <Border Grid.Row="1" BackgroundColor="White" Stroke="#E8E3F5" StrokeThickness="1"
+                Margin="12,6" Padding="12,10">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="16"/>
             </Border.StrokeShape>
@@ -67,30 +53,21 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Icon chỉ đường -->
                 <Image Grid.Column="0" Source="ic_directions.svg"
-                       WidthRequest="20" HeightRequest="20"
-                       VerticalOptions="Center"/>
+                       WidthRequest="20" HeightRequest="20" VerticalOptions="Center"/>
 
-                <!-- Label điểm đến -->
                 <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                     <Label Text="Từ vị trí của bạn đến"
                            FontSize="11" TextColor="#94A3B8"/>
                     <Label x:Name="lblDestination"
                            Text="Đang tính toán..."
                            FontSize="14" FontAttributes="Bold"
-                           TextColor="#1A1035"
-                           LineBreakMode="TailTruncation"/>
+                           TextColor="#1A1035" LineBreakMode="TailTruncation"/>
                 </VerticalStackLayout>
 
-                <!-- Nút đổi điểm đến -->
-                <Border
-                    Grid.Column="2"
-                    BackgroundColor="#EDE7FF"
-                    Stroke="Transparent"
-                    StrokeThickness="0"
-                    WidthRequest="36" HeightRequest="36"
-                    VerticalOptions="Center">
+                <Border Grid.Column="2" BackgroundColor="#EDE7FF"
+                        Stroke="Transparent" StrokeThickness="0"
+                        WidthRequest="36" HeightRequest="36" VerticalOptions="Center">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="10"/>
                     </Border.StrokeShape>
@@ -103,13 +80,9 @@
             </Grid>
         </Border>
 
-        <!--  danh sách POI -->
-        <Border
-            Grid.Row="2"
-            Padding="0"
-            BackgroundColor="White"
-            Stroke="#E8E3F5"
-            StrokeThickness="0">
+        <!-- ═══ Row 2: POI list ══════════════════════════════════════════ -->
+        <Border Grid.Row="2" Padding="0" BackgroundColor="White"
+                Stroke="#E8E3F5" StrokeThickness="0">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="28,28,0,0"/>
             </Border.StrokeShape>
@@ -123,7 +96,6 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Handle + header -->
                 <VerticalStackLayout Grid.Row="0" Padding="0,10,0,12">
                     <BoxView BackgroundColor="#DDD6F3" WidthRequest="36" HeightRequest="4"
                              CornerRadius="2" HorizontalOptions="Center"/>
@@ -134,20 +106,14 @@
                            FontSize="12" Margin="20,3,20,0" TextColor="#94A3B8"/>
                 </VerticalStackLayout>
 
-                <!-- POI list -->
-                <CollectionView
-                    Grid.Row="1"
-                    ItemsSource="{Binding NearbyPOI}"
-                    ItemsLayout="HorizontalList"
-                    Margin="16,0,16,16">
+                <CollectionView Grid.Row="1"
+                                ItemsSource="{Binding NearbyPOI}"
+                                ItemsLayout="HorizontalList"
+                                Margin="16,0,16,16">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Border
-                                BackgroundColor="#F4F2FB"
-                                Stroke="#E8E3F5"
-                                StrokeThickness="1"
-                                WidthRequest="240"
-                                Margin="0,0,12,0">
+                            <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5"
+                                    StrokeThickness="1" WidthRequest="240" Margin="0,0,12,0">
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="18"/>
                                 </Border.StrokeShape>
@@ -164,30 +130,56 @@
                                     <Label Text="Địa điểm gần bạn"
                                            FontSize="12" TextColor="#94A3B8"/>
 
-                                    <!-- Nút phát audio -->
-                                    <Border
-                                        BackgroundColor="#EDE7FF" Stroke="Transparent"
-                                        StrokeThickness="0" HeightRequest="38" Margin="0,4,0,0">
+                                    <!-- Audio button: icon + label react to IsPlaying -->
+                                    <Border BackgroundColor="#EDE7FF" Stroke="Transparent"
+                                            StrokeThickness="0" HeightRequest="38" Margin="0,4,0,0">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="10"/>
                                         </Border.StrokeShape>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Image Grid.Column="0" Source="ic_play.svg"
-                                                   WidthRequest="16" HeightRequest="16"
-                                                   Margin="14,0,8,0" VerticalOptions="Center"/>
-                                            <Label Grid.Column="1" Text="Audio giới thiệu"
-                                                   FontSize="13" FontAttributes="Bold"
-                                                   TextColor="#512BD4" VerticalOptions="Center"/>
-                                        </Grid>
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
                                                 CommandParameter="{Binding .}"/>
                                         </Border.GestureRecognizers>
+
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Icon switches play ↔ pause -->
+                                            <Image Grid.Column="0"
+                                                   WidthRequest="16" HeightRequest="16"
+                                                   Margin="14,0,8,0" VerticalOptions="Center">
+                                                <Image.Triggers>
+                                                    <DataTrigger TargetType="Image"
+                                                                 Binding="{Binding IsPlaying}" Value="True">
+                                                        <Setter Property="Source" Value="ic_pause.svg"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Image"
+                                                                 Binding="{Binding IsPlaying}" Value="False">
+                                                        <Setter Property="Source" Value="ic_play.svg"/>
+                                                    </DataTrigger>
+                                                </Image.Triggers>
+                                            </Image>
+
+                                            <!-- Label switches -->
+                                            <Label Grid.Column="1"
+                                                   FontSize="13" FontAttributes="Bold"
+                                                   TextColor="#512BD4" VerticalOptions="Center">
+                                                <Label.Triggers>
+                                                    <DataTrigger TargetType="Label"
+                                                                 Binding="{Binding IsPlaying}" Value="True">
+                                                        <Setter Property="Text" Value="Đang phát âm thanh"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Label"
+                                                                 Binding="{Binding IsPlaying}" Value="False">
+                                                        <Setter Property="Text" Value="Audio giới thiệu"/>
+                                                    </DataTrigger>
+                                                </Label.Triggers>
+                                            </Label>
+                                        </Grid>
                                     </Border>
                                 </VerticalStackLayout>
                             </Border>

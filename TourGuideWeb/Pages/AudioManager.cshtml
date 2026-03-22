@@ -10,9 +10,7 @@
 }
 
 <div class="page-header">
-    <div>
-        <h2>Quản lý Audio</h2>
-    </div>
+    <div><h2>Quản lý Audio</h2></div>
     <button class="btn btn-primary" onclick="openModal()">
         <i class="bi bi-plus-lg"></i> Thêm Audio
     </button>
@@ -36,7 +34,7 @@
                 <tr>
                     <td class="text-muted">#@a.Id</td>
                     <td style="font-weight:600">@(a.PoiName ?? $"#{a.PoiId}")</td>
-                    <td><span class="badge badge-blue">@a.Language</span></td>
+                    <td><span class="badge badge-blue">@(a.Language ?? "vi")</span></td>
                     <td class="text-muted"
                         style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
                         title="@a.Script">
@@ -51,27 +49,17 @@
                             @if (!string.IsNullOrEmpty(a.Script))
                             {
                                 <button class="btn btn-ghost btn-sm btn-icon" title="Nghe thử"
-                                        id="ttsBtn-@a.Id"
-                                        onclick="toggleTts(this)"
-                                        data-script="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(a.Script))"
-                                        data-lang="@a.Language"
-                                        data-playing="false">
+                                        onclick="toggleTts(@a.Id)"
+                                        id="ttsBtn-@a.Id">
                                     <i class="bi bi-play-circle"></i>
                                 </button>
                             }
                             <button class="btn btn-ghost btn-sm btn-icon" title="Chỉnh sửa"
-                                    data-edit-id="@a.Id"
-                                    data-edit-poi="@a.PoiId"
-                                    data-edit-lang="@a.Language"
-                                    data-edit-url="@(a.AudioUrl ?? "")"
-                                    data-edit-script="@Html.Raw(System.Text.Json.JsonSerializer.Serialize(a.Script ?? ""))"
-                                    onclick="editFromData(this)">
+                                    onclick="editAudio(@a.Id)">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
-                                    data-del-id="@a.Id"
-                                    data-del-name="@(a.PoiName ?? $"#{a.PoiId}")"
-                                    onclick="confirmDeleteFromData(this)">
+                                    onclick="confirmDeleteAudio(@a.Id, '@(a.PoiName ?? $"#{a.PoiId}")')">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -121,8 +109,6 @@
                         <option value="vi">🇻🇳 Tiếng Việt</option>
                         <option value="en">🇺🇸 English</option>
                         <option value="ja">🇯🇵 日本語</option>
-                        <option value="zh">🇨🇳 中文</option>
-                        <option value="ko">🇰🇷 한국어</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -186,7 +172,22 @@
     </div>
 </div>
 
+@* Lưu data audio dưới dạng JSON an toàn trong script tag — tránh HTML encode trong attribute *@
+<script id="audioData" type="application/json">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Audios.Select(a => new {
+        id = a.Id,
+                poiId = a.PoiId,
+                poiName = a.PoiName ?? $"#{a.PoiId}",
+                lang = a.Language ?? "vi",
+                url = a.AudioUrl ?? "",
+                script = a.Script ?? ""
+        })))
+</script>
+
 <script>
+    // Load data từ script tag — an toàn với mọi ký tự đặc biệt
+    const AUDIOS = JSON.parse(document.getElementById('audioData').textContent);
+
     // ── Modal ──────────────────────────────────────────────────────────────────
     function openModal() {
         document.getElementById('fId').value = '0';
@@ -201,22 +202,23 @@
     }
     function closeModal() { stopTts(); document.getElementById('audioModal').style.display = 'none'; }
 
-    function editFromData(btn) {
-        document.getElementById('fId').value       = btn.dataset.editId;
-        document.getElementById('fPoiId').value    = btn.dataset.editPoi;
-        document.getElementById('fLanguage').value = btn.dataset.editLang;
-        document.getElementById('fAudioUrl').value = btn.dataset.editUrl || '';
-        const s = JSON.parse(btn.dataset.editScript);
-        document.getElementById('fScript').value   = s;
-        document.getElementById('scriptCount').textContent = s.length;
+    function editAudio(id) {
+        const a = AUDIOS.find(x => x.id === id);
+        if (!a) return;
+        document.getElementById('fId').value       = a.id;
+        document.getElementById('fPoiId').value    = a.poiId;
+        document.getElementById('fLanguage').value = a.lang;
+        document.getElementById('fAudioUrl').value = a.url;
+        document.getElementById('fScript').value   = a.script;
+        document.getElementById('scriptCount').textContent = a.script.length;
         document.getElementById('modalTitle').textContent  = 'Sửa Audio';
         document.getElementById('submitLabel').textContent = 'Cập nhật';
         document.getElementById('audioModal').style.display = 'flex';
     }
 
-    function confirmDeleteFromData(btn) {
-        document.getElementById('fDeleteId').value     = btn.dataset.delId;
-        document.getElementById('delName').textContent = btn.dataset.delName;
+    function confirmDeleteAudio(id, name) {
+        document.getElementById('fDeleteId').value     = id;
+        document.getElementById('delName').textContent = name;
         document.getElementById('deleteModal').style.display = 'flex';
     }
     function closeDelete() { document.getElementById('deleteModal').style.display = 'none'; }
@@ -232,16 +234,15 @@
     });
 
     // ── TTS ────────────────────────────────────────────────────────────────────
-    const langBcp = { vi:'vi', en:'en', ja:'ja', zh:'zh', ko:'ko' };
     let _tts = null;
-    let _playingBtn = null;
+    let _playingId = null;
 
     function pickVoice(langCode) {
         const voices = window.speechSynthesis.getVoices();
         if (!voices.length) return null;
-        const prefix = (langBcp[langCode] || langCode).toLowerCase();
+        const prefix = langCode.toLowerCase();
         const matched = voices.filter(v => v.lang.toLowerCase().startsWith(prefix));
-        if (matched.length) { return matched.find(v => v.localService) || matched[0]; }
+        if (matched.length) return matched.find(v => v.localService) || matched[0];
         return null;
     }
 
@@ -257,45 +258,60 @@
         return u;
     }
 
-    // Toggle play/stop trên từng dòng bảng
-    function toggleTts(btn) {
-        if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
+    function toggleTts(id) {
+        const a = AUDIOS.find(x => x.id === id);
+        if (!a) return;
+        const btn = document.getElementById('ttsBtn-' + id);
 
-        // Nếu đang play chính nó → stop
-        if (btn.dataset.playing === 'true') {
-            stopAllTts();
+        // Nếu đang play → stop
+        if (_playingId === id) { stopAllTts(); return; }
+        stopAllTts();
+
+        // Ưu tiên phát file audio URL nếu có
+        if (a.url) {
+            const audio = new Audio(a.url);
+            _playingId = id;
+            if (btn) { btn.querySelector('i').className = 'bi bi-stop-circle'; btn.style.color = 'var(--accent)'; }
+            audio.play().catch(() => {
+                // Nếu file không tồn tại, fallback sang TTS
+                playTts(a, btn, id);
+            });
+            audio.onended = () => {
+                if (btn) { btn.querySelector('i').className = 'bi bi-play-circle'; btn.style.color = ''; }
+                _playingId = null;
+            };
+            // Lưu để stop được
+            _tts = { cancel: () => { audio.pause(); audio.currentTime = 0; } };
             return;
         }
 
-        // Stop cái đang chạy (nếu có)
-        stopAllTts();
+        // Không có URL → dùng TTS
+        playTts(a, btn, id);
+    }
 
-        const text = JSON.parse(btn.dataset.script);
-        const lang = btn.dataset.lang || 'vi';
-        _tts = makeTtsUtterance(text, lang);
-        _playingBtn = btn;
-
-        btn.dataset.playing = 'true';
-        btn.querySelector('i').className = 'bi bi-stop-circle';
-        btn.style.color = 'var(--accent)';
-
-        _tts.onend = _tts.onerror = () => resetTtsBtn(btn);
+    function playTts(a, btn, id) {
+        if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
+        if (!a.script) return;
+        _tts = makeTtsUtterance(a.script, a.lang);
+        _playingId = id;
+        if (btn) { btn.querySelector('i').className = 'bi bi-stop-circle'; btn.style.color = 'var(--accent)'; }
+        _tts.onend = _tts.onerror = () => {
+            if (btn) { btn.querySelector('i').className = 'bi bi-play-circle'; btn.style.color = ''; }
+            _tts = null; _playingId = null;
+        };
         window.speechSynthesis.speak(_tts);
     }
 
     function stopAllTts() {
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        if (_playingBtn) resetTtsBtn(_playingBtn);
-        _tts = null; _playingBtn = null;
+        if (_tts && typeof _tts.cancel === 'function') _tts.cancel();
+        if (_playingId !== null) {
+            const btn = document.getElementById('ttsBtn-' + _playingId);
+            if (btn) { btn.querySelector('i').className = 'bi bi-play-circle'; btn.style.color = ''; }
+        }
+        _tts = null; _playingId = null;
     }
 
-    function resetTtsBtn(btn) {
-        btn.dataset.playing = 'false';
-        btn.querySelector('i').className = 'bi bi-play-circle';
-        btn.style.color = '';
-    }
-
-    // Nghe thử trong modal
     function previewTtsModal() {
         const s = document.getElementById('fScript').value.trim();
         if (!s) { alert('Chưa có script.'); return; }

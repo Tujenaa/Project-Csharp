@@ -1,0 +1,124 @@
+﻿/* wwwroot/css/users.css */
+
+.user-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.utab {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-family: var(--font);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+    .utab:hover {
+        border-color: var(--accent);
+        color: var(--text);
+    }
+
+    .utab.active {
+        background: rgba(233,69,96,.12);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+.utab-count {
+    background: var(--bg3);
+    border-radius: 20px;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-family: var(--mono);
+}
+
+.utab.active .utab-count {
+    background: rgba(233,69,96,.2);
+}
+
+.u-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.u-avatar-admin {
+    background: rgba(239,68,68,.15);
+    color: var(--danger);
+}
+
+.u-avatar-owner {
+    background: rgba(59,130,246,.15);
+    color: #60a5fa;
+}
+
+.u-avatar-customer {
+    background: rgba(16,185,129,.15);
+    color: var(--success);
+}
+
+.badge-red {
+    background: rgba(239,68,68,.15);
+    color: var(--danger);
+}
+
+.badge-green {
+    background: rgba(16,185,129,.15);
+    color: var(--success);
+}
+
+.toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 8px;
+}
+
+    .toggle-switch input {
+        display: none;
+    }
+
+.toggle-track {
+    width: 38px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 20px;
+    position: relative;
+    transition: background .2s;
+}
+
+.toggle-switch input:checked + .toggle-track {
+    background: var(--accent);
+}
+
+.toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+
+.toggle-switch input:checked + .toggle-track .toggle-thumb {
+    transform: translateX(18px);
+}

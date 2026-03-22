@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Trang chủ";
     ViewData["Active"] = "home";
+    var isAdmin = Model.IsAdmin;
 }
 
 @if (Model.ApiError)
@@ -19,50 +20,37 @@
         <div>
             <div class="stat-label">Điểm thuyết minh</div>
             <div class="stat-value">@Model.TotalPoi</div>
-            <div class="stat-trend trend-blue">
-                <i class="bi bi-geo-alt-fill"></i> POI active
-            </div>
+            <div class="stat-trend trend-blue"><i class="bi bi-geo-alt-fill"></i> POI active</div>
         </div>
-        <div class="stat-icon-wrap icon-blue">
-            <i class="bi bi-geo-alt"></i>
-        </div>
+        <div class="stat-icon-wrap icon-blue"><i class="bi bi-geo-alt"></i></div>
     </div>
     <div class="stat-card cyan">
         <div>
             <div class="stat-label">File Audio / Script</div>
             <div class="stat-value">@Model.TotalAudio</div>
-            <div class="stat-trend trend-cyan">
-                <i class="bi bi-music-note"></i> scripts
-            </div>
+            <div class="stat-trend trend-cyan"><i class="bi bi-music-note"></i> scripts</div>
         </div>
-        <div class="stat-icon-wrap icon-cyan">
-            <i class="bi bi-music-note-beamed"></i>
-        </div>
+        <div class="stat-icon-wrap icon-cyan"><i class="bi bi-music-note-beamed"></i></div>
     </div>
     <div class="stat-card green">
         <div>
             <div class="stat-label">Lượt phát tổng</div>
             <div class="stat-value">@Model.TotalHistory</div>
-            <div class="stat-trend trend-green">
-                <i class="bi bi-arrow-up"></i> all time
-            </div>
+            <div class="stat-trend trend-green"><i class="bi bi-arrow-up"></i> all time</div>
         </div>
-        <div class="stat-icon-wrap icon-green">
-            <i class="bi bi-play-circle"></i>
-        </div>
+        <div class="stat-icon-wrap icon-green"><i class="bi bi-play-circle"></i></div>
     </div>
-    <div class="stat-card yellow">
-        <div>
-            <div class="stat-label">Người dùng</div>
-            <div class="stat-value">@Model.TotalUsers</div>
-            <div class="stat-trend trend-yellow">
-                <i class="bi bi-people"></i> accounts
+    @if (isAdmin)
+    {
+        <div class="stat-card yellow">
+            <div>
+                <div class="stat-label">Người dùng</div>
+                <div class="stat-value">@Model.TotalUsers</div>
+                <div class="stat-trend trend-yellow"><i class="bi bi-people"></i> accounts</div>
             </div>
+            <div class="stat-icon-wrap icon-yellow"><i class="bi bi-people"></i></div>
         </div>
-        <div class="stat-icon-wrap icon-yellow">
-            <i class="bi bi-people"></i>
-        </div>
-    </div>
+    }
 </div>
 
 <!-- Bottom Grid -->
@@ -73,20 +61,13 @@
             <a href="/HistoryPage" class="btn btn-ghost btn-sm">Xem tất cả</a>
         </div>
         <table class="tg-table">
-            <thead>
-                <tr><th>Điểm POI</th><th>Thời gian</th></tr>
-            </thead>
+            <thead><tr><th>Điểm POI</th><th>Thời gian</th></tr></thead>
             <tbody>
                 @foreach (var h in Model.RecentHistory)
                 {
                     <tr>
-                        <td>
-                            <span class="poi-dot"></span>
-                            @h.PoiName
-                        </td>
-                        <td>
-                            <span class="time-chip">@h.PlayTime.ToString("dd/MM HH:mm")</span>
-                        </td>
+                        <td><span class="poi-dot"></span>@h.PoiName</td>
+                        <td><span class="time-chip">@h.PlayTime.ToString("dd/MM HH:mm")</span></td>
                     </tr>
                 }
                 @if (!Model.RecentHistory.Any())
@@ -102,9 +83,7 @@
             <span><i class="bi bi-trophy me-2"></i>Top POI được phát nhiều nhất</span>
         </div>
         <table class="tg-table">
-            <thead>
-                <tr><th>Điểm</th><th>Lượt phát</th></tr>
-            </thead>
+            <thead><tr><th>Điểm</th><th>Lượt phát</th></tr></thead>
             <tbody>
                 @{
                     int rank = 1;
@@ -130,10 +109,9 @@
 </div>
 
 <style>
-    /* ── Stat card nâng cấp ── */
     .stat-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4,1fr);
         gap: 16px;
         margin-bottom: 20px;
     }
@@ -148,14 +126,13 @@
         align-items: flex-start;
         position: relative;
         overflow: hidden;
-        transition: transform .15s, border-color .2s;
+        transition: transform .15s;
     }
 
         .stat-card:hover {
             transform: translateY(-2px);
         }
 
-        /* Thanh màu trên cùng */
         .stat-card::before {
             content: '';
             position: absolute;
@@ -167,11 +144,11 @@
         }
 
         .stat-card.blue::before {
-            background: linear-gradient(90deg,#3b82f6,#60a5fa);
+            background: linear-gradient(90deg,#e94560,#ff6b6b);
         }
 
         .stat-card.cyan::before {
-            background: linear-gradient(90deg,#06b6d4,#22d3ee);
+            background: linear-gradient(90deg,#0f3460,#1a6bbf);
         }
 
         .stat-card.green::before {
@@ -189,7 +166,6 @@
             text-transform: uppercase;
             color: var(--text2);
             margin-bottom: 6px;
-            font-family: var(--font);
         }
 
         .stat-card .stat-value {
@@ -201,22 +177,21 @@
         }
 
         .stat-card.blue .stat-value {
-            color: #60a5fa;
+            color: #e94560;
         }
 
         .stat-card.cyan .stat-value {
-            color: #22d3ee;
+            color: #60a5fa;
         }
 
         .stat-card.green .stat-value {
-            color: #34d399;
+            color: var(--success);
         }
 
         .stat-card.yellow .stat-value {
-            color: #fbbf24;
+            color: var(--warning);
         }
 
-    /* Trend badge kế số */
     .stat-trend {
         display: inline-flex;
         align-items: center;
@@ -228,26 +203,25 @@
     }
 
     .trend-blue {
-        background: rgba(59,130,246,.12);
-        color: #60a5fa;
+        background: rgba(233,69,96,.12);
+        color: #e94560;
     }
 
     .trend-cyan {
-        background: rgba(6,182,212,.12);
-        color: #22d3ee;
+        background: rgba(96,165,250,.12);
+        color: #60a5fa;
     }
 
     .trend-green {
         background: rgba(16,185,129,.12);
-        color: #34d399;
+        color: var(--success);
     }
 
     .trend-yellow {
         background: rgba(245,158,11,.12);
-        color: #fbbf24;
+        color: var(--warning);
     }
 
-    /* Icon box góc phải */
     .stat-icon-wrap {
         width: 42px;
         height: 42px;
@@ -261,26 +235,25 @@
     }
 
     .icon-blue {
-        background: rgba(59,130,246,.15);
-        color: #60a5fa;
+        background: rgba(233,69,96,.15);
+        color: #e94560;
     }
 
     .icon-cyan {
-        background: rgba(6,182,212,.15);
-        color: #22d3ee;
+        background: rgba(96,165,250,.15);
+        color: #60a5fa;
     }
 
     .icon-green {
         background: rgba(16,185,129,.15);
-        color: #34d399;
+        color: var(--success);
     }
 
     .icon-yellow {
         background: rgba(245,158,11,.15);
-        color: #fbbf24;
+        color: var(--warning);
     }
 
-    /* Table enhancements */
     .poi-dot {
         display: inline-block;
         width: 7px;
@@ -335,7 +308,7 @@
         font-size: 11px;
         font-family: var(--mono);
         background: rgba(16,185,129,.12);
-        color: #34d399;
+        color: var(--success);
         padding: 3px 9px;
         border-radius: 20px;
     }

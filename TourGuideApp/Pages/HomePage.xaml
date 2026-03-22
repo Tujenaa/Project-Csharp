@@ -158,13 +158,6 @@
                                 <RoundRectangle CornerRadius="18"/>
                             </Border.StrokeShape>
 
-                            <!-- 🔥 ĐẶT Ở ĐÂY -->
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GoToDetailCommand}"
-                                    CommandParameter="{Binding .}" />
-                            </Border.GestureRecognizers>
-
                             <Grid Padding="16,14" ColumnSpacing="14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -175,7 +168,11 @@
                                     Grid.Column="0"
                                     VerticalOptions="Center"
                                     Spacing="3">
-
+                                    <VerticalStackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GoToDetailCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </VerticalStackLayout.GestureRecognizers>
                                     <Label
                                     Text="{Binding Name}"
                                     FontSize="15"
@@ -194,7 +191,7 @@
                                     TextColor="#94A3B8"/>   
                                 </VerticalStackLayout>
 
-                                <!-- Play icon (KHÔNG có command nữa) -->
+                                <!-- Play icon -->
                                 <Border
                                     Grid.Column="1"
                                     BackgroundColor="#EDE7FF"
@@ -205,13 +202,25 @@
                                     <Border.StrokeShape>
                                         <RoundRectangle CornerRadius="12"/>
                                     </Border.StrokeShape>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Image Source="ic_play.svg"
+                                           WidthRequest="18"
+                                           HeightRequest="18">
 
-                                    <Image
-                                        Source="ic_play.svg"
-                                        WidthRequest="18"
-                                        HeightRequest="18"
-                                        HorizontalOptions="Center"
-                                        VerticalOptions="Center"/>
+                                        <Image.Triggers>
+
+                                            <DataTrigger TargetType="Image"
+                                                 Binding="{Binding IsPlaying}"
+                                                 Value="True">
+                                                <Setter Property="Source" Value="ic_pause.svg"/>
+                                            </DataTrigger>
+
+                                        </Image.Triggers>
+                                    </Image>
                                 </Border>
 
                             </Grid>

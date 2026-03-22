@@ -1,5 +1,4 @@
-﻿/* wwwroot/css/auth.css */
-/* Dùng chung cho Login.cshtml và Register.cshtml */
+﻿/* wwwroot/css/auth.css — dùng chung Login + Register */
 
 *, *::before, *::after {
     box-sizing: border-box;
@@ -7,21 +6,15 @@
     padding: 0;
 }
 
-body {
-    /* ── ĐỔI MÀU NỀN Ở ĐÂY ── */
-    background: #0f2044; /* xanh dương đậm — đổi thành màu bạn muốn */
-    /* Ví dụ khác:
-       background: #1a3a5c;   xanh navy
-       background: #0d2137;   xanh tối hơn
-       background: #e8f4fd;   xanh nhạt (nếu muốn nền sáng)
-    */
+html, body {
+    background: #1A1035 !important; /* tím đậm — nền chính app */
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Times New Roman', Times, serif;
     color: #e2e8f0;
-    font-size: 16px; /* tăng base font */
+    font-size: 16px;
 }
 
 .auth-wrap {
@@ -60,8 +53,8 @@ body {
     }
 
 .auth-card {
-    background: #16213e;
-    border: 1px solid #1f3460;
+    background: #2D1B6E;
+    border: 1px solid #512BD4;
     border-radius: 14px;
     padding: 30px;
 }
@@ -69,7 +62,7 @@ body {
 .auth-tabs {
     display: flex;
     margin-bottom: 24px;
-    background: #0d1117;
+    background: #1A1035;
     border-radius: 8px;
     padding: 4px;
     gap: 4px;
@@ -83,14 +76,14 @@ body {
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    color: #8b9ab3;
+    color: #9B7FEA;
     text-decoration: none;
     transition: all .15s;
     font-family: 'Times New Roman', Times, serif;
 }
 
     .auth-tab.active {
-        background: #e94560;
+        background: #512BD4;
         color: #fff;
     }
 
@@ -114,12 +107,12 @@ body {
 
 .form-control {
     width: 100%;
-    background: #1a2744;
-    border: 1px solid #1f3460;
+    background: #1A1035;
+    border: 1.5px solid #E8E3F5;
     border-radius: 8px;
     padding: 11px 14px;
     color: #e2e8f0;
-    font-size: 15px; /* ── ĐỔI SIZE INPUT Ở ĐÂY ── */
+    font-size: 15px;
     font-family: 'Times New Roman', Times, serif;
     -webkit-text-fill-color: #e2e8f0;
     transition: border-color .15s;
@@ -127,18 +120,18 @@ body {
 
     .form-control:focus {
         outline: none;
-        border-color: #e94560;
-        box-shadow: 0 0 0 3px rgba(233,69,96,.15);
+        border-color: #512BD4;
+        box-shadow: 0 0 0 3px rgba(81,43,212,.2);
     }
 
     .form-control::placeholder {
-        color: #8b9ab3;
+        color: #9B7FEA;
         opacity: 1;
     }
 
     .form-control:-webkit-autofill,
     .form-control:-webkit-autofill:focus {
-        -webkit-box-shadow: 0 0 0 1000px #1a2744 inset !important;
+        -webkit-box-shadow: 0 0 0 1000px #1A1035 inset !important;
         -webkit-text-fill-color: #e2e8f0 !important;
     }
 
@@ -151,7 +144,7 @@ body {
         right: 13px;
         top: 50%;
         transform: translateY(-50%);
-        color: #8b9ab3;
+        color: #9B7FEA;
         cursor: pointer;
         font-size: 16px;
     }
@@ -163,11 +156,11 @@ body {
 .btn-submit {
     width: 100%;
     padding: 12px;
-    background: #e94560;
+    background: #512BD4;
     color: #fff;
     border: none;
     border-radius: 8px;
-    font-size: 15px; /* ── ĐỔI SIZE NÚT Ở ĐÂY ── */
+    font-size: 15px;
     font-weight: 600;
     font-family: 'Times New Roman', Times, serif;
     cursor: pointer;
@@ -180,13 +173,13 @@ body {
 }
 
     .btn-submit:hover {
-        background: #c73652;
+        background: #3d1fa8;
     }
 
 .alert-error {
     background: rgba(233,69,96,.1);
     border: 1px solid rgba(233,69,96,.3);
-    color: #e94560;
+    color: #E94560;
     padding: 11px 14px;
     border-radius: 8px;
     font-size: 14px;
@@ -197,16 +190,17 @@ body {
 }
 
 .role-info {
-    background: rgba(59,130,246,.08);
-    border: 1px solid rgba(59,130,246,.2);
+    background: rgba(81,43,212,.1);
+    border: 1px solid rgba(81,43,212,.3);
     border-radius: 8px;
     padding: 11px 14px;
     font-size: 13px;
-    color: #8b9ab3;
+    color: #9B7FEA;
     margin-bottom: 18px;
     line-height: 1.5;
 }
 
     .role-info strong {
-        color: #60a5fa;
+        color: #9B7FEA;
+        font-weight: 700;
     }

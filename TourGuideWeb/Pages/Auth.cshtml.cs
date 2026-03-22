@@ -21,7 +21,6 @@ public class AuthModel : PageModel
         return Page();
     }
 
-    // POST /Auth — đăng nhập
     public async Task<IActionResult> OnPostAsync()
     {
         if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
@@ -38,6 +37,10 @@ public class AuthModel : PageModel
             if (user == null)
             { Error = "Tên đăng nhập hoặc mật khẩu không đúng."; return Page(); }
 
+            // Chặn CUSTOMER — web chỉ dành cho ADMIN và OWNER
+            if (user.Role == "CUSTOMER")
+            { Error = "Tài khoản khách hàng không được phép đăng nhập web quản lý. Vui lòng dùng ứng dụng mobile."; return Page(); }
+
             HttpContext.Session.SetString("UserId", user.Id.ToString());
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("Role", user.Role ?? "OWNER");
@@ -47,7 +50,7 @@ public class AuthModel : PageModel
         { Error = "Không kết nối được API. Vui lòng thử lại."; return Page(); }
     }
 
-    // POST /Auth?handler=Logout — đăng xuất
+    // Đăng xuất
     public IActionResult OnPostLogout()
     {
         HttpContext.Session.Clear();

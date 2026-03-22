@@ -11,6 +11,7 @@ public class AudioManagerModel : PageModel
 
     public List<Audio> Audios { get; set; } = [];
     public List<POI> Pois { get; set; } = [];
+
     [TempData] public string Msg { get; set; } = "";
 
     [BindProperty] public int Id { get; set; }
@@ -20,11 +21,34 @@ public class AudioManagerModel : PageModel
     [BindProperty] public string? Script { get; set; }
     [BindProperty] public int DeleteId { get; set; }
 
+    private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
+    private bool IsAdmin => Role == "ADMIN";
+    private int? MyId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
+
     public async Task OnGetAsync()
     {
         var client = _http.CreateClient("API");
-        try { Audios = await client.GetFromJsonAsync<List<Audio>>("audio") ?? []; } catch { Audios = []; }
-        try { Pois = await client.GetFromJsonAsync<List<POI>>("poi") ?? []; } catch { Pois = []; }
+        try
+        {
+            var allAudios = await client.GetFromJsonAsync<List<Audio>>("audio") ?? [];
+
+            if (IsAdmin)
+            {
+                Audios = allAudios;
+                Pois = await client.GetFromJsonAsync<List<POI>>("poi") ?? [];
+            }
+            else
+            {
+                // Owner chỉ thấy audio của POI mình
+                Pois = await client.GetFromJsonAsync<List<POI>>($"poi/owner/{MyId}") ?? [];
+                var myPoiIds = Pois.Select(p => p.Id).ToHashSet();
+                Audios = allAudios.Where(a => myPoiIds.Contains(a.PoiId)).ToList();
+            }
+        }
+        catch
+        {
+            Audios = []; Pois = [];
+        }
     }
 
     public async Task<IActionResult> OnPostAsync()

@@ -18,6 +18,7 @@ public class PoisModel : PageModel
     [BindProperty] public int Id { get; set; }
     [BindProperty] public string Name { get; set; } = "";
     [BindProperty] public string? Description { get; set; }
+    [BindProperty] public string? Address { get; set; }
     [BindProperty] public double Latitude { get; set; }
     [BindProperty] public double Longitude { get; set; }
     [BindProperty] public int Radius { get; set; } = 80;
@@ -26,11 +27,25 @@ public class PoisModel : PageModel
 
     private HttpClient Api => _http.CreateClient("API");
 
+    // Lấy role và userId từ session
+    private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
+    private bool IsAdmin => Role == "ADMIN";
+    private int? MyUserId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
+
     public async Task OnGetAsync()
     {
         try
         {
-            Pois = await Api.GetFromJsonAsync<List<POI>>("poi") ?? new List<POI>();
+            if (IsAdmin)
+            {
+                // Admin thấy tất cả POI
+                Pois = await Api.GetFromJsonAsync<List<POI>>("poi") ?? new List<POI>();
+            }
+            else
+            {
+                // Owner chỉ thấy POI của mình
+                Pois = await Api.GetFromJsonAsync<List<POI>>($"poi/owner/{MyUserId}") ?? new List<POI>();
+            }
         }
         catch (Exception ex)
         {
@@ -40,7 +55,6 @@ public class PoisModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        // Fix dấu thập phân — đọc thẳng từ form, parse bằng InvariantCulture
         var latStr = Request.Form["Latitude"].ToString().Replace(',', '.');
         var lngStr = Request.Form["Longitude"].ToString().Replace(',', '.');
         double lat = double.TryParse(latStr, System.Globalization.NumberStyles.Any,
@@ -48,15 +62,19 @@ public class PoisModel : PageModel
         double lng = double.TryParse(lngStr, System.Globalization.NumberStyles.Any,
                          System.Globalization.CultureInfo.InvariantCulture, out var lgv) ? lgv : Longitude;
 
+        // Owner chỉ được thêm POI với OwnerId = chính mình
+        var ownerId = IsAdmin ? OwnerId : MyUserId;
+
         var body = new POI
         {
             Id = Id,
             Name = Name,
             Description = Description ?? "",
+            Address = Address ?? "",
             Latitude = lat,
             Longitude = lng,
             Radius = Radius,
-            OwnerId = OwnerId
+            OwnerId = ownerId
         };
 
         try
@@ -69,6 +87,13 @@ public class PoisModel : PageModel
             }
             else
             {
+                // Owner chỉ được sửa POI của mình
+                if (!IsAdmin)
+                {
+                    var existing = await Api.GetFromJsonAsync<POI>($"poi/{Id}");
+                    if (existing?.OwnerId != MyUserId)
+                    { Error = "Bạn không có quyền sửa điểm này."; return RedirectToPage(); }
+                }
                 resp = await Api.PutAsJsonAsync($"poi/{Id}", body);
                 Msg = $"Đã cập nhật \"{Name}\" thành công.";
             }
@@ -79,10 +104,7 @@ public class PoisModel : PageModel
                 Error = $"API lỗi {(int)resp.StatusCode}: {detail}";
             }
         }
-        catch (Exception ex)
-        {
-            Error = "Lỗi kết nối API: " + ex.Message;
-        }
+        catch (Exception ex) { Error = "Lỗi kết nối API: " + ex.Message; }
 
         return RedirectToPage();
     }
@@ -91,16 +113,21 @@ public class PoisModel : PageModel
     {
         try
         {
+            // Owner chỉ được xóa POI của mình
+            if (!IsAdmin)
+            {
+                var existing = await Api.GetFromJsonAsync<POI>($"poi/{DeleteId}");
+                if (existing?.OwnerId != MyUserId)
+                { Error = "Bạn không có quyền xóa điểm này."; return RedirectToPage(); }
+            }
+
             var resp = await Api.DeleteAsync($"poi/{DeleteId}");
             if (resp.IsSuccessStatusCode)
                 Msg = "Đã xoá điểm thuyết minh thành công.";
             else
                 Error = $"Xoá thất bại: {(int)resp.StatusCode} {resp.ReasonPhrase}";
         }
-        catch (Exception ex)
-        {
-            Error = "Lỗi kết nối API: " + ex.Message;
-        }
+        catch (Exception ex) { Error = "Lỗi kết nối API: " + ex.Message; }
 
         return RedirectToPage();
     }

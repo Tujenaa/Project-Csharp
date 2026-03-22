@@ -24,17 +24,41 @@ public class IndexModel : PageModel
     public List<HistoryItem> RecentHistory { get; set; } = [];
     public List<KeyValuePair<string, int>> TopPoi { get; set; } = [];
 
+    private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
+    public bool IsAdmin => Role == "ADMIN";
+    private int? MyId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
+
     public async Task OnGetAsync()
     {
-        ApiUrl = _config["ApiUrl"] ?? "(chưa cấu hình)";
+        ApiUrl = _config["ApiUrl"] ?? "";
         var client = _http.CreateClient("API");
 
-        var pois = await Fetch<List<POI>>(client, "poi");
-        var audios = await Fetch<List<AudioItem>>(client, "audio");
-        var history = await Fetch<List<HistoryItem>>(client, "history");
-        var users = await Fetch<List<UserItem>>(client, "users");
+        List<POI>? pois = null;
+        List<AudioItem>? audios = null;
+        List<HistoryItem>? history = null;
+        List<UserItem>? users = null;
 
-        ApiError = pois is null && audios is null && history is null && users is null;
+        if (IsAdmin)
+        {
+            pois = await Fetch<List<POI>>(client, "poi");
+            audios = await Fetch<List<AudioItem>>(client, "audio");
+            history = await Fetch<List<HistoryItem>>(client, "history");
+            users = await Fetch<List<UserItem>>(client, "users");
+        }
+        else
+        {
+            // Owner chỉ thấy dữ liệu của mình
+            pois = await Fetch<List<POI>>(client, $"poi/owner/{MyId}");
+            audios = await Fetch<List<AudioItem>>(client, "audio");
+            history = await Fetch<List<HistoryItem>>(client, "history");
+
+            // Lọc audio và history theo POI của owner
+            var myPoiIds = (pois ?? []).Select(p => p.Id).ToHashSet();
+            audios = audios?.Where(a => myPoiIds.Contains(a.PoiId)).ToList();
+            history = history?.Where(h => myPoiIds.Contains(h.PoiId)).ToList();
+        }
+
+        ApiError = pois is null && audios is null && history is null;
 
         TotalPoi = pois?.Count ?? 0;
         TotalAudio = audios?.Count ?? 0;
