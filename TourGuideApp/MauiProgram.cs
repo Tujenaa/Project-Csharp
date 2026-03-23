@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using TourGuideApp.Services;
 using TourGuideApp.ViewModels;
+using TourGuideApp.Pages; // Thêm cái này để gọi tên Page ngắn gọn hơn
 
 namespace TourGuideApp;
 
@@ -22,15 +23,18 @@ public static class MauiProgram
         builder.Logging.AddDebug();
 #endif
 
-        // SERVICES
+        // --- SERVICES ---
         builder.Services.AddSingleton<MapService>();
         builder.Services.AddSingleton<LocationService>();
 
-        // VIEWMODELS
+        // --- VIEWMODELS ---
         builder.Services.AddSingleton<MapViewModel>();
+        builder.Services.AddTransient<AccountViewModel>(); // ĐĂNG KÝ MỚI
 
-        // PAGES – đăng ký để DI inject ViewModel
-        builder.Services.AddTransient<TourGuideApp.Pages.MapPage>();
+        // --- PAGES ---
+        builder.Services.AddTransient<MapPage>();
+        builder.Services.AddTransient<AccountPage>();    // ĐĂNG KÝ MỚI
+        builder.Services.AddTransient<SettingsPage>();   // ĐĂNG KÝ MỚI
 
         return builder.Build();
     }

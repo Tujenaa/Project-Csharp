@@ -1,5 +1,4 @@
 ﻿/* wwwroot/css/auth.css — dùng chung Login + Register */
-
 *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -7,13 +6,13 @@
 }
 
 html, body {
-    background: #1A1035 !important; /* tím đậm — nền chính app */
+    background: #1A1035 !important;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Times New Roman', Times, serif;
-    color: #e2e8f0;
+    color: #f5f0e8;
     font-size: 16px;
 }
 
@@ -31,7 +30,7 @@ html, body {
     .auth-logo .icon {
         width: 56px;
         height: 56px;
-        background: linear-gradient(135deg, #e94560, #ff6b6b);
+        background: linear-gradient(135deg, #512BD4, #9B7FEA);
         border-radius: 14px;
         display: inline-flex;
         align-items: center;
@@ -44,11 +43,12 @@ html, body {
         font-family: 'Space Mono', monospace;
         font-size: 22px;
         font-weight: 700;
+        color: #f5f0e8;
     }
 
     .auth-logo p {
         font-size: 14px;
-        color: #8b9ab3;
+        color: #c9bfa8;
         margin-top: 4px;
     }
 
@@ -76,7 +76,7 @@ html, body {
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    color: #9B7FEA;
+    color: #c9bfa8;
     text-decoration: none;
     transition: all .15s;
     font-family: 'Times New Roman', Times, serif;
@@ -88,7 +88,7 @@ html, body {
     }
 
     .auth-tab:hover:not(.active) {
-        color: #e2e8f0;
+        color: #f5f0e8;
     }
 
 .form-group {
@@ -99,7 +99,7 @@ html, body {
     display: block;
     font-size: 12px;
     font-weight: 600;
-    color: #8b9ab3;
+    color: #c9bfa8;
     text-transform: uppercase;
     letter-spacing: .5px;
     margin-bottom: 7px;
@@ -108,31 +108,31 @@ html, body {
 .form-control {
     width: 100%;
     background: #1A1035;
-    border: 1.5px solid #E8E3F5;
+    border: 1.5px solid #512BD4;
     border-radius: 8px;
     padding: 11px 14px;
-    color: #e2e8f0;
+    color: #f5f0e8;
     font-size: 15px;
     font-family: 'Times New Roman', Times, serif;
-    -webkit-text-fill-color: #e2e8f0;
+    -webkit-text-fill-color: #f5f0e8;
     transition: border-color .15s;
 }
 
     .form-control:focus {
         outline: none;
-        border-color: #512BD4;
-        box-shadow: 0 0 0 3px rgba(81,43,212,.2);
+        border-color: #9B7FEA;
+        box-shadow: 0 0 0 3px rgba(155,127,234,.2);
     }
 
     .form-control::placeholder {
-        color: #9B7FEA;
+        color: #c9bfa8;
         opacity: 1;
     }
 
     .form-control:-webkit-autofill,
     .form-control:-webkit-autofill:focus {
         -webkit-box-shadow: 0 0 0 1000px #1A1035 inset !important;
-        -webkit-text-fill-color: #e2e8f0 !important;
+        -webkit-text-fill-color: #f5f0e8 !important;
     }
 
 .input-icon {
@@ -144,7 +144,7 @@ html, body {
         right: 13px;
         top: 50%;
         transform: translateY(-50%);
-        color: #9B7FEA;
+        color: #c9bfa8;
         cursor: pointer;
         font-size: 16px;
     }
@@ -179,7 +179,7 @@ html, body {
 .alert-error {
     background: rgba(233,69,96,.1);
     border: 1px solid rgba(233,69,96,.3);
-    color: #E94560;
+    color: #fca5a5;
     padding: 11px 14px;
     border-radius: 8px;
     font-size: 14px;
@@ -190,17 +190,17 @@ html, body {
 }
 
 .role-info {
-    background: rgba(81,43,212,.1);
-    border: 1px solid rgba(81,43,212,.3);
+    background: rgba(81,43,212,.15);
+    border: 1px solid rgba(155,127,234,.3);
     border-radius: 8px;
     padding: 11px 14px;
     font-size: 13px;
-    color: #9B7FEA;
+    color: #c9bfa8;
     margin-bottom: 18px;
     line-height: 1.5;
 }
 
     .role-info strong {
-        color: #9B7FEA;
+        color: #f5f0e8;
         font-weight: 700;
     }

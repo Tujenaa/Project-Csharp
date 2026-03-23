@@ -27,6 +27,7 @@ namespace TourGuideAPI.Controllers
                     Name = p.Name,
                     Description = p.Description,
                     Address = p.Address,
+                    Phone = p.Phone,
                     Latitude = p.Latitude,
                     Longitude = p.Longitude,
                     Radius = p.Radius,

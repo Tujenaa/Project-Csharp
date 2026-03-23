@@ -17,7 +17,6 @@ public class AudioManagerModel : PageModel
     [BindProperty] public int Id { get; set; }
     [BindProperty] public int PoiId { get; set; }
     [BindProperty] public string Language { get; set; } = "vi";
-    [BindProperty] public string? AudioUrl { get; set; }
     [BindProperty] public string? Script { get; set; }
     [BindProperty] public int DeleteId { get; set; }
 
@@ -54,7 +53,7 @@ public class AudioManagerModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         var client = _http.CreateClient("API");
-        var payload = new { PoiId, Language, AudioUrl, Script };
+        var payload = new { PoiId, Language, Script };
         HttpResponseMessage res;
         if (Id == 0)
         {

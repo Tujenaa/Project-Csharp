@@ -11,7 +11,7 @@ public class ApiService
 
     public static class ApiConfig
     {
-        public const string BaseUrl = "http://192.168.1.182:5266/api/";
+        public const string BaseUrl = "http://192.168.1.201:5266/api/";
        // public const string BaseUrl = "http://10.0.2.2:5266/api/";
     }
 

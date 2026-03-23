@@ -11,7 +11,7 @@
     <ScrollView>
         <VerticalStackLayout Spacing="0">
 
-            <!-- Header -->
+            <!-- ── Header ── -->
             <Grid BackgroundColor="#1A1035" Padding="22,52,22,26">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -22,34 +22,48 @@
                        FontSize="22" FontAttributes="Bold"
                        TextColor="White" Margin="0,0,0,16"/>
 
-                <!-- Profile card -->
+                <!-- Profile card — tappable → AccountPage -->
                 <Border Grid.Row="1" BackgroundColor="#2D1B6E"
                         Stroke="#512BD4" StrokeThickness="1">
                     <Border.StrokeShape>
                         <RoundRectangle CornerRadius="18"/>
                     </Border.StrokeShape>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnProfileCardTapped"/>
+                    </Border.GestureRecognizers>
                     <Grid Padding="16" ColumnSpacing="14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="52"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
+
+                        <!-- Avatar -->
                         <Border Grid.Column="0" BackgroundColor="#512BD4"
                                 WidthRequest="52" HeightRequest="52" StrokeThickness="0">
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="16"/>
                             </Border.StrokeShape>
-                            <Label Text="U" FontSize="20" FontAttributes="Bold"
+                            <Label x:Name="AvatarLabel" Text="U" FontSize="20" FontAttributes="Bold"
                                    TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
                         </Border>
+
+                        <!-- Name / email -->
                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
-                            <Label Text="Người dùng" FontSize="16" FontAttributes="Bold" TextColor="White"/>
-                            <Label Text="tourguide@email.com" FontSize="12" TextColor="#9B7FEA"/>
+                            <Label x:Name="NameLabel" Text="Người dùng"
+                                   FontSize="16" FontAttributes="Bold" TextColor="White"/>
+                            <Label x:Name="EmailLabel" Text=""
+                                   FontSize="12" TextColor="#9B7FEA"/>
                         </VerticalStackLayout>
+
+                        <!-- Arrow -->
+                        <Label Grid.Column="2" Text="›" FontSize="24"
+                               TextColor="#9B7FEA" VerticalOptions="Center"/>
                     </Grid>
                 </Border>
             </Grid>
 
-            <!-- ── ỨNG DỤNG group ──────────────────────────────────── -->
+            <!-- ── ỨNG DỤNG ── -->
             <Label Text="ỨNG DỤNG" Margin="22,20,20,8"
                    FontSize="11" FontAttributes="Bold"
                    TextColor="#94A3B8" CharacterSpacing="1"/>
@@ -72,14 +86,14 @@
                             <Label Text="Xác định vị trí của bạn trên bản đồ"
                                    FontSize="11" TextColor="#94A3B8"/>
                         </VerticalStackLayout>
-                        <Switch Grid.Column="1" x:Name="switchGps"
+                        <Switch Grid.Column="1"
                                 IsToggled="{Binding GpsEnabled, Source={x:Static local:SettingService.Instance}}"
                                 OnColor="#512BD4"/>
                     </Grid>
 
                     <BoxView HeightRequest="1" BackgroundColor="#F1EEF9" Margin="18,0"/>
 
-                    <!-- Audio hướng dẫn -->
+                    <!-- Audio -->
                     <Grid Padding="18,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -97,7 +111,7 @@
 
                     <BoxView HeightRequest="1" BackgroundColor="#F1EEF9" Margin="18,0"/>
 
-                    <!-- Language picker -->
+                    <!-- Language -->
                     <Grid Padding="18,14">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -108,8 +122,6 @@
                             <Label Text="Ngôn ngữ thuyết minh và giao diện"
                                    FontSize="11" TextColor="#94A3B8"/>
                         </VerticalStackLayout>
-
-                        <!-- Tappable language badge -->
                         <Border Grid.Column="1" BackgroundColor="#EDE7FF"
                                 Stroke="Transparent" StrokeThickness="0"
                                 Padding="10,6" VerticalOptions="Center">
@@ -119,22 +131,16 @@
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnLanguageTapped"/>
                             </Border.GestureRecognizers>
-                            <HorizontalStackLayout Spacing="6">
-                                <Label x:Name="lblLanguage"
-                                       Text="{Binding LanguageDisplayName, Source={x:Static local:SettingService.Instance}}"
-                                       FontSize="13" FontAttributes="Bold"
-                                       TextColor="#512BD4" VerticalOptions="Center"/>
-                                <Image Source="ic_chevron_right.svg"
-                                       WidthRequest="14" HeightRequest="14"
-                                       VerticalOptions="Center"/>
-                            </HorizontalStackLayout>
+                            <Label x:Name="lblLanguage"
+                                   Text="{Binding LanguageDisplayName, Source={x:Static local:SettingService.Instance}}"
+                                   FontSize="13" FontAttributes="Bold"
+                                   TextColor="#512BD4" VerticalOptions="Center"/>
                         </Border>
                     </Grid>
-
                 </VerticalStackLayout>
             </Border>
 
-            <!-- ── THÔNG TIN group ─────────────────────────────────── -->
+            <!-- ── THÔNG TIN ── -->
             <Label Text="THÔNG TIN" Margin="22,20,20,8"
                    FontSize="11" FontAttributes="Bold"
                    TextColor="#94A3B8" CharacterSpacing="1"/>
@@ -152,11 +158,17 @@
                 </VerticalStackLayout>
             </Border>
 
+            <!-- Logout -->
             <Button Text="Đăng xuất"
-                    BackgroundColor="#FEF0F3" TextColor="#E94560"
-                    BorderColor="#FCA5A5" BorderWidth="1"
-                    CornerRadius="14" HeightRequest="50"
-                    FontSize="14" FontAttributes="Bold"
+                    Clicked="OnLogoutClicked"
+                    BackgroundColor="#FEF0F3"
+                    TextColor="#E94560"
+                    BorderColor="#FCA5A5"
+                    BorderWidth="1"
+                    CornerRadius="14"
+                    HeightRequest="50"
+                    FontSize="14"
+                    FontAttributes="Bold"
                     Margin="18,16,18,32"/>
 
         </VerticalStackLayout>

@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="TourGuideApp.Pages.AccountPage"
+    Title=""
+    BackgroundColor="#F4F2FB"
+    Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ── Custom header ── -->
+        <Grid Grid.Row="0" BackgroundColor="#1A1035" Padding="16,52,16,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Back button -->
+            <Border Grid.Column="0" BackgroundColor="#2D1B6E"
+                    WidthRequest="40" HeightRequest="40"
+                    StrokeThickness="0" VerticalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="12"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackTapped"/>
+                </Border.GestureRecognizers>
+                <Label Text="‹" FontSize="22" TextColor="White"
+                       HorizontalOptions="Center" VerticalOptions="Center"/>
+            </Border>
+
+            <Label Grid.Column="1" Text="Thông tin tài khoản"
+                   FontSize="18" FontAttributes="Bold" TextColor="White"
+                   VerticalOptions="Center" Margin="12,0,0,0"/>
+        </Grid>
+
+        <!-- ── Scrollable content ── -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="0" Padding="0,0,0,40">
+
+                <!-- Avatar section -->
+                <VerticalStackLayout HorizontalOptions="Center" Margin="0,28,0,24" Spacing="10">
+                    <Border BackgroundColor="#512BD4" WidthRequest="80" HeightRequest="80"
+                            StrokeThickness="0" HorizontalOptions="Center">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="24"/>
+                        </Border.StrokeShape>
+                        <Label x:Name="BigAvatarLabel" Text="U"
+                               FontSize="32" FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+                    <Label x:Name="HeaderNameLabel" Text="Người dùng"
+                           FontSize="18" FontAttributes="Bold"
+                           TextColor="#1A1035" HorizontalOptions="Center"/>
+                    <Label x:Name="HeaderEmailLabel" Text=""
+                           FontSize="13" TextColor="#6B7280" HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+
+                <!-- Edit form -->
+                <Label Text="THÔNG TIN CÁ NHÂN" Margin="22,0,22,8"
+                       FontSize="11" FontAttributes="Bold"
+                       TextColor="#94A3B8" CharacterSpacing="1"/>
+
+                <Border Margin="18,0" BackgroundColor="White"
+                        Stroke="#E8E3F5" StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="18"/>
+                    </Border.StrokeShape>
+                    <VerticalStackLayout Padding="20,18" Spacing="0">
+
+                        <!-- Full name -->
+                        <Label Text="HỌ TÊN" FontSize="11" FontAttributes="Bold"
+                               TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
+                        <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5"
+                                Margin="0,0,0,16">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="13"/>
+                            </Border.StrokeShape>
+                            <Entry x:Name="NameEntry" Placeholder="Nhập họ tên"
+                                   PlaceholderColor="#B0ADBB" TextColor="#1A1035"
+                                   FontSize="15" BackgroundColor="Transparent"
+                                   Margin="6,0" HeightRequest="48"/>
+                        </Border>
+
+                        <!-- Email (read-only) -->
+                        <Label Text="EMAIL" FontSize="11" FontAttributes="Bold"
+                               TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
+                        <Border BackgroundColor="#EEEAF8" Stroke="#E8E3F5" StrokeThickness="1.5"
+                                Margin="0,0,0,16">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="13"/>
+                            </Border.StrokeShape>
+                            <Entry x:Name="EmailEntry" Placeholder="email@example.com"
+                                   PlaceholderColor="#B0ADBB" TextColor="#6B7280"
+                                   FontSize="15" Keyboard="Email" IsReadOnly="True"
+                                   BackgroundColor="Transparent"
+                                   Margin="6,0" HeightRequest="48"/>
+                        </Border>
+
+                        <!-- Phone -->
+                        <Label Text="SỐ ĐIỆN THOẠI" FontSize="11" FontAttributes="Bold"
+                               TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
+                        <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5"
+                                Margin="0,0,0,4">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="13"/>
+                            </Border.StrokeShape>
+                            <Entry x:Name="PhoneEntry" Placeholder="0901 234 567"
+                                   PlaceholderColor="#B0ADBB" TextColor="#1A1035"
+                                   FontSize="15" Keyboard="Telephone"
+                                   BackgroundColor="Transparent"
+                                   Margin="6,0" HeightRequest="48"/>
+                        </Border>
+
+                        <Label Text="Email không thể thay đổi sau khi đăng ký."
+                               FontSize="11" TextColor="#94A3B8" Margin="4,6,0,0"/>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Error/success message -->
+                <Label x:Name="StatusLabel" Text="" FontSize="13"
+                       TextColor="#E94560" IsVisible="False"
+                       HorizontalOptions="Center" Margin="18,12,18,0"
+                       HorizontalTextAlignment="Center"/>
+
+                <!-- Save button -->
+                <Button x:Name="SaveButton" 
+                        Text="Lưu thay đổi"
+                        Command="{Binding SaveProfileCommand}"
+                        BackgroundColor="#512BD4" TextColor="White"
+                        FontSize="15" FontAttributes="Bold"
+                        CornerRadius="14" HeightRequest="50"
+                        Margin="18,16,18,0">
+                    <Button.Shadow>
+                        <Shadow Brush="#40512BD4" Offset="0,6" Radius="16"/>
+                    </Button.Shadow>
+                </Button>
+
+                <!-- Change password section -->
+                <Label Text="BẢO MẬT" Margin="22,28,22,8"
+                       FontSize="11" FontAttributes="Bold"
+                       TextColor="#94A3B8" CharacterSpacing="1"/>
+
+                <Border Margin="18,0" BackgroundColor="White"
+                        Stroke="#E8E3F5" StrokeThickness="1">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="18"/>
+                    </Border.StrokeShape>
+                    <Grid Padding="18,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <VerticalStackLayout Grid.Column="0" Spacing="2">
+                            <Label Text="Đổi mật khẩu" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
+                            <Label Text="Cập nhật mật khẩu của bạn" FontSize="11" TextColor="#94A3B8"/>
+                        </VerticalStackLayout>
+                        <Label Grid.Column="1" Text="›" FontSize="24"
+                               TextColor="#9B7FEA" VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnChangePasswordTapped"/>
+                            </Label.GestureRecognizers>
+                        </Label>
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnChangePasswordTapped"/>
+                        </Grid.GestureRecognizers>
+                    </Grid>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

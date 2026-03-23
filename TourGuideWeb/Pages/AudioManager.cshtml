@@ -24,7 +24,6 @@
                 <th>Điểm</th>
                 <th>Ngôn ngữ</th>
                 <th>Script</th>
-                <th>Audio URL</th>
                 <th>Hành động</th>
             </tr>
         </thead>
@@ -39,10 +38,6 @@
                         style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
                         title="@a.Script">
                         @(string.IsNullOrEmpty(a.Script) ? "—" : a.Script)
-                    </td>
-                    <td class="text-muted"
-                        style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                        @(string.IsNullOrEmpty(a.AudioUrl) ? "—" : a.AudioUrl)
                     </td>
                     <td>
                         <div class="action-group">
@@ -69,7 +64,7 @@
             @if (!Model.Audios.Any())
             {
                 <tr>
-                    <td colspan="6" class="empty-state">
+                    <td colspan="5" class="empty-state">
                         Chưa có audio nào.
                         <a href="#" onclick="openModal();return false;">Thêm mới</a>
                     </td>
@@ -109,6 +104,7 @@
                         <option value="vi">🇻🇳 Tiếng Việt</option>
                         <option value="en">🇺🇸 English</option>
                         <option value="ja">🇯🇵 日本語</option>
+                        <option value="zh">🇨🇳 中文</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -129,11 +125,6 @@
                             </button>
                         </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Audio URL <small class="text-muted">(tuỳ chọn)</small></label>
-                    <input type="text" name="AudioUrl" id="fAudioUrl" class="form-control"
-                           placeholder="audio/tenfile.mp3" />
                 </div>
             </div>
             <div class="modal-footer">
@@ -172,7 +163,7 @@
     </div>
 </div>
 
-@* Lưu data audio dưới dạng JSON an toàn trong script tag — tránh HTML encode trong attribute *@
+@* Data audio trong script tag — an toàn với ký tự đặc biệt tiếng Việt/Nhật/Trung *@
 <script id="audioData" type="application/json">
     @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Audios.Select(a => new {
         id = a.Id,
@@ -185,7 +176,6 @@
 </script>
 
 <script>
-    // Load data từ script tag — an toàn với mọi ký tự đặc biệt
     const AUDIOS = JSON.parse(document.getElementById('audioData').textContent);
 
     // ── Modal ──────────────────────────────────────────────────────────────────
@@ -208,7 +198,6 @@
         document.getElementById('fId').value       = a.id;
         document.getElementById('fPoiId').value    = a.poiId;
         document.getElementById('fLanguage').value = a.lang;
-        document.getElementById('fAudioUrl').value = a.url;
         document.getElementById('fScript').value   = a.script;
         document.getElementById('scriptCount').textContent = a.script.length;
         document.getElementById('modalTitle').textContent  = 'Sửa Audio';
@@ -227,84 +216,114 @@
         document.getElementById('fScript').addEventListener('input', function () {
             document.getElementById('scriptCount').textContent = this.value.length;
         });
+        // Preload voices
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices();
             window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
         }
     });
 
-    // ── TTS ────────────────────────────────────────────────────────────────────
+    // ── Dịch tự động qua Google Translate (free, không cần key) ──────────────
+    async function translateText(text, targetLang) {
+        if (targetLang === 'vi') return text; // script gốc là tiếng Việt, không cần dịch
+        try {
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+            const res  = await fetch(url);
+            const data = await res.json();
+            // Kết quả trả về dạng [[["text dịch","text gốc",...],...],...]
+            return data[0].map(x => x[0]).join('');
+        } catch {
+            return text; // Nếu lỗi mạng → đọc text gốc
+        }
+    }
+
+    // ── TTS core ──────────────────────────────────────────────────────────────
     let _tts = null;
     let _playingId = null;
 
-    function pickVoice(langCode) {
-        const voices = window.speechSynthesis.getVoices();
-        if (!voices.length) return null;
-        const prefix = langCode.toLowerCase();
-        const matched = voices.filter(v => v.lang.toLowerCase().startsWith(prefix));
-        if (matched.length) return matched.find(v => v.localService) || matched[0];
-        return null;
+    // Chờ voices load (Chrome/Edge cần thời gian load online voices)
+    function getVoices() {
+        return new Promise(resolve => {
+            const v = window.speechSynthesis.getVoices();
+            if (v.length > 0) { resolve(v); return; }
+            window.speechSynthesis.onvoiceschanged = () => {
+                resolve(window.speechSynthesis.getVoices());
+            };
+            // Timeout fallback 2s
+            setTimeout(() => resolve(window.speechSynthesis.getVoices()), 2000);
+        });
     }
 
-    function makeTtsUtterance(text, langCode) {
-        const u = new SpeechSynthesisUtterance(text);
-        const voice = pickVoice(langCode);
-        if (voice) { u.voice = voice; u.lang = voice.lang; }
-        else {
-            u.lang = langCode==='vi'?'vi-VN':langCode==='en'?'en-US':
-                     langCode==='ja'?'ja-JP':langCode==='zh'?'zh-CN':
-                     langCode==='ko'?'ko-KR':'vi-VN';
+    function pickVoice(voices, langCode) {
+        // Danh sách giọng ưu tiên cho từng ngôn ngữ — Google > Microsoft Online > Microsoft local
+        const prefs = {
+            'vi': ['Google Vietnamese', 'Microsoft Nam Minh Online', 'vi-VN-NamMinhNeural', 'Microsoft Hoai My Online', 'vi-VN-HoaiMyNeural'],
+            'en': ['Google US English', 'Microsoft Aria Online (Natural)', 'Microsoft Guy Online (Natural)', 'Microsoft David', 'Microsoft Zira'],
+            'ja': ['Google 日本語', 'Microsoft Nanami Online (Natural)', 'Microsoft Haruka', 'Microsoft Ichiro'],
+            'zh': ['Google 普通话（中国大陆）', 'Google Chinese (Simplified)', 'Microsoft Xiaoxiao Online (Natural)', 'Microsoft Yunxi Online (Natural)', 'Microsoft Huihui']
+        };
+
+        const list = prefs[langCode] || prefs['en'];
+
+        // Tìm theo tên chính xác hoặc tên chứa
+        for (const name of list) {
+            const found = voices.find(v => v.name === name || v.name.includes(name));
+            if (found) return found;
         }
+
+        // Fallback: tìm bất kỳ voice nào của ngôn ngữ đó
+        const prefix = { vi:'vi', en:'en', ja:'ja', zh:'zh' }[langCode] || 'en';
+        const matched = voices.filter(v => v.lang.toLowerCase().startsWith(prefix));
+        if (!matched.length) return null;
+
+        // Ưu tiên Online/Neural > Google > còn lại
+        return matched.find(v => v.name.includes('Online') || v.name.includes('Neural'))
+            || matched.find(v => v.name.includes('Google'))
+            || matched[0];
+    }
+
+    async function makeTtsUtterance(text, langCode) {
+        const u = new SpeechSynthesisUtterance(text);
+        const voices = await getVoices();
+        const voice  = pickVoice(voices, langCode);
+        if (voice) {
+            u.voice = voice;
+            u.lang  = voice.lang;
+        } else {
+            // Không có voice → set lang để browser tự chọn
+            u.lang = { vi:'vi-VN', en:'en-US', ja:'ja-JP', zh:'zh-CN' }[langCode] || 'en-US';
+        }
+        u.rate  = 1.0;
+        u.pitch = 1.0;
         return u;
     }
 
-    function toggleTts(id) {
+    // Nút nghe thử từng dòng bảng
+    async function toggleTts(id) {
+        if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
         const a = AUDIOS.find(x => x.id === id);
-        if (!a) return;
+        if (!a || !a.script) return;
         const btn = document.getElementById('ttsBtn-' + id);
 
-        // Nếu đang play → stop
         if (_playingId === id) { stopAllTts(); return; }
         stopAllTts();
 
-        // Ưu tiên phát file audio URL nếu có
-        if (a.url) {
-            const audio = new Audio(a.url);
-            _playingId = id;
-            if (btn) { btn.querySelector('i').className = 'bi bi-stop-circle'; btn.style.color = 'var(--accent)'; }
-            audio.play().catch(() => {
-                // Nếu file không tồn tại, fallback sang TTS
-                playTts(a, btn, id);
-            });
-            audio.onended = () => {
-                if (btn) { btn.querySelector('i').className = 'bi bi-play-circle'; btn.style.color = ''; }
-                _playingId = null;
-            };
-            // Lưu để stop được
-            _tts = { cancel: () => { audio.pause(); audio.currentTime = 0; } };
-            return;
-        }
-
-        // Không có URL → dùng TTS
-        playTts(a, btn, id);
-    }
-
-    function playTts(a, btn, id) {
-        if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
-        if (!a.script) return;
-        _tts = makeTtsUtterance(a.script, a.lang);
         _playingId = id;
         if (btn) { btn.querySelector('i').className = 'bi bi-stop-circle'; btn.style.color = 'var(--accent)'; }
-        _tts.onend = _tts.onerror = () => {
+
+        // Dịch script sang ngôn ngữ đã chọn trước khi đọc
+        const translated = await translateText(a.script, a.lang);
+        const u = await makeTtsUtterance(translated, a.lang);
+        _tts = u;
+        u.onend = u.onerror = () => {
             if (btn) { btn.querySelector('i').className = 'bi bi-play-circle'; btn.style.color = ''; }
             _tts = null; _playingId = null;
         };
-        window.speechSynthesis.speak(_tts);
+        window.speechSynthesis.speak(u);
     }
 
     function stopAllTts() {
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        if (_tts && typeof _tts.cancel === 'function') _tts.cancel();
+        window.speechSynthesis.cancel();
         if (_playingId !== null) {
             const btn = document.getElementById('ttsBtn-' + _playingId);
             if (btn) { btn.querySelector('i').className = 'bi bi-play-circle'; btn.style.color = ''; }
@@ -312,16 +331,21 @@
         _tts = null; _playingId = null;
     }
 
-    function previewTtsModal() {
+    // Nút nghe thử trong modal
+    async function previewTtsModal() {
         const s = document.getElementById('fScript').value.trim();
         if (!s) { alert('Chưa có script.'); return; }
         if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
         stopTts();
         const lang = document.getElementById('fLanguage').value || 'vi';
-        _tts = makeTtsUtterance(s, lang);
-        _tts.onstart = () => document.getElementById('stopBtn').style.display = 'inline-flex';
-        _tts.onend = _tts.onerror = () => { document.getElementById('stopBtn').style.display = 'none'; _tts = null; };
-        window.speechSynthesis.speak(_tts);
+
+        // Dịch trước rồi mới đọc
+        const translated = await translateText(s, lang);
+        const u = await makeTtsUtterance(translated, lang);
+        _tts = u;
+        u.onstart = () => document.getElementById('stopBtn').style.display = 'inline-flex';
+        u.onend = u.onerror = () => { document.getElementById('stopBtn').style.display = 'none'; _tts = null; };
+        window.speechSynthesis.speak(u);
     }
 
     function stopTts() {
