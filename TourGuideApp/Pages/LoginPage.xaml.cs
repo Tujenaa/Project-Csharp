@@ -49,12 +49,12 @@ public partial class LoginPage : ContentPage
 
     private async void OnLoginClicked(object sender, EventArgs e)
     {
-        var email = LoginEmailEntry.Text?.Trim();
-        var password = LoginPasswordEntry.Text;
+        var username = LoginUsernameEntry.Text?.Trim();
+        var password = LoginPasswordEntry.Text?.Trim();
 
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
-            ShowLoginError("Vui lòng nhập email và mật khẩu.");
+            ShowLoginError("Vui lòng nhập username và mật khẩu.");
             return;
         }
 
@@ -62,12 +62,12 @@ public partial class LoginPage : ContentPage
 
         try
         {
-            bool ok = await AuthService.LoginAsync(email, password);
+            bool ok = await AuthService.LoginAsync(username, password);
 
             if (ok)
                 GoToShell();
             else
-                ShowLoginError("Email hoặc mật khẩu không đúng.");
+                ShowLoginError("Username hoặc mật khẩu không đúng.");
         }
         catch (Exception ex)
         {
@@ -84,23 +84,32 @@ public partial class LoginPage : ContentPage
 
     private async void OnRegisterClicked(object sender, EventArgs e)
     {
+        var username = RegUsernameEntry.Text?.Trim();
         var name = RegNameEntry.Text?.Trim();
         var email = RegEmailEntry.Text?.Trim();
         var password = RegPasswordEntry.Text;
         var confirm = RegConfirmPasswordEntry.Text;
 
+        if (string.IsNullOrEmpty(username))
+        {
+            ShowRegError("Vui lòng nhập username."); return;
+        }
+
         if (string.IsNullOrEmpty(name))
         {
             ShowRegError("Vui lòng nhập họ tên."); return;
         }
+
         if (string.IsNullOrEmpty(email))
         {
             ShowRegError("Vui lòng nhập email."); return;
         }
+
         if (string.IsNullOrEmpty(password) || password.Length < 6)
         {
             ShowRegError("Mật khẩu phải ít nhất 6 ký tự."); return;
         }
+
         if (password != confirm)
         {
             ShowRegError("Mật khẩu xác nhận không khớp."); return;
@@ -110,7 +119,7 @@ public partial class LoginPage : ContentPage
 
         try
         {
-            bool ok = await AuthService.RegisterAsync(name, email, password);
+            bool ok = await AuthService.RegisterAsync(username, name, email, password);
 
             if (ok)
                 GoToShell();
@@ -148,9 +157,6 @@ public partial class LoginPage : ContentPage
         RegPasswordEntry.IsPassword = !RegPasswordEntry.IsPassword;
         RegTogglePwdLabel.Text = RegPasswordEntry.IsPassword ? "👁" : "🙈";
     }
-
-    private async void OnForgotPasswordTapped(object sender, EventArgs e)
-        => await DisplayAlert("Quên mật khẩu", "Tính năng đặt lại mật khẩu sẽ sớm được hỗ trợ.", "OK");
 
     private void ShowLoginError(string msg)
     {

@@ -13,7 +13,6 @@
             <RowDefinition Height="270"/>
         </Grid.RowDefinitions>
 
-        <!-- ═══ Row 0: Map + FAB ═══════════════════════════════════════════ -->
         <Grid Grid.Row="0">
             <WebView x:Name="mapWebView"
                      HorizontalOptions="Fill" VerticalOptions="Fill"

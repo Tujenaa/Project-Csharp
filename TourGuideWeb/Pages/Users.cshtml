@@ -15,12 +15,11 @@
 
 <div class="page-header">
     <div><h2>Người dùng</h2></div>
-    <button class="btn btn-primary" onclick="openModal()">
+    <button class="btn btn-primary" onclick="openAddModal()">
         <i class="bi bi-person-plus"></i> Thêm người dùng
     </button>
 </div>
 
-<!-- Tabs lọc theo role -->
 <div class="user-tabs">
     <button class="utab active" onclick="filterRole('ALL', this)">
         Tất cả <span class="utab-count">@Model.Users.Count</span>
@@ -59,30 +58,29 @@
                         <strong>@u.Username</strong>
                     </td>
                     <td>
-                        @if (u.Role == "ADMIN")
-                        {
-                            <span class="badge badge-red">ADMIN</span>
-                        }
-                        else if (u.Role == "OWNER")
-                        {
-                            <span class="badge badge-blue">OWNER</span>
-                        }
-                        else
-                        {
-                            <span class="badge badge-green">CUSTOMER</span>
-                        }
+                        <!-- Admin đổi role trực tiếp bằng dropdown -->
+                        <form method="post" asp-page-handler="ChangeRole" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ChangeId" value="@u.Id" />
+                            <select name="NewRole" class="role-select role-dd"
+                                    data-current="@u.Role"
+                                    onchange="this.form.submit()"
+                                    style="background:transparent;border:1px solid rgba(155,127,234,.3);border-radius:6px;padding:3px 8px;font-size:12px;font-family:var(--font);cursor:pointer;color:var(--text)">
+                                <option value="ADMIN">ADMIN</option>
+                                <option value="OWNER">OWNER</option>
+                                <option value="CUSTOMER">CUSTOMER</option>
+                            </select>
+                        </form>
                     </td>
                     <td>
-                        <label class="toggle-switch" title="Bật/tắt tài khoản">
+                        <label class="toggle-switch">
                             <input type="checkbox" checked onchange="toggleActive(this, @u.Id)" />
                             <span class="toggle-track"><span class="toggle-thumb"></span></span>
                         </label>
                     </td>
                     <td>
                         <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
-                                data-del-id="@u.Id"
-                                data-del-name="@u.Username"
-                                data-del-role="@u.Role"
+                                data-del-id="@u.Id" data-del-name="@u.Username" data-del-role="@u.Role"
                                 onclick="confirmDelete(this)">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -98,12 +96,12 @@
 </div>
 
 <!-- Modal thêm -->
-<div id="userModal" class="modal-backdrop" style="display:none"
-     onclick="if(event.target===this)closeModal()">
+<div id="addModal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeAddModal()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h4>Thêm người dùng</h4>
-            <button type="button" class="btn btn-ghost btn-icon" onclick="closeModal()">
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeAddModal()">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
@@ -112,8 +110,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label">Tên đăng nhập <span class="required">*</span></label>
-                    <input type="text" name="Username" class="form-control" required maxlength="100"
-                           placeholder="VD: nguyen_owner" />
+                    <input type="text" name="Username" class="form-control" required maxlength="100" placeholder="VD: nguyen_owner" />
                 </div>
                 <div class="form-group">
                     <label class="form-label">Mật khẩu <span class="required">*</span></label>
@@ -129,10 +126,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg"></i> Tạo
-                </button>
+                <button type="button" class="btn btn-ghost" onclick="closeAddModal()">Huỷ</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Tạo</button>
             </div>
         </form>
     </div>
@@ -165,10 +160,14 @@
     </div>
 </div>
 
-
 <script>
-    function openModal()  { document.getElementById('userModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('userModal').style.display = 'none'; }
+    // Set giá trị hiện tại cho dropdown role
+    document.querySelectorAll('.role-dd').forEach(sel => {
+        sel.value = sel.dataset.current;
+    });
+
+    function openAddModal()  { document.getElementById('addModal').style.display = 'flex'; }
+    function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
 
     function confirmDelete(btn) {
         document.getElementById('fDelId').value        = btn.dataset.delId;
@@ -194,6 +193,6 @@
     }
 
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') { closeModal(); closeDelete(); }
+        if (e.key === 'Escape') { closeAddModal(); closeDelete(); }
     });
 </script>

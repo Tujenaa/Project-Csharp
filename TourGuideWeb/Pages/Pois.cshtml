@@ -153,8 +153,22 @@
                             <div class="form-hint">Vùng kích hoạt thuyết minh</div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Owner ID</label>
-                            <input type="number" name="OwnerId" id="fOwnerId" class="form-control" placeholder="Để trống = không có" />
+                            <label class="form-label">Chủ sở hữu</label>
+                            @if (Model.IsAdmin)
+                            {
+                                <select name="OwnerId" id="fOwnerId" class="form-control">
+                                    <option value="">-- Không có --</option>
+                                    @foreach (var o in Model.Owners)
+                                    {
+                                        <option value="@o.Id">@o.Username (#@o.Id)</option>
+                                    }
+                                </select>
+                            }
+                            else
+                            {
+                                <input type="hidden" name="OwnerId" id="fOwnerId" value="@Model.MyUserIdVal" />
+                                <input type="text" class="form-control" value="#@Model.MyUserIdVal — @(HttpContext.Session.GetString("Username"))" readonly disabled style="opacity:.6;cursor:not-allowed" />
+                            }
                         </div>
                     </div>
                 </div>
@@ -228,10 +242,10 @@
     })).Replace("'", "\\'"))');
 
     const IMGS = [
-        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80',
-        'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80',
-        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400&q=80',
-        'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&q=80',
+        '/image/hinh1.jpg',
+        '/image/hinh2.jpg',
+        '/image/hinh3.jpg',
+        '/image/hinh4.jpg',
         'https://images.unsplash.com/photo-1476224203421-9ac39bcb3df1?w=400&q=80',
     ];
 
@@ -290,7 +304,6 @@
     function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg); }
     function deleteCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) confirmDelete(p.id,p.name); }
 
-    // Bỏ dấu tiếng Việt để tìm kiếm không phân biệt dấu
     function removeDiacritics(str){
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     }

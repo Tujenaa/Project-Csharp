@@ -114,14 +114,14 @@
 
                     <VerticalStackLayout Padding="12,14" Spacing="4">
                         <Label
-                            Text="{Binding AudioCount}"
+                            Text=""
                             FontSize="20"
                             FontAttributes="Bold"
                             TextColor="#1A1035"
                             HorizontalOptions="Center"/>
 
                         <Label
-                            Text="Audio"
+                            Text="Khoảng cách đến nơi gần nhất"
                             FontSize="11"
                             TextColor="#6B7280"
                             HorizontalOptions="Center"/>

@@ -93,17 +93,24 @@
                                TextColor="#6B7280" Margin="0,0,0,22"/>
 
                         <!-- Email -->
-                        <Label Text="EMAIL" FontSize="11" FontAttributes="Bold"
-                               TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
+                        <Label Text="USERNAME" FontSize="11" FontAttributes="Bold"
+                             TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
+
                         <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5"
                                 Margin="0,0,0,14">
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="13"/>
                             </Border.StrokeShape>
-                            <Entry x:Name="LoginEmailEntry" Placeholder="email@example.com"
-                                   PlaceholderColor="#B0ADBB" TextColor="#1A1035"
-                                   FontSize="15" Keyboard="Email"
-                                   BackgroundColor="Transparent" Margin="6,0" HeightRequest="48"/>
+
+                            <Entry x:Name="LoginUsernameEntry"
+                               Placeholder="Nhập username"
+                               PlaceholderColor="#B0ADBB"
+                               TextColor="#1A1035"
+                               FontSize="15"
+                               Keyboard="Default"   
+                               BackgroundColor="Transparent"
+                               Margin="6,0"
+                               HeightRequest="48"/> 
                         </Border>
 
                         <!-- Password -->
@@ -133,13 +140,7 @@
                             </Grid>
                         </Border>
 
-                        <!-- Forgot password -->
-                        <Label Text="Quên mật khẩu?" FontSize="12" FontAttributes="Bold"
-                               TextColor="#512BD4" HorizontalOptions="End" Margin="0,0,0,20">
-                            <Label.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnForgotPasswordTapped"/>
-                            </Label.GestureRecognizers>
-                        </Label>
+                       
 
                         <!-- Error -->
                         <Label x:Name="LoginErrorLabel" Text="" FontSize="12" TextColor="#E94560"
@@ -192,7 +193,24 @@
                                TextColor="#1A1035" Margin="0,0,0,3"/>
                         <Label Text="Đăng ký để khám phá thế giới xung quanh" FontSize="13"
                                TextColor="#6B7280" Margin="0,0,0,22"/>
+                        <!--Username-->
+                        <Label Text="USERNAME" FontSize="11" FontAttributes="Bold"
+                               TextColor="#94A3B8" Margin="0,0,0,6"/>
 
+                        <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5"
+                                Margin="0,0,0,14">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="13"/>
+                            </Border.StrokeShape>
+
+                            <Entry x:Name="RegUsernameEntry"
+                               Placeholder="Nhập username"
+                               Keyboard="Default"
+                               BackgroundColor="Transparent"
+                               Margin="6,0"
+                               HeightRequest="48"
+                               TextColor="#1A1035"/>     
+                        </Border>
                         <!-- Full name -->
                         <Label Text="HỌ TÊN" FontSize="11" FontAttributes="Bold"
                                TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>

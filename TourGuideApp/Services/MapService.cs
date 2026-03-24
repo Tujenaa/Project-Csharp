@@ -107,6 +107,7 @@ function setPOIs(jsonArray) {
     poiMarkers.push(m);
   });
 
+/* ❌ TẮT NAV ROUTE
   // Đường nối giữa các POI (tím, nét đứt)
   if (pois.length >= 2) {
     const latlngs = pois.map(p => [p.latitude, p.longitude]);
@@ -114,6 +115,7 @@ function setPOIs(jsonArray) {
       color: '#512BD4', weight: 4, opacity: 0.75, dashArray: '8,5'
     }).addTo(map);
   }
+*/
 
   // Đường chỉ đường từ user → poi đầu tiên (đỏ)
   if (userLatLng) {

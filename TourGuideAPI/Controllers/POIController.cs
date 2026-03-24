@@ -13,7 +13,7 @@ namespace TourGuideAPI.Controllers
         private readonly AppDbContext _context;
         public POIController(AppDbContext context) => _context = context;
 
-        // ── APP: GET /api/poi — trả về POIDto kèm audio ──
+        // ── APP: GET /api/poi ──
         [HttpGet]
         public async Task<IActionResult> GetPOI()
         {
@@ -32,8 +32,7 @@ namespace TourGuideAPI.Controllers
                     Longitude = p.Longitude,
                     Radius = p.Radius,
                     Script = a != null && !string.IsNullOrWhiteSpace(a.Script)
-                    ? a.Script
-                    : p.Description
+                                  ? a.Script : p.Description
                 }
             ).ToListAsync();
             return Ok(data);
@@ -76,11 +75,9 @@ namespace TourGuideAPI.Controllers
                     Longitude = p.Longitude,
                     Radius = p.Radius,
                     Script = a != null && !string.IsNullOrWhiteSpace(a.Script)
-                        ? a.Script
-                        : p.Description
+                                  ? a.Script : p.Description
                 }
             ).ToListAsync();
-
             return Ok(data);
         }
 
@@ -92,8 +89,12 @@ namespace TourGuideAPI.Controllers
         [HttpGet("audio-count")]
         public IActionResult GetAudioCount() => Ok(_context.History.Count());
 
-        // ── WEB: GET /api/poi/owner/{ownerId} — POI của 1 owner ──
-        // Khai báo TRƯỚC {id} để tránh conflict route
+        // ── WEB ADMIN: GET /api/poi/all — trả POI đầy đủ (có OwnerId) cho web ──
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll() =>
+            Ok(await _context.POI.ToListAsync());
+
+        // ── WEB: GET /api/poi/owner/{ownerId} ──
         [HttpGet("owner/{ownerId}")]
         public async Task<IActionResult> GetByOwner(int ownerId) =>
             Ok(await _context.POI.Where(p => p.OwnerId == ownerId).ToListAsync());

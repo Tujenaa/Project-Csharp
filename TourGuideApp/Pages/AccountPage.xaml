@@ -69,7 +69,20 @@
                         <RoundRectangle CornerRadius="18"/>
                     </Border.StrokeShape>
                     <VerticalStackLayout Padding="20,18" Spacing="0">
-
+                        <Label Text="TÊN ĐĂNG NHẬP" FontSize="11" FontAttributes="Bold"
+                               TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
+                        <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5"
+                                Margin="0,0,0,16">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="13"/>
+                            </Border.StrokeShape>
+                            <Entry x:Name="UsernameEntry" 
+                                   Text="{Binding Username}"
+                                   PlaceholderColor="#1A1035" TextColor="#1A1035"
+                                   FontSize="15" BackgroundColor="Transparent"
+                                   Margin="6,0" HeightRequest="48"
+                                   IsEnabled="False"/>        
+                        </Border>
                         <!-- Full name -->
                         <Label Text="HỌ TÊN" FontSize="11" FontAttributes="Bold"
                                TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
@@ -78,7 +91,8 @@
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="13"/>
                             </Border.StrokeShape>
-                            <Entry x:Name="NameEntry" Placeholder="Nhập họ tên"
+                            <Entry x:Name="NameEntry" 
+                                   Text="{Binding Name}"
                                    PlaceholderColor="#B0ADBB" TextColor="#1A1035"
                                    FontSize="15" BackgroundColor="Transparent"
                                    Margin="6,0" HeightRequest="48"/>
@@ -92,11 +106,13 @@
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="13"/>
                             </Border.StrokeShape>
-                            <Entry x:Name="EmailEntry" Placeholder="email@example.com"
+                            <Entry x:Name="EmailEntry" 
+                                   Text="{Binding Email}"
                                    PlaceholderColor="#B0ADBB" TextColor="#6B7280"
                                    FontSize="15" Keyboard="Email" IsReadOnly="True"
                                    BackgroundColor="Transparent"
-                                   Margin="6,0" HeightRequest="48"/>
+                                   Margin="6,0" HeightRequest="48"
+                                   IsEnabled="False"/>
                         </Border>
 
                         <!-- Phone -->
@@ -107,23 +123,26 @@
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="13"/>
                             </Border.StrokeShape>
-                            <Entry x:Name="PhoneEntry" Placeholder="0901 234 567"
-                                   PlaceholderColor="#B0ADBB" TextColor="#1A1035"
+                            <Entry x:Name="PhoneEntry" 
+                                   Text="{Binding Phone}"
+                                   PlaceholderColor="#1A1035" TextColor="#1A1035"
                                    FontSize="15" Keyboard="Telephone"
                                    BackgroundColor="Transparent"
                                    Margin="6,0" HeightRequest="48"/>
                         </Border>
 
-                        <Label Text="Email không thể thay đổi sau khi đăng ký."
+                        <Label Text="Tên đăng nhập và Email không thể thay đổi sau khi đăng ký."
                                FontSize="11" TextColor="#94A3B8" Margin="4,6,0,0"/>
                     </VerticalStackLayout>
                 </Border>
 
                 <!-- Error/success message -->
-                <Label x:Name="StatusLabel" Text="" FontSize="13"
-                       TextColor="#E94560" IsVisible="False"
-                       HorizontalOptions="Center" Margin="18,12,18,0"
-                       HorizontalTextAlignment="Center"/>
+                <Label 
+                    Text="{Binding StatusMessage}"
+                    TextColor="Green"
+                    IsVisible="{Binding HasMessage}"
+                    HorizontalOptions="Center"
+                    Margin="12,6"/>
 
                 <!-- Save button -->
                 <Button x:Name="SaveButton" 

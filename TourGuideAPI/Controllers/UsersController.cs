@@ -16,7 +16,15 @@ namespace TourGuideAPI.Controllers
         public async Task<IActionResult> GetAll() =>
             Ok(await _context.Users.ToListAsync());
 
-        [HttpGet("{id}")]
+        [HttpGet("owners")]
+        public async Task<IActionResult> GetOwners() =>
+            Ok(await _context.Users.Where(u => u.Role == "OWNER").ToListAsync());
+
+        [HttpGet("customers")]
+        public async Task<IActionResult> GetCustomers() =>
+            Ok(await _context.Users.Where(u => u.Role == "CUSTOMER").ToListAsync());
+
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -26,12 +34,28 @@ namespace TourGuideAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] User user)
         {
+            // Admin được tạo cả 3 role: ADMIN, OWNER, CUSTOMER
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return Ok(user);
         }
 
-        [HttpDelete("{id}")]
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(int id, [FromBody] User user)
+        {
+            var existing = await _context.Users.FindAsync(id);
+            if (existing == null) return NotFound();
+            existing.Username = user.Username;
+            existing.PasswordHash = string.IsNullOrWhiteSpace(user.PasswordHash) ? existing.PasswordHash : user.PasswordHash;
+            existing.Role = user.Role;
+            existing.Name = user.Name;
+            existing.Email = user.Email;
+            existing.Phone = user.Phone;
+            await _context.SaveChangesAsync();
+            return Ok(existing);
+        }
+
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
             var user = await _context.Users.FindAsync(id);
@@ -39,6 +63,73 @@ namespace TourGuideAPI.Controllers
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return Ok();
+        }
+
+
+        // ── APP: GET /api/users/login ── Đăng nhập (chỉ CUSTOMER)
+        [HttpPost("login")]
+        public IActionResult Login([FromBody] UserLoginRequest req)
+        {
+            var user = _context.Users
+                .FirstOrDefault(x => x.Username == req.Username);
+
+            if (user == null)
+                return Unauthorized("Sai username");
+
+            if (req.Password != user.PasswordHash)
+                return Unauthorized("Sai mật khẩu");
+
+            if (user.Role != "CUSTOMER")
+                return Unauthorized("Chỉ CUSTOMER được login");
+
+            return Ok(new
+            {
+                user.Id,
+                user.Username, // thêm dòng này
+                user.Name,
+                user.Email,
+                user.Phone,
+                user.Role
+            });
+        }
+
+        // ── APP: POST /api/users/register ── Đăng ký (tự động CUSTOMER)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] User user)
+        {
+            // check username tồn tại
+            if (_context.Users.Any(x => x.Username == user.Username))
+                return BadRequest("Username đã tồn tại");
+
+            user.Role = "CUSTOMER";
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                user.Id,
+                user.Username, // thêm dòng này
+                user.Name,
+                user.Email,
+                user.Phone,
+                user.Role
+            });
+        }
+
+        // ── APP: PUT /api/users/{id} ── Cập nhật thông tin (chỉ CUSTOMER)
+        [HttpPut("customer/{id}")]
+        public async Task<IActionResult> UpdateCustomer(int id, [FromBody] User updated)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            user.Name = updated.Name;
+            user.Phone = updated.Phone;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(user);
         }
     }
 }

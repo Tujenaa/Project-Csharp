@@ -1,0 +1,198 @@
+﻿@page
+@model GPSGuide.Web.Pages.ProfileModel
+@{
+    ViewData["Title"] = "Thông tin cá nhân"; ViewData["Active"] = "profile";
+}
+
+@if (!string.IsNullOrEmpty(Model.Msg))
+{
+    <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
+}
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
+}
+
+<div class="page-header">
+    <div><h2>Thông tin cá nhân</h2></div>
+</div>
+
+<div class="profile-wrap">
+    <div class="profile-side">
+        <div class="profile-avatar-card">
+            <div class="profile-avatar">@Model.CurrentUsername.Substring(0, 1).ToUpper()</div>
+            <div class="profile-uname">@Model.CurrentUsername</div>
+            <span class="profile-role-badge">OWNER</span>
+            @if (!string.IsNullOrEmpty(Model.Info?.Name))
+            {
+                <div class="profile-displayname">@Model.Info.Name</div>
+            }
+            @if (!string.IsNullOrEmpty(Model.Info?.Email))
+            {
+                <div class="profile-meta"><i class="bi bi-envelope"></i> @Model.Info.Email</div>
+            }
+            @if (!string.IsNullOrEmpty(Model.Info?.Phone))
+            {
+                <div class="profile-meta"><i class="bi bi-telephone"></i> @Model.Info.Phone</div>
+            }
+        </div>
+    </div>
+
+    <div class="profile-main">
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <div class="profile-section">
+                <div class="profile-section-title">
+                    <i class="bi bi-shield-lock"></i> Tài khoản
+                </div>
+                <div class="profile-fields">
+                    <div class="form-group">
+                        <label class="form-label">Tên đăng nhập</label>
+                        <input type="text" name="NewUsername" class="form-control" value="@Model.CurrentUsername" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mật khẩu mới <small class="text-muted">(để trống = giữ nguyên)</small></label>
+                        <input type="password" name="NewPassword" class="form-control" placeholder="••••••••" />
+                    </div>
+                </div>
+            </div>
+            <div class="profile-section">
+                <div class="profile-section-title">
+                    <i class="bi bi-person"></i> Thông tin cá nhân
+                </div>
+                <div class="profile-fields">
+                    <div class="form-group">
+                        <label class="form-label">Tên hiển thị</label>
+                        <input type="text" name="Name" class="form-control" value="@(Model.Info?.Name ?? "")" placeholder="Nguyễn Văn A" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="Email" class="form-control" value="@(Model.Info?.Email ?? "")" placeholder="email@example.com" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Số điện thoại</label>
+                        <input type="text" name="Phone" class="form-control" value="@(Model.Info?.Phone ?? "")" placeholder="09xxxxxxxx" />
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:center;padding-top:8px">
+                <button type="submit" class="btn btn-primary" style="padding:10px 48px;font-size:14px">
+                    <i class="bi bi-check-lg"></i> Lưu thay đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .profile-wrap {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .profile-avatar-card {
+        background: linear-gradient(160deg,#2D1B6E,#1a0f40);
+        border: 1px solid rgba(155,127,234,.3);
+        border-radius: 16px;
+        padding: 28px 20px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .profile-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: linear-gradient(135deg,#9B7FEA,#512BD4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: 700;
+        color: #fff;
+        box-shadow: 0 4px 20px rgba(81,43,212,.4);
+        margin-bottom: 4px;
+    }
+
+    .profile-uname {
+        font-size: 16px;
+        font-weight: 700;
+        color: #f8d7da;
+    }
+
+    .profile-role-badge {
+        background: rgba(155,127,234,.2);
+        color: #c4b0ff;
+        border: 1px solid rgba(155,127,234,.3);
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-family: var(--mono);
+    }
+
+    .profile-displayname {
+        font-size: 13px;
+        color: #f0a8b0;
+        margin-top: 4px;
+    }
+
+    .profile-meta {
+        font-size: 12px;
+        color: rgba(240,168,176,.7);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+        .profile-meta i {
+            color: #9B7FEA;
+        }
+
+    .profile-main {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .profile-section {
+        background: rgba(45,27,110,.4);
+        border: 1px solid rgba(155,127,234,.25);
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 16px;
+    }
+
+    .profile-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #f0a8b0;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(155,127,234,.2);
+    }
+
+        .profile-section-title i {
+            color: #9B7FEA;
+            font-size: 15px;
+        }
+
+    .profile-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+        .profile-fields .form-group {
+            margin-bottom: 0;
+        }
+</style>

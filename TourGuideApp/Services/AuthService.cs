@@ -1,14 +1,16 @@
-﻿namespace TourGuideApp.Services;
+﻿using System.Net.Http.Json;
+using TourGuideApp.Models;
+namespace TourGuideApp.Services;
 
 public static class AuthService
 {
+    private const string KeyUsername = "user_username";
     private const string KeyToken = "user_token";
     private const string KeyEmail = "user_email";
     private const string KeyName = "user_name";
     private const string KeyPhone = "user_phone";
-
-    // ─── Read ────────────────────────────────────────────────────────────────
     public static bool IsLoggedIn => Preferences.ContainsKey(KeyToken);
+    public static string Username => Preferences.Get(KeyUsername, string.Empty);
     public static string Email => Preferences.Get(KeyEmail, string.Empty);
     public static string Name => Preferences.Get(KeyName, "Người dùng");
     public static string Phone => Preferences.Get(KeyPhone, string.Empty);
@@ -21,59 +23,95 @@ public static class AuthService
         }
     }
 
-    // ─── Write ───────────────────────────────────────────────────────────────
-
-    /// <summary>Simulated login. Returns true on success.</summary>
-    public static async Task<bool> LoginAsync(string email, string password)
+    // Đang nhập bằng username 
+    public static async Task<bool> LoginAsync(string username, string password)
     {
-        await Task.Delay(800); // simulate network
+        try
+        {
+            var api = new ApiService();
 
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+            var user = await api.Login(username, password);
+
+            if (user == null)
+                return false;
+
+            Preferences.Set(KeyToken, Guid.NewGuid().ToString());
+            Preferences.Set(KeyUsername, user.Username);
+            Preferences.Set(KeyEmail, user.Email);
+            Preferences.Set(KeyName, user.Name);
+            Preferences.Set(KeyPhone, user.Phone);
+
+            Preferences.Set("user_id", user.Id); 
+
+            return true;
+        }
+        catch
+        {
             return false;
-
-        // TODO: replace with real API call
-        Preferences.Set(KeyToken, Guid.NewGuid().ToString());
-        Preferences.Set(KeyEmail, email.Trim());
-
-        var existing = Preferences.Get(KeyName, string.Empty);
-        if (string.IsNullOrEmpty(existing))
-            Preferences.Set(KeyName, email.Split('@')[0]);
-
-        return true;
+        }
     }
 
-    /// <summary>Simulated registration. Returns true on success.</summary>
-    public static async Task<bool> RegisterAsync(string name, string email, string password)
+    // Đăng ký bằng username, email, password
+    public static async Task<bool> RegisterAsync(string username, string name, string email, string password)
     {
-        await Task.Delay(800); // simulate network
+        try
+        {
+            var api = new ApiService();
 
-        if (string.IsNullOrWhiteSpace(name) ||
-            string.IsNullOrWhiteSpace(email) ||
-            string.IsNullOrWhiteSpace(password))
+            var user = await api.Register(username, name, email, password);
+
+            if (user == null)
+                return false;
+
+            Preferences.Set(KeyToken, Guid.NewGuid().ToString());
+            Preferences.Set(KeyEmail, user.Email);
+            Preferences.Set(KeyName, user.Name);
+            Preferences.Set(KeyPhone, user.Phone);
+
+            Preferences.Set("user_id", user.Id); 
+
+            return true;
+        }
+        catch
+        {
             return false;
-
-        // TODO: replace with real API call
-        Preferences.Set(KeyToken, Guid.NewGuid().ToString());
-        Preferences.Set(KeyEmail, email.Trim());
-        Preferences.Set(KeyName, name.Trim());
-
-        return true;
+        }
     }
 
-    /// <summary>Update profile fields.</summary>
-    public static void UpdateProfile(string name, string phone)
+    // Cập nhật thông tin người dùng (chỉ name và phone)
+    public static async Task<bool> UpdateProfileAsync(string name, string phone)
     {
-        if (!string.IsNullOrWhiteSpace(name))
-            Preferences.Set(KeyName, name.Trim());
+        try
+        {
+            var api = new ApiService();
+            var userId = Preferences.Get("user_id", 0);
 
-        Preferences.Set(KeyPhone, phone?.Trim() ?? string.Empty);
+            if (userId == 0) return false;
+
+            var ok = await api.UpdateProfile(userId, name, phone);
+
+            if (!ok) return false;
+
+            // update local
+            Preferences.Set(KeyName, name);
+            Preferences.Set(KeyPhone, phone);
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
-
+    // Đăng xuất
     public static void Logout()
     {
+        Preferences.Remove(KeyUsername);
         Preferences.Remove(KeyToken);
         Preferences.Remove(KeyEmail);
         Preferences.Remove(KeyName);
         Preferences.Remove(KeyPhone);
+        Preferences.Remove("user_id");
+        Preferences.Remove(KeyUsername);
     }
 }

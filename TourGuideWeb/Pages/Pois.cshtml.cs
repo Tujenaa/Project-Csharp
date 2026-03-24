@@ -14,6 +14,7 @@ public class PoisModel : PageModel
     [TempData] public string Error { get; set; } = "";
 
     public IList<POI> Pois { get; private set; } = new List<POI>();
+    public IList<OwnerItem> Owners { get; private set; } = new List<OwnerItem>(); // cho admin dropdown
 
     [BindProperty] public int Id { get; set; }
     [BindProperty] public string Name { get; set; } = "";
@@ -26,11 +27,10 @@ public class PoisModel : PageModel
     [BindProperty] public int DeleteId { get; set; }
 
     private HttpClient Api => _http.CreateClient("API");
-
-    // Lấy role và userId từ session
     private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
-    private bool IsAdmin => Role == "ADMIN";
+    public bool IsAdmin => Role == "ADMIN";
     private int? MyUserId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
+    public int MyUserIdVal => MyUserId ?? 0;
 
     public async Task OnGetAsync()
     {
@@ -38,19 +38,15 @@ public class PoisModel : PageModel
         {
             if (IsAdmin)
             {
-                // Admin thấy tất cả POI
-                Pois = await Api.GetFromJsonAsync<List<POI>>("poi") ?? new List<POI>();
+                Pois = await Api.GetFromJsonAsync<List<POI>>("poi/all") ?? [];
+                Owners = await Api.GetFromJsonAsync<List<OwnerItem>>("users/owners") ?? [];
             }
             else
             {
-                // Owner chỉ thấy POI của mình
-                Pois = await Api.GetFromJsonAsync<List<POI>>($"poi/owner/{MyUserId}") ?? new List<POI>();
+                Pois = await Api.GetFromJsonAsync<List<POI>>($"poi/owner/{MyUserId}") ?? [];
             }
         }
-        catch (Exception ex)
-        {
-            Error = "Không kết nối được API: " + ex.Message;
-        }
+        catch (Exception ex) { Error = "Không kết nối được API: " + ex.Message; }
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -62,8 +58,8 @@ public class PoisModel : PageModel
         double lng = double.TryParse(lngStr, System.Globalization.NumberStyles.Any,
                          System.Globalization.CultureInfo.InvariantCulture, out var lgv) ? lgv : Longitude;
 
-        // Owner chỉ được thêm POI với OwnerId = chính mình
-        var ownerId = IsAdmin ? OwnerId : MyUserId;
+        // Owner luôn dùng ID của mình, không cho nhập tay
+        var ownerId = IsAdmin ? (OwnerId > 0 ? OwnerId : null) : MyUserId;
 
         var body = new POI
         {
@@ -87,7 +83,6 @@ public class PoisModel : PageModel
             }
             else
             {
-                // Owner chỉ được sửa POI của mình
                 if (!IsAdmin)
                 {
                     var existing = await Api.GetFromJsonAsync<POI>($"poi/{Id}");
@@ -97,11 +92,11 @@ public class PoisModel : PageModel
                 resp = await Api.PutAsJsonAsync($"poi/{Id}", body);
                 Msg = $"Đã cập nhật \"{Name}\" thành công.";
             }
-
             if (!resp.IsSuccessStatusCode)
             {
                 var detail = await resp.Content.ReadAsStringAsync();
                 Error = $"API lỗi {(int)resp.StatusCode}: {detail}";
+                Msg = "";
             }
         }
         catch (Exception ex) { Error = "Lỗi kết nối API: " + ex.Message; }
@@ -113,22 +108,19 @@ public class PoisModel : PageModel
     {
         try
         {
-            // Owner chỉ được xóa POI của mình
             if (!IsAdmin)
             {
                 var existing = await Api.GetFromJsonAsync<POI>($"poi/{DeleteId}");
                 if (existing?.OwnerId != MyUserId)
                 { Error = "Bạn không có quyền xóa điểm này."; return RedirectToPage(); }
             }
-
             var resp = await Api.DeleteAsync($"poi/{DeleteId}");
-            if (resp.IsSuccessStatusCode)
-                Msg = "Đã xoá điểm thuyết minh thành công.";
-            else
-                Error = $"Xoá thất bại: {(int)resp.StatusCode} {resp.ReasonPhrase}";
+            if (resp.IsSuccessStatusCode) Msg = "Đã xoá điểm thuyết minh thành công.";
+            else Error = $"Xoá thất bại: {(int)resp.StatusCode}";
         }
         catch (Exception ex) { Error = "Lỗi kết nối API: " + ex.Message; }
-
         return RedirectToPage();
     }
+
+    public record OwnerItem(int Id, string Username);
 }

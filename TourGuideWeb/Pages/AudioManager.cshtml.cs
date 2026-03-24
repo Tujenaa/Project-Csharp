@@ -53,7 +53,7 @@ public class AudioManagerModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         var client = _http.CreateClient("API");
-        var payload = new { PoiId, Language, Script };
+        var payload = new { PoiId, Language, Script, AudioUrl = (string?)null };
         HttpResponseMessage res;
         if (Id == 0)
         {
