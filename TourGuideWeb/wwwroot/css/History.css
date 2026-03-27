@@ -1,30 +1,26 @@
-﻿
+﻿/* history.css */
 .stat-mini {
-    background: rgba(45,27,110,.5);
-    border: 1px solid rgba(155,127,234,.3);
-    border-radius: 10px;
-    padding: .875rem 1.25rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
     flex: 1;
     text-align: center;
-    transition: transform .15s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 
-    .stat-mini:hover {
-        transform: translateY(-2px);
-    }
-
 .stat-mini-val {
-    font-size: 26px;
-    font-weight: 700;
-    color: #fca5a5;
+    font-size: 28px;
+    font-weight: 800;
+    color: #3b0764;
     font-family: var(--mono);
 }
 
 .stat-mini-label {
     font-size: 12px;
-    color: #f0a8b0;
+    color: #111827;
     margin-top: 4px;
     text-transform: uppercase;
     letter-spacing: .5px;
-    font-weight: 600;
+    font-weight: 700;
 }

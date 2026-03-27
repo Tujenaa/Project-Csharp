@@ -43,10 +43,20 @@
                         <div class="action-group">
                             @if (!string.IsNullOrEmpty(a.Script))
                             {
-                                <button class="btn btn-ghost btn-sm btn-icon" title="Nghe thử"
-                                        onclick="toggleTts(@a.Id)"
-                                        id="ttsBtn-@a.Id">
+                                <button class="btn btn-ghost btn-sm btn-icon" title="Phát"
+                                        onclick="playTts(@a.Id)"
+                                        id="ttsPlay-@a.Id">
                                     <i class="bi bi-play-circle"></i>
+                                </button>
+                                <button class="btn btn-ghost btn-sm btn-icon" title="Tạm dừng / Tiếp tục"
+                                        onclick="pauseResumeTts(@a.Id)"
+                                        id="ttsPause-@a.Id" style="display:none">
+                                    <i class="bi bi-pause-circle"></i>
+                                </button>
+                                <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Dừng hẳn"
+                                        onclick="stopTtsById(@a.Id)"
+                                        id="ttsStop-@a.Id" style="display:none">
+                                    <i class="bi bi-stop-circle"></i>
                                 </button>
                             }
                             <button class="btn btn-ghost btn-sm btn-icon" title="Chỉnh sửa"
@@ -236,10 +246,6 @@
         }
     }
 
-    // ── TTS core ──────────────────────────────────────────────────────────────
-    let _tts = null;
-    let _playingId = null;
-
     // Chờ voices load (Chrome/Edge cần thời gian load online voices)
     function getVoices() {
         return new Promise(resolve => {
@@ -297,37 +303,78 @@
         return u;
     }
 
-    // Nút nghe thử từng dòng bảng
-    async function toggleTts(id) {
+    // ── TTS State ──────────────────────────────────────────────────────────────
+    let _playingId = null;   // id đang phát
+    let _pausedId  = null;   // id đang tạm dừng
+    let _tts       = null;   // utterance hiện tại
+
+    function _showBtns(id, playing) {
+        const play  = document.getElementById('ttsPlay-'  + id);
+        const pause = document.getElementById('ttsPause-' + id);
+        const stop  = document.getElementById('ttsStop-'  + id);
+        if (!play) return;
+        if (playing) {
+            play.style.display  = 'none';
+            pause.style.display = 'inline-flex';
+            stop.style.display  = 'inline-flex';
+            pause.querySelector('i').className = 'bi bi-pause-circle';
+        } else {
+            play.style.display  = 'inline-flex';
+            pause.style.display = 'none';
+            stop.style.display  = 'none';
+        }
+    }
+
+    // Phát — nếu đang phát cái khác thì dừng trước
+    async function playTts(id) {
         if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
         const a = AUDIOS.find(x => x.id === id);
         if (!a || !a.script) return;
-        const btn = document.getElementById('ttsBtn-' + id);
 
-        if (_playingId === id) { stopAllTts(); return; }
+        // Dừng bất kỳ cái đang phát/pause
         stopAllTts();
 
         _playingId = id;
-        if (btn) { btn.querySelector('i').className = 'bi bi-stop-circle'; btn.style.color = 'var(--accent)'; }
+        _showBtns(id, true);
 
-        // Dịch script sang ngôn ngữ đã chọn trước khi đọc
         const translated = await translateText(a.script, a.lang);
         const u = await makeTtsUtterance(translated, a.lang);
         _tts = u;
         u.onend = u.onerror = () => {
-            if (btn) { btn.querySelector('i').className = 'bi bi-play-circle'; btn.style.color = ''; }
-            _tts = null; _playingId = null;
+            _showBtns(id, false);
+            _tts = null; _playingId = null; _pausedId = null;
         };
         window.speechSynthesis.speak(u);
     }
 
+    // Tạm dừng / Tiếp tục (không phát lại từ đầu)
+    function pauseResumeTts(id) {
+        if (_pausedId === id) {
+            // Đang pause → resume
+            window.speechSynthesis.resume();
+            _pausedId = null;
+            const pauseBtn = document.getElementById('ttsPause-' + id);
+            if (pauseBtn) pauseBtn.querySelector('i').className = 'bi bi-pause-circle';
+        } else if (_playingId === id) {
+            // Đang phát → pause
+            window.speechSynthesis.pause();
+            _pausedId = id;
+            const pauseBtn = document.getElementById('ttsPause-' + id);
+            if (pauseBtn) pauseBtn.querySelector('i').className = 'bi bi-play-circle';
+        }
+    }
+
+    // Dừng hẳn — lần sau phát lại từ đầu
+    function stopTtsById(id) {
+        window.speechSynthesis.cancel();
+        _showBtns(id, false);
+        _tts = null; _playingId = null; _pausedId = null;
+    }
+
     function stopAllTts() {
         window.speechSynthesis.cancel();
-        if (_playingId !== null) {
-            const btn = document.getElementById('ttsBtn-' + _playingId);
-            if (btn) { btn.querySelector('i').className = 'bi bi-play-circle'; btn.style.color = ''; }
-        }
-        _tts = null; _playingId = null;
+        if (_playingId !== null) _showBtns(_playingId, false);
+        _tts = null; _playingId = null; _pausedId = null;
     }
 
     // Nút nghe thử trong modal
@@ -337,8 +384,6 @@
         if (!('speechSynthesis' in window)) { alert('Trình duyệt không hỗ trợ TTS.'); return; }
         stopTts();
         const lang = document.getElementById('fLanguage').value || 'vi';
-
-        // Dịch trước rồi mới đọc
         const translated = await translateText(s, lang);
         const u = await makeTtsUtterance(translated, lang);
         _tts = u;

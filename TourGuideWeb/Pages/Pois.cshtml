@@ -227,7 +227,6 @@
 
 
 <script>
-    // FIX: dùng JSON.parse để tránh HTML encode khi render string tiếng Việt
     const POIS = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pois.Select(p => new {
         id       = p.Id,
         name     = p.Name,

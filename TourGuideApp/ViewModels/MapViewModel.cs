@@ -21,15 +21,16 @@ public class MapViewModel
     double? userLat;
     double? userLon;
 
-    // Track which POIs have been auto-played this session to avoid repeat
     readonly HashSet<int> autoPlayedIds = new();
 
     public string MapHtml { get; }
 
+    // ── Sự kiện thông báo UI cập nhật ─────────────────────────────────────────
+    public event Action? POIUpdated;
+
     // ── Commands ──────────────────────────────────────────────────────────────
     public Command<POI> PlayAudioCommand { get; }
     public Command<POI> GoToDetailCommand { get; }
-    public Command<POI> ChangeDestinationCommand { get; }
 
     public Func<string, Task<string?>>? EvalJs { get; set; }
 
@@ -48,12 +49,6 @@ public class MapViewModel
             if (poi == null) return;
             await Shell.Current.GoToAsync("placeDetail",
                 new Dictionary<string, object> { { "poi", poi } });
-        });
-
-        ChangeDestinationCommand = new Command<POI>(async poi =>
-        {
-            if (poi == null) return;
-            await ApplyNewStartPOI(poi);
         });
 
         _ = InitAsync();
@@ -82,32 +77,12 @@ public class MapViewModel
         double startLat = userLat ?? pois[0].Latitude;
         double startLon = userLon ?? pois[0].Longitude;
 
-        RebuildNearbyPOI(SortByNearestNeighbor(allPOIs, startLat, startLon));
+        var sorted = SortByNearestNeighbor(allPOIs, startLat, startLon);
+        UpdateIndexAndDistance(sorted);
+        RebuildNearbyPOI(sorted);
 
         await PushMapDataAsync();
         _ = TrackUserLocationAsync();
-    }
-
-    // ── Đổi điểm đầu ─────────────────────────────────────────────────────────
-    async Task ApplyNewStartPOI(POI startPoi)
-    {
-        var sorted = SortByNearestNeighbor(allPOIs, startPoi.Latitude, startPoi.Longitude,
-                                           forcedFirst: startPoi);
-        RebuildNearbyPOI(sorted);
-
-        if (EvalJs == null) return;
-
-        await EvalJs("clearRoutes()");
-        await EvalJs($"setPOIs({BuildPOIJson(sorted)})");
-
-        if (userLat.HasValue && userLon.HasValue)
-        {
-            var uLat = userLat.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            var uLon = userLon.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            var dLat = startPoi.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            var dLon = startPoi.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            await EvalJs($"drawNavigationRoute({uLat},{uLon},{dLat},{dLon})");
-        }
     }
 
     // ── Push data to WebView ──────────────────────────────────────────────────
@@ -127,12 +102,21 @@ public class MapViewModel
             await EvalJs($"setPOIs({BuildPOIJson(NearbyPOI)})");
     }
 
+    // ── Cập nhật khoảng cách (gọi thủ công sau khi lấy vị trí mới) ───────────
+    public void RefreshDistances()
+    {
+        if (!userLat.HasValue || !userLon.HasValue) return;
+        foreach (var poi in NearbyPOI)
+            poi.DistanceText = FormatDistance(
+                DistanceHelper.GetDistance(userLat.Value, userLon.Value, poi.Latitude, poi.Longitude));
+        POIUpdated?.Invoke();
+    }
+
     // ── Play / Pause ──────────────────────────────────────────────────────────
     async Task HandlePlayPause(POI poi)
     {
         if (poi == null) return;
 
-        // Pause current
         if (currentPlayingPoi?.Id == poi.Id && isPlaying)
         {
             ttsToken?.Cancel();
@@ -142,12 +126,11 @@ public class MapViewModel
             return;
         }
 
-        // Stop previous
         StopAll();
 
         currentPlayingPoi = poi;
         isPlaying = true;
-        poi.IsPlaying = true;  // triggers UI: icon → pause, label → "Đang phát âm thanh"
+        poi.IsPlaying = true;
 
         try
         {
@@ -161,9 +144,8 @@ public class MapViewModel
         catch (OperationCanceledException) { }
         catch (Exception ex) { Console.WriteLine(ex.Message); }
 
-        // FIX: Always reset state after playback ends so UI reverts to Play state
         isPlaying = false;
-        poi.IsPlaying = false;  // triggers UI: icon → play, label → "Audio giới thiệu"
+        poi.IsPlaying = false;
         if (currentPlayingPoi?.Id == poi.Id)
             currentPlayingPoi = null;
     }
@@ -177,7 +159,7 @@ public class MapViewModel
 
     public void PlayPOIManually(POI poi) => _ = HandlePlayPause(poi);
 
-    // ── Auto-play: called from location tracking ───────────────────────────────
+    // ── Auto-play ─────────────────────────────────────────────────────────────
     void CheckNearbyPOI(double lat, double lon)
     {
         if (!SettingService.Instance.AutoPlay) return;
@@ -191,8 +173,6 @@ public class MapViewModel
                 _ = HandlePlayPause(poi);
                 break;
             }
-
-            // Reset auto-play flag when user moves away (> 2× radius)
             if (dist > poi.Radius * 2 && autoPlayedIds.Contains(poi.Id))
                 autoPlayedIds.Remove(poi.Id);
         }
@@ -220,6 +200,12 @@ public class MapViewModel
                 await EvalJs($"setUserLocation({lat},{lon})");
             }
 
+            // Cập nhật khoảng cách cho tất cả POI
+            foreach (var poi in NearbyPOI)
+                poi.DistanceText = FormatDistance(
+                    DistanceHelper.GetDistance(loc.Latitude, loc.Longitude, poi.Latitude, poi.Longitude));
+
+            POIUpdated?.Invoke();
             CheckNearbyPOI(loc.Latitude, loc.Longitude);
         }
     }
@@ -229,6 +215,29 @@ public class MapViewModel
     {
         NearbyPOI.Clear();
         foreach (var p in sorted) NearbyPOI.Add(p);
+        POIUpdated?.Invoke();
+    }
+
+    /// Gán IndexLabel (1, 2, 3…) và DistanceText cho mỗi POI
+    void UpdateIndexAndDistance(IList<POI> sorted)
+    {
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            sorted[i].IndexLabel = (i + 1).ToString();
+            if (userLat.HasValue && userLon.HasValue)
+                sorted[i].DistanceText = FormatDistance(
+                    DistanceHelper.GetDistance(
+                        userLat.Value, userLon.Value,
+                        sorted[i].Latitude, sorted[i].Longitude));
+        }
+    }
+
+    /// Định dạng khoảng cách: < 1000 m hiện "x m", >= 1000 m hiện "x.x km"
+    static string FormatDistance(double meters)
+    {
+        if (meters < 1000)
+            return $"{(int)meters} m";
+        return $"{(meters / 1000.0):F1} km";
     }
 
     static string BuildPOIJson(IEnumerable<POI> pois) =>

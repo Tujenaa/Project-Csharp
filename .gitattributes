@@ -1,4 +1,11 @@
-*.cs text
-*.xaml text
-*.xml text
-*.json text
+*.cs text eol=lf
+*.cshtml text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.xaml text eol=lf
+
+# Giữ nguyên định dạng cho các file nhị phân (ảnh, thư viện)
+*.jpg binary
+*.png binary
+*.dll binary

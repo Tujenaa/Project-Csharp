@@ -1,7 +1,7 @@
 ﻿@{
     var sessionUser = Context.Session.GetString("Username") ?? "";
     var sessionRole = Context.Session.GetString("Role") ?? "";
-    var isAdmin     = sessionRole == "ADMIN";
+    var isAdmin = sessionRole == "ADMIN";
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -11,36 +11,135 @@
     <title>@ViewData["Title"] — TourGuide CMS</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
-    <link href="~/css/site.css?v=13" rel="stylesheet" />
+    <link href="~/css/site.css?v=16" rel="stylesheet" />
     @await RenderSectionAsync("Styles", required: false)
     <style>
         input, select, textarea,
         input.form-control, select.form-control, textarea.form-control {
-            color: #f8d7da !important;
-            background-color: #0f0a24 !important;
+            color: #1e1b4b !important;
+            background-color: #fff !important;
             font-family: 'Times New Roman', Times, serif !important;
         }
-        input::placeholder, textarea::placeholder { color: rgba(240,168,176,.5) !important; opacity: 1 !important; }
-        input:-webkit-autofill, input:-webkit-autofill:focus {
-            -webkit-box-shadow: 0 0 0 1000px #0f0a24 inset !important;
-            -webkit-text-fill-color: #f8d7da !important;
+
+            input::placeholder, textarea::placeholder {
+                color: #9ca3af !important;
+                opacity: 1 !important;
+            }
+
+            input:-webkit-autofill, input:-webkit-autofill:focus {
+                -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
+                -webkit-text-fill-color: #1e1b4b !important;
+            }
+
+        * {
+            font-family: 'Times New Roman', Times, serif;
         }
-        * { font-family: 'Times New Roman', Times, serif; }
+
         .stat-value, code, pre, .mono, .coord, .time-chip, .rank-badge, .play-badge {
             font-family: 'Space Mono', monospace !important;
         }
-        .user-chip { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #f0a8b0; }
-        .user-chip .u-name { color: #f8d7da; font-weight: 600; }
-        .user-chip .u-role { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-family: 'Space Mono', monospace; }
-        .role-admin { background: rgba(233,69,96,.2); color: #fca5a5; }
-        .role-owner { background: rgba(155,127,234,.2); color: #c4b0ff; }
-        .btn-logout {
-            background: transparent; border: 1px solid rgba(155,127,234,.3);
-            color: #f0a8b0; padding: 5px 10px; border-radius: 7px;
-            cursor: pointer; font-size: 12px; font-family: 'Times New Roman', Times, serif;
-            transition: all .15s; display: inline-flex; align-items: center; gap: 5px;
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #6b7280;
         }
-        .btn-logout:hover { border-color: #fca5a5; color: #fca5a5; }
+
+            .user-chip .u-name {
+                color: #1e1b4b;
+                font-weight: 600;
+            }
+
+            .user-chip .u-role {
+                font-size: 10px;
+                padding: 2px 7px;
+                border-radius: 20px;
+                font-family: 'Space Mono', monospace;
+            }
+
+        .role-admin {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .role-owner {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid #e5e7eb;
+            color: #6b7280;
+            padding: 5px 10px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Times New Roman', Times, serif;
+            transition: all .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .btn-logout:hover {
+                border-color: #dc2626;
+                color: #dc2626;
+            }
+
+        .tg-table td {
+            color: #111827 !important;
+        }
+
+        .tg-table th {
+            color: #fff !important;
+        }
+
+        .stat-mini-val {
+            color: #3b0764 !important;
+        }
+
+        .stat-mini-label {
+            color: #111827 !important;
+        }
+
+        .utab {
+            color: #111827 !important;
+        }
+
+        .poi-item-name {
+            color: #111827 !important;
+        }
+
+        .poi-item-coord {
+            color: #5b21b6 !important;
+        }
+
+        .dii-val {
+            color: #111827 !important;
+        }
+
+        .dii-label {
+            color: #6b7280 !important;
+        }
+
+        .detail-body h3 {
+            color: #111827 !important;
+        }
+
+        .detail-desc {
+            color: #374151 !important;
+        }
+
+        .profile-uname {
+            color: #111827 !important;
+        }
+
+        .profile-section-title {
+            color: #111827 !important;
+        }
     </style>
 </head>
 <body>

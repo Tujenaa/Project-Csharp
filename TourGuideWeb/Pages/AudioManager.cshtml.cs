@@ -34,7 +34,7 @@ public class AudioManagerModel : PageModel
             if (IsAdmin)
             {
                 Audios = allAudios;
-                Pois = await client.GetFromJsonAsync<List<POI>>("poi") ?? [];
+                Pois = await client.GetFromJsonAsync<List<POI>>("poi/all") ?? [];
             }
             else
             {

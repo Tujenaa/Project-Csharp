@@ -1,4 +1,4 @@
-﻿/* wwwroot/css/index.css */
+﻿/* index.css */
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(4,1fr);
@@ -7,8 +7,8 @@
 }
 
 .stat-card {
-    background: rgba(45,27,110,.5);
-    border: 1px solid rgba(155,127,234,.3);
+    background: #fff;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 20px 18px 16px;
     display: flex;
@@ -16,12 +16,12 @@
     align-items: flex-start;
     position: relative;
     overflow: hidden;
-    transition: transform .2s, box-shadow .2s;
+    transition: transform .2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 
     .stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 24px rgba(81,43,212,.25);
+        transform: translateY(-2px);
     }
 
     .stat-card::before {
@@ -35,19 +35,19 @@
     }
 
     .stat-card.blue::before {
-        background: linear-gradient(90deg,#E94560,#fca5a5);
+        background: linear-gradient(90deg,#7c3aed,#a855f7);
     }
 
     .stat-card.cyan::before {
-        background: linear-gradient(90deg,#9B7FEA,#c4b0ff);
+        background: linear-gradient(90deg,#0369a1,#0ea5e9);
     }
 
     .stat-card.green::before {
-        background: linear-gradient(90deg,#10b981,#34d399);
+        background: linear-gradient(90deg,#15803d,#22c55e);
     }
 
     .stat-card.yellow::before {
-        background: linear-gradient(90deg,#f59e0b,#fbbf24);
+        background: linear-gradient(90deg,#b45309,#f59e0b);
     }
 
     .stat-card .stat-label {
@@ -55,33 +55,32 @@
         font-weight: 700;
         letter-spacing: 1px;
         text-transform: uppercase;
-        color: #f0a8b0;
+        color: #374151;
         margin-bottom: 6px;
-        font-family: var(--font);
     }
 
     .stat-card .stat-value {
         font-size: 34px;
-        font-weight: 700;
+        font-weight: 800;
         font-family: var(--mono);
         line-height: 1;
         margin-bottom: 8px;
     }
 
     .stat-card.blue .stat-value {
-        color: #fca5a5;
+        color: #3b0764;
     }
 
     .stat-card.cyan .stat-value {
-        color: #c4b0ff;
+        color: #0c4a6e;
     }
 
     .stat-card.green .stat-value {
-        color: #6ee7b7;
+        color: #14532d;
     }
 
     .stat-card.yellow .stat-value {
-        color: #fcd34d;
+        color: #78350f;
     }
 
 .stat-trend {
@@ -92,26 +91,27 @@
     padding: 2px 8px;
     border-radius: 20px;
     font-family: var(--mono);
+    font-weight: 700;
 }
 
 .trend-blue {
-    background: rgba(233,69,96,.15);
-    color: #fca5a5;
+    background: #ede9fe;
+    color: #3b0764;
 }
 
 .trend-cyan {
-    background: rgba(155,127,234,.15);
-    color: #c4b0ff;
+    background: #e0f2fe;
+    color: #0c4a6e;
 }
 
 .trend-green {
-    background: rgba(16,185,129,.12);
-    color: #6ee7b7;
+    background: #dcfce7;
+    color: #14532d;
 }
 
 .trend-yellow {
-    background: rgba(245,158,11,.12);
-    color: #fcd34d;
+    background: #fef3c7;
+    color: #78350f;
 }
 
 .stat-icon-wrap {
@@ -127,23 +127,23 @@
 }
 
 .icon-blue {
-    background: rgba(233,69,96,.2);
-    color: #fca5a5;
+    background: #ede9fe;
+    color: #7c3aed;
 }
 
 .icon-cyan {
-    background: rgba(155,127,234,.2);
-    color: #c4b0ff;
+    background: #e0f2fe;
+    color: #0369a1;
 }
 
 .icon-green {
-    background: rgba(16,185,129,.2);
-    color: #6ee7b7;
+    background: #dcfce7;
+    color: #15803d;
 }
 
 .icon-yellow {
-    background: rgba(245,158,11,.2);
-    color: #fcd34d;
+    background: #fef3c7;
+    color: #b45309;
 }
 
 .poi-dot {
@@ -151,20 +151,20 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #E94560;
+    background: #7c3aed;
     margin-right: 8px;
     vertical-align: middle;
-    box-shadow: 0 0 4px #E94560;
 }
 
 .time-chip {
     font-family: var(--mono);
     font-size: 11px;
-    color: #fcd34d;
-    background: rgba(245,158,11,.1);
+    color: #374151;
+    background: #f3f4f6;
     padding: 2px 8px;
     border-radius: 6px;
-    border: 1px solid rgba(245,158,11,.2);
+    border: 1px solid #e5e7eb;
+    font-weight: 600;
 }
 
 .rank-badge {
@@ -180,18 +180,18 @@
 }
 
 .rank-gold {
-    background: rgba(245,158,11,.25);
-    color: #fcd34d;
+    background: #fef3c7;
+    color: #78350f;
 }
 
 .rank-silver {
-    background: rgba(155,127,234,.2);
-    color: #c4b0ff;
+    background: #ede9fe;
+    color: #3b0764;
 }
 
 .rank-bronze {
-    background: rgba(233,69,96,.15);
-    color: #fca5a5;
+    background: #f3f4f6;
+    color: #111827;
 }
 
 .play-badge {
@@ -200,9 +200,28 @@
     gap: 4px;
     font-size: 11px;
     font-family: var(--mono);
-    background: rgba(16,185,129,.15);
-    color: #6ee7b7;
+    background: #dcfce7;
+    color: #14532d;
     padding: 3px 9px;
     border-radius: 20px;
-    border: 1px solid rgba(16,185,129,.2);
+    border: 1px solid #86efac;
+    font-weight: 700;
 }
+
+.link-all {
+    color: #5b21b6;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #c4b5fd;
+    background: #ede9fe;
+    transition: all .15s;
+}
+
+    .link-all:hover {
+        background: #7c3aed;
+        color: #fff;
+        border-color: #7c3aed;
+    }

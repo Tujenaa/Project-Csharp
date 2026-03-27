@@ -6,6 +6,10 @@
     var isAdmin = Model.IsAdmin;
 }
 
+@section Styles {
+    <link rel="stylesheet" href="~/css/index.css" />
+}
+
 @if (Model.ApiError)
 {
     <div class="alert alert-error">
@@ -58,7 +62,7 @@
     <div class="card">
         <div class="card-header">
             <span><i class="bi bi-clock-history me-2"></i>Lịch sử phát gần đây</span>
-            <a href="/HistoryPage" class="btn btn-ghost btn-sm">Xem tất cả</a>
+            <a href="/HistoryPage" class="link-all">Xem tất cả →</a>
         </div>
         <table class="tg-table">
             <thead><tr><th>Điểm POI</th><th>Thời gian</th></tr></thead>
@@ -108,208 +112,3 @@
     </div>
 </div>
 
-<style>
-    .stat-grid {
-        display: grid;
-        grid-template-columns: repeat(4,1fr);
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-
-    .stat-card {
-        background: var(--bg2);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px 18px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        position: relative;
-        overflow: hidden;
-        transition: transform .15s;
-    }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            border-radius: 12px 12px 0 0;
-        }
-
-        .stat-card.blue::before {
-            background: linear-gradient(90deg,#e94560,#ff6b6b);
-        }
-
-        .stat-card.cyan::before {
-            background: linear-gradient(90deg,#0f3460,#1a6bbf);
-        }
-
-        .stat-card.green::before {
-            background: linear-gradient(90deg,#10b981,#34d399);
-        }
-
-        .stat-card.yellow::before {
-            background: linear-gradient(90deg,#f59e0b,#fbbf24);
-        }
-
-        .stat-card .stat-label {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: .8px;
-            text-transform: uppercase;
-            color: var(--text2);
-            margin-bottom: 6px;
-        }
-
-        .stat-card .stat-value {
-            font-size: 34px;
-            font-weight: 700;
-            font-family: var(--mono);
-            line-height: 1;
-            margin-bottom: 8px;
-        }
-
-        .stat-card.blue .stat-value {
-            color: #e94560;
-        }
-
-        .stat-card.cyan .stat-value {
-            color: #60a5fa;
-        }
-
-        .stat-card.green .stat-value {
-            color: var(--success);
-        }
-
-        .stat-card.yellow .stat-value {
-            color: var(--warning);
-        }
-
-    .stat-trend {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 20px;
-        font-family: var(--mono);
-    }
-
-    .trend-blue {
-        background: rgba(233,69,96,.12);
-        color: #e94560;
-    }
-
-    .trend-cyan {
-        background: rgba(96,165,250,.12);
-        color: #60a5fa;
-    }
-
-    .trend-green {
-        background: rgba(16,185,129,.12);
-        color: var(--success);
-    }
-
-    .trend-yellow {
-        background: rgba(245,158,11,.12);
-        color: var(--warning);
-    }
-
-    .stat-icon-wrap {
-        width: 42px;
-        height: 42px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        flex-shrink: 0;
-        margin-top: 2px;
-    }
-
-    .icon-blue {
-        background: rgba(233,69,96,.15);
-        color: #e94560;
-    }
-
-    .icon-cyan {
-        background: rgba(96,165,250,.15);
-        color: #60a5fa;
-    }
-
-    .icon-green {
-        background: rgba(16,185,129,.15);
-        color: var(--success);
-    }
-
-    .icon-yellow {
-        background: rgba(245,158,11,.15);
-        color: var(--warning);
-    }
-
-    .poi-dot {
-        display: inline-block;
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--accent);
-        margin-right: 8px;
-        vertical-align: middle;
-    }
-
-    .time-chip {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--text2);
-        background: var(--bg3);
-        padding: 2px 8px;
-        border-radius: 6px;
-        border: 1px solid var(--border);
-    }
-
-    .rank-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-family: var(--mono);
-        font-weight: 700;
-    }
-
-    .rank-gold {
-        background: rgba(245,158,11,.2);
-        color: #fbbf24;
-    }
-
-    .rank-silver {
-        background: rgba(148,163,184,.15);
-        color: #94a3b8;
-    }
-
-    .rank-bronze {
-        background: rgba(107,127,163,.1);
-        color: #64748b;
-    }
-
-    .play-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 11px;
-        font-family: var(--mono);
-        background: rgba(16,185,129,.12);
-        color: var(--success);
-        padding: 3px 9px;
-        border-radius: 20px;
-    }
-</style>

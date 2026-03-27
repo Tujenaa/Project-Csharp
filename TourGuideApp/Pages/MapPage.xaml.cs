@@ -7,6 +7,8 @@ public partial class MapPage : ContentPage
 {
     readonly MapViewModel viewModel;
     bool mapReady = false;
+    bool poiListVisible = false;
+    POI? currentDetailPoi = null;
 
     public MapPage()
     {
@@ -17,6 +19,9 @@ public partial class MapPage : ContentPage
 
         viewModel.EvalJs = js => mapWebView.EvaluateJavaScriptAsync(js);
         mapWebView.Source = new HtmlWebViewSource { Html = viewModel.MapHtml };
+
+        // Lắng nghe sự kiện khi ViewModel cập nhật khoảng cách
+        viewModel.POIUpdated += OnPOIUpdated;
     }
 
     // ── WebView: bắt URL scheme tourguide://poi/{id} ──────────────────────────
@@ -29,7 +34,11 @@ public partial class MapPage : ContentPage
         if (int.TryParse(e.Url.Replace("tourguide://poi/", ""), out int poiId))
         {
             var poi = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == poiId);
-            if (poi != null) viewModel.PlayPOIManually(poi);
+            if (poi != null)
+            {
+                // Hiện detail card thay vì tự động phát audio
+                ShowDetailCard(poi);
+            }
         }
     }
 
@@ -41,7 +50,6 @@ public partial class MapPage : ContentPage
 
         if (!mapReady)
         {
-            // Đợi Leaflet init (tối đa 3 s)
             for (int i = 0; i < 30; i++)
             {
                 await Task.Delay(100);
@@ -55,13 +63,26 @@ public partial class MapPage : ContentPage
             }
 
             await viewModel.PushMapDataAsync();
-
-            // Cập nhật label điểm đến mặc định (POI đầu tiên sau khi sort)
-            UpdateDestinationLabel();
+            UpdatePOICountLabel();
         }
     }
 
-    // ── FAB – về vị trí hiện tại ──────────────────────────────────────────────
+    // ── Toggle danh sách POI ──────────────────────────────────────────────────
+
+    private void OnTogglePOIListTapped(object sender, EventArgs e)
+    {
+        poiListVisible = !poiListVisible;
+        poiBottomSheet.IsVisible = poiListVisible;
+
+        // Ẩn detail card khi mở list
+        if (poiListVisible)
+        {
+            poiDetailCard.IsVisible = false;
+            currentDetailPoi = null;
+        }
+    }
+
+    // ── Nút "vị trí của tôi" ─────────────────────────────────────────────────
 
     private async void OnCurrentLocationTapped(object sender, EventArgs e)
     {
@@ -76,6 +97,9 @@ public partial class MapPage : ContentPage
 
             await mapWebView.EvaluateJavaScriptAsync(
                 $"setUserLocation({latStr},{lonStr}); flyTo({latStr},{lonStr},15);");
+
+            // Cập nhật khoảng cách sau khi có vị trí mới
+            viewModel.RefreshDistances();
         }
         catch (Exception ex)
         {
@@ -83,36 +107,96 @@ public partial class MapPage : ContentPage
         }
     }
 
-    // ── Thanh lộ trình – chọn điểm xuất phát mới ─────────────────────────────
+    // ── Detail Card: hiện khi bấm marker ─────────────────────────────────────
 
-    private async void OnChangeDestinationTapped(object sender, EventArgs e)
+    async void ShowDetailCard(POI poi)
     {
-        if (viewModel.NearbyPOI.Count == 0) return;
+        currentDetailPoi = poi;
 
-        // Hiện danh sách POI để chọn điểm bắt đầu
-        var names = viewModel.NearbyPOI.Select(p => p.Name).ToArray();
-        var chosen = await DisplayActionSheet(
-            "Chọn điểm bắt đầu lộ trình", "Huỷ", null, names);
+        lblCardName.Text = poi.Name;
+        lblCardDistance.Text = poi.DistanceText;
+        lblCardDesc.Text = string.IsNullOrWhiteSpace(poi.Description)
+            ? "Nhấn \"Xem chi tiết\" để biết thêm về địa điểm này."
+            : poi.Description;
 
-        if (chosen == null || chosen == "Huỷ") return;
+        UpdateCardPlayButton(poi.IsPlaying);
 
-        var poi = viewModel.NearbyPOI.FirstOrDefault(p => p.Name == chosen);
-        if (poi == null) return;
+        poiDetailCard.IsVisible = true;
 
-        // xóa đường cũ + vẽ đường mới
-        viewModel.ChangeDestinationCommand.Execute(poi);
-        await mapWebView.EvaluateJavaScriptAsync("clearRoutes()");
-        await Task.Delay(100); 
-        await viewModel.PushMapDataAsync();
-        // Cập nhật 
-        lblDestination.Text = poi.Name;
+        if (poiListVisible)
+        {
+            poiListVisible = false;
+            poiBottomSheet.IsVisible = false;
+        }
+
+        // Highlight
+        if (viewModel.EvalJs != null)
+            await viewModel.EvalJs($"highlightPOI({poi.Id})");
+
+        // Lấy vị trí
+        var loc = await viewModel.GetCurrentLocationFastAsync();
+
+        if (loc != null && viewModel.EvalJs != null)
+        {
+            var (lat, lon) = loc.Value;
+
+            var lat1 = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lon1 = lon.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lat2 = poi.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lon2 = poi.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+            await viewModel.EvalJs($"drawRoute({lat1},{lon1},{lat2},{lon2})");
+        }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    void UpdateDestinationLabel()
+    private void OnCloseDetailCardTapped(object sender, EventArgs e)
     {
-        var first = viewModel.NearbyPOI.FirstOrDefault();
-        lblDestination.Text = first?.Name ?? "Chưa có điểm đến";
+        poiDetailCard.IsVisible = false;
+        currentDetailPoi = null;
+    }
+
+    private void OnCardPlayAudioTapped(object sender, EventArgs e)
+    {
+        if (currentDetailPoi == null) return;
+        viewModel.PlayAudioCommand.Execute(currentDetailPoi);
+        UpdateCardPlayButton(!currentDetailPoi.IsPlaying); // toggle trước khi ViewModel update
+    }
+
+    private async void OnCardDetailTapped(object sender, EventArgs e)
+    {
+        if (currentDetailPoi == null) return;
+        poiDetailCard.IsVisible = false;
+        viewModel.GoToDetailCommand.Execute(currentDetailPoi);
+    }
+
+    void UpdateCardPlayButton(bool isPlaying)
+    {
+        imgCardPlay.Source = isPlaying ? "ic_pause.svg" : "ic_play.svg";
+        lblCardPlay.Text = isPlaying ? "Đang phát" : "Audio giới thiệu";
+    }
+
+    // ── Cập nhật label số lượng POI ──────────────────────────────────────────
+
+    void UpdatePOICountLabel()
+    {
+        int count = viewModel.NearbyPOI.Count;
+        lblPoiCount.Text = count > 0
+            ? $"{count} địa điểm · sắp xếp từ gần nhất"
+            : "Không có địa điểm nào";
+    }
+
+    void OnPOIUpdated()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            UpdatePOICountLabel();
+            // Nếu detail card đang hiện, cập nhật khoảng cách
+            if (currentDetailPoi != null && poiDetailCard.IsVisible)
+            {
+                var updated = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == currentDetailPoi.Id);
+                if (updated != null)
+                    lblCardDistance.Text = updated.DistanceText;
+            }
+        });
     }
 }
