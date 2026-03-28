@@ -14,10 +14,14 @@ public class HomeViewModel : INotifyPropertyChanged
     public Command<POI> PlayAudioCommand { get; }
 
     readonly TextToSpeechService ttsService = new();
+    readonly TranslateService translateService = new();
 
     POI? currentPlayingPoi;
     bool isPlaying = false;
     CancellationTokenSource? ttsToken;
+
+    int currentPosition = 0;
+    string currentText = "";
 
     public HomeViewModel()
     {
@@ -34,6 +38,9 @@ public class HomeViewModel : INotifyPropertyChanged
         {
             await HandlePlayPause(poi);
         });
+
+        // Log để debug
+        System.Diagnostics.Debug.WriteLine($"HomeViewModel created. Current language: {SettingService.Instance.Language}");
     }
 
     private int _poiCount;
@@ -63,6 +70,8 @@ public class HomeViewModel : INotifyPropertyChanged
 
         AllPOIs.Clear();
         foreach (var item in all) AllPOIs.Add(item);
+
+        System.Diagnostics.Debug.WriteLine($"Loaded {TopPOIs.Count} top POIs and {AllPOIs.Count} all POIs");
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -71,44 +80,101 @@ public class HomeViewModel : INotifyPropertyChanged
 
     async Task HandlePlayPause(POI poi)
     {
+        var currentLang = SettingService.Instance.Language;
+        System.Diagnostics.Debug.WriteLine($"HandlePlayPause called. POI: {poi?.Name}, Current Language: {currentLang}");
+
         if (poi == null) return;
 
-        // Pause if already playing this POI
+        // ───────────── PAUSE ─────────────
         if (currentPlayingPoi?.Id == poi.Id && isPlaying)
         {
+            System.Diagnostics.Debug.WriteLine("Pausing playback");
             ttsToken?.Cancel();
             isPlaying = false;
             poi.IsPlaying = false;
-            currentPlayingPoi = null;
             return;
         }
 
-        // Stop any currently playing POI
+        // ───────────── RESUME ─────────────
+        if (currentPlayingPoi?.Id == poi.Id && !isPlaying)
+        {
+            System.Diagnostics.Debug.WriteLine("Resuming playback");
+            isPlaying = true;
+            poi.IsPlaying = true;
+
+            ttsToken = new CancellationTokenSource();
+
+            try
+            {
+                string remainingText = currentText.Substring(currentPosition);
+                await ttsService.SpeakAsync(remainingText, ttsToken.Token);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RESUME ERROR: {ex.Message}");
+            }
+
+            isPlaying = false;
+            poi.IsPlaying = false;
+            return;
+        }
+
+        // ───────────── PLAY MỚI ─────────────
+        System.Diagnostics.Debug.WriteLine("Starting new playback");
         StopAll();
 
         currentPlayingPoi = poi;
         isPlaying = true;
         poi.IsPlaying = true;
 
-        ttsToken = new CancellationTokenSource();
+        // Lấy text gốc (tiếng Việt)
+        string originalText = !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
+                              !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
+                              "Không có dữ liệu";
 
-        // FIX: Use Script first, fall back to Description only if Script is empty
-        string text =
-         !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
-         !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
-         "Không có dữ liệu";
+        System.Diagnostics.Debug.WriteLine($"Original text: {originalText?.Substring(0, Math.Min(100, originalText?.Length ?? 0))}...");
+
+        string targetLang = SettingService.Instance.Language;
+        System.Diagnostics.Debug.WriteLine($"Target language: {targetLang}");
+
+        string finalText;
 
         try
         {
-            await ttsService.SpeakAsync(text, ttsToken.Token);
+            if (targetLang == "vi")
+            {
+                finalText = originalText;
+                System.Diagnostics.Debug.WriteLine("Playing in Vietnamese (no translation)");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"Translating from Vietnamese to {targetLang}...");
+                finalText = await translateService.TranslateWithRetryAsync(originalText, targetLang);
+                System.Diagnostics.Debug.WriteLine($"Translation completed. Result: {finalText?.Substring(0, Math.Min(100, finalText?.Length ?? 0))}...");
+            }
         }
-        catch (OperationCanceledException) { /* user paused */ }
-        catch (Exception ex) { Console.WriteLine(ex.Message); }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"TRANSLATE ERROR: {ex.Message}");
+            finalText = originalText;
+        }
+
+        currentText = finalText;
+        currentPosition = 0;
+
+        ttsToken = new CancellationTokenSource();
+
+        try
+        {
+            await ttsService.SpeakAsync(finalText, ttsToken.Token);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"TTS ERROR: {ex.Message}");
+        }
 
         isPlaying = false;
         poi.IsPlaying = false;
-        if (currentPlayingPoi?.Id == poi.Id)
-            currentPlayingPoi = null;
     }
 
     void StopAll()
@@ -117,5 +183,6 @@ public class HomeViewModel : INotifyPropertyChanged
         foreach (var item in TopPOIs) item.IsPlaying = false;
         foreach (var item in AllPOIs) item.IsPlaying = false;
         isPlaying = false;
+        currentPlayingPoi = null;
     }
 }

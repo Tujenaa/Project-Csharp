@@ -13,6 +13,7 @@ public class MapViewModel
     readonly LocationService locationService = new();
     readonly ApiService apiService = new();
     readonly TextToSpeechService ttsService = new();
+    readonly TranslateService translateService = new();
 
     // ── State ─────────────────────────────────────────────────────────────────
     readonly List<POI> allPOIs = new();
@@ -24,13 +25,18 @@ public class MapViewModel
     readonly HashSet<int> autoPlayedIds = new();
 
     public string MapHtml { get; }
+    int currentPosition = 0;
+    string currentText = "";
 
-    // ── Sự kiện thông báo UI cập nhật ─────────────────────────────────────────
+    // ── Events ────────────────────────────────────────────────────────────────
     public event Action? POIUpdated;
 
     // ── Commands ──────────────────────────────────────────────────────────────
     public Command<POI> PlayAudioCommand { get; }
     public Command<POI> GoToDetailCommand { get; }
+
+    /// Được gán lại từ MapPage (để xử lý vẽ đường trên UI thread)
+    public Command<POI> SelectRouteDestCommand { get; set; }
 
     public Func<string, Task<string?>>? EvalJs { get; set; }
 
@@ -50,6 +56,9 @@ public class MapViewModel
             await Shell.Current.GoToAsync("placeDetail",
                 new Dictionary<string, object> { { "poi", poi } });
         });
+
+        // Default no-op; MapPage sẽ gán lại trong constructor
+        SelectRouteDestCommand = new Command<POI>(_ => { });
 
         _ = InitAsync();
     }
@@ -102,7 +111,21 @@ public class MapViewModel
             await EvalJs($"setPOIs({BuildPOIJson(NearbyPOI)})");
     }
 
-    // ── Cập nhật khoảng cách (gọi thủ công sau khi lấy vị trí mới) ───────────
+    // ── Tìm kiếm POI theo tên ────────────────────────────────────────────────
+    public List<POI> SearchPOI(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return new List<POI>();
+
+        var q = query.Trim().ToLowerInvariant();
+        return allPOIs
+            .Where(p => p.Name.ToLowerInvariant().Contains(q))
+            .OrderBy(p => userLat.HasValue && userLon.HasValue
+                ? DistanceHelper.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude)
+                : 0)
+            .ToList();
+    }
+
+    // ── Cập nhật khoảng cách ─────────────────────────────────────────────────
     public void RefreshDistances()
     {
         if (!userLat.HasValue || !userLon.HasValue) return;
@@ -117,39 +140,77 @@ public class MapViewModel
     {
         if (poi == null) return;
 
+        // Nếu đang play → pause
         if (currentPlayingPoi?.Id == poi.Id && isPlaying)
         {
             ttsToken?.Cancel();
             isPlaying = false;
             poi.IsPlaying = false;
-            currentPlayingPoi = null;
+
             return;
         }
 
+        // Nếu resume cùng POI
+        if (currentPlayingPoi?.Id == poi.Id && !isPlaying)
+        {
+            isPlaying = true;
+            poi.IsPlaying = true;
+
+            ttsToken = new CancellationTokenSource();
+
+            try
+            {
+                string remainingText = currentText.Substring(currentPosition);
+
+                await ttsService.SpeakAsync(remainingText, ttsToken.Token);
+            }
+            catch { }
+
+            isPlaying = false;
+            poi.IsPlaying = false;
+            return;
+        }
+
+        // Play mới
         StopAll();
 
         currentPlayingPoi = poi;
         isPlaying = true;
         poi.IsPlaying = true;
 
+        string text =
+    !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
+    !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
+    "Không có dữ liệu";
+
+        // 🔥 lấy ngôn ngữ từ setting
+        string lang = SettingService.Instance.Language;
+
+        string finalText;
+
+        if (lang == "vi")
+        {
+            finalText = text;
+        }
+        else
+        {
+            finalText = await translateService.TranslateAsync(text, lang);
+        }
+
+        currentText = finalText;
+        currentPosition = 0;
+
+        ttsToken = new CancellationTokenSource();
+
         try
         {
-            string text = !string.IsNullOrWhiteSpace(poi.Script)
-                ? poi.Script
-                : "Không có dữ liệu";
-
-            ttsToken = new CancellationTokenSource();
-            await ttsService.SpeakAsync(text, ttsToken.Token);
+            await ttsService.SpeakAsync(finalText, ttsToken.Token);
         }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) { Console.WriteLine(ex.Message); }
+        catch { }
 
         isPlaying = false;
         poi.IsPlaying = false;
-        if (currentPlayingPoi?.Id == poi.Id)
-            currentPlayingPoi = null;
     }
-
     void StopAll()
     {
         ttsToken?.Cancel();
@@ -200,7 +261,6 @@ public class MapViewModel
                 await EvalJs($"setUserLocation({lat},{lon})");
             }
 
-            // Cập nhật khoảng cách cho tất cả POI
             foreach (var poi in NearbyPOI)
                 poi.DistanceText = FormatDistance(
                     DistanceHelper.GetDistance(loc.Latitude, loc.Longitude, poi.Latitude, poi.Longitude));
@@ -218,7 +278,6 @@ public class MapViewModel
         POIUpdated?.Invoke();
     }
 
-    /// Gán IndexLabel (1, 2, 3…) và DistanceText cho mỗi POI
     void UpdateIndexAndDistance(IList<POI> sorted)
     {
         for (int i = 0; i < sorted.Count; i++)
@@ -232,11 +291,9 @@ public class MapViewModel
         }
     }
 
-    /// Định dạng khoảng cách: < 1000 m hiện "x m", >= 1000 m hiện "x.x km"
     static string FormatDistance(double meters)
     {
-        if (meters < 1000)
-            return $"{(int)meters} m";
+        if (meters < 1000) return $"{(int)meters} m";
         return $"{(meters / 1000.0):F1} km";
     }
 

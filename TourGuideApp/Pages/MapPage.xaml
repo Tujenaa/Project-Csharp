@@ -6,17 +6,233 @@
     Title="Bản đồ"
     Shell.NavBarIsVisible="False">
 
-    <!-- Toàn bộ trang là 1 Grid chồng layer -->
     <Grid>
 
-        <!-- ═══ Layer 0: Map toàn màn hình ═══════════════════════════════════ -->
+        <!-- ═══ Layer 0: Map toàn màn hình ════════════════════════════════════ -->
         <WebView x:Name="mapWebView"
                  HorizontalOptions="Fill" VerticalOptions="Fill"
                  Navigating="OnWebViewNavigating"/>
 
-        <!-- ═══ Layer 1: Nút "vị trí của tôi" (góc phải dưới) ═══════════════ -->
-        <Border x:Name="btnMyLocation"
-                BackgroundColor="#512BD4" Stroke="Transparent" StrokeThickness="0"
+        <!-- ═══ Layer 1: Thanh lộ trình (luôn hiện trên đầu) ════════════════ -->
+        <Border BackgroundColor="White" Stroke="Transparent" StrokeThickness="0"
+                HorizontalOptions="Fill" VerticalOptions="Start"
+                Margin="12,12,12,0">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="18"/>
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="#35000000" Offset="0,4" Radius="14"/>
+            </Border.Shadow>
+
+            <VerticalStackLayout Spacing="0">
+
+                <!-- Thanh lộ trình: bấm để mở/đóng search -->
+                <Grid ColumnSpacing="10" Padding="14,13,14,13">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Đường chấm dọc -->
+                    <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" Spacing="2">
+                        <Ellipse Fill="#2563EB" WidthRequest="9" HeightRequest="9"
+                                 HorizontalOptions="Center"/>
+                        <BoxView BackgroundColor="#CBD5E1" WidthRequest="2" HeightRequest="12"
+                                 HorizontalOptions="Center"/>
+                        <Ellipse Fill="#EF4444" WidthRequest="9" HeightRequest="9"
+                                 HorizontalOptions="Center"/>
+                    </VerticalStackLayout>
+
+                    <!-- Text lộ trình -->
+                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                        <Label Text="Vị trí của tôi"
+                               FontSize="12" TextColor="#94A3B8"/>
+                        <BoxView BackgroundColor="#E2E8F0" HeightRequest="1"/>
+                        <Label x:Name="lblRouteDestination"
+                               Text="Chọn điểm đến..."
+                               FontSize="14" FontAttributes="Bold"
+                               TextColor="#94A3B8" LineBreakMode="TailTruncation"/>
+                    </VerticalStackLayout>
+
+                    <!-- Nút xóa lộ trình (chỉ hiện khi đã chọn điểm đến) -->
+                    <Border x:Name="btnClearRoute"
+                            Grid.Column="2" BackgroundColor="#FEE2E2"
+                            Stroke="Transparent" StrokeThickness="0"
+                            WidthRequest="32" HeightRequest="32"
+                            VerticalOptions="Center" IsVisible="False">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="9"/>
+                        </Border.StrokeShape>
+                        <Label Text="✕" FontSize="13" TextColor="#EF4444"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnClearRouteTapped"/>
+                        </Border.GestureRecognizers>
+                    </Border>
+
+                    <!-- Vùng tap để mở search (phủ lên toàn thanh lộ trình) -->
+                    <Grid.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnRouteBarTapped"/>
+                    </Grid.GestureRecognizers>
+                </Grid>
+
+                <!-- Panel tìm kiếm (ẩn mặc định, hiện khi bấm thanh lộ trình) -->
+                <VerticalStackLayout x:Name="searchPanel" IsVisible="False" Spacing="0">
+
+                    <!-- Ô tìm kiếm -->
+                    <Border BackgroundColor="#F8F7FD" Stroke="#E8E3F5" StrokeThickness="1"
+                            Margin="12,0,12,10">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="12"/>
+                        </Border.StrokeShape>
+                        <Grid ColumnSpacing="8" Padding="12,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Image Grid.Column="0" Source="ic_search.svg"
+                                   WidthRequest="16" HeightRequest="16" VerticalOptions="Center"/>
+
+                            <Entry Grid.Column="1"
+                                   x:Name="searchEntry"
+                                   Placeholder="Tìm địa điểm..."
+                                   PlaceholderColor="#94A3B8"
+                                   FontSize="13" TextColor="#1A1035"
+                                   BackgroundColor="Transparent"
+                                   HeightRequest="42"
+                                   TextChanged="OnSearchTextChanged"/>
+
+                            <Border x:Name="btnClearSearch"
+                                    Grid.Column="2" BackgroundColor="#E2E8F0"
+                                    Stroke="Transparent" StrokeThickness="0"
+                                    WidthRequest="22" HeightRequest="22"
+                                    VerticalOptions="Center" IsVisible="False">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="11"/>
+                                </Border.StrokeShape>
+                                <Label Text="✕" FontSize="11" TextColor="#64748B"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnClearSearchTapped"/>
+                                </Border.GestureRecognizers>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Kết quả tìm kiếm -->
+                    <CollectionView x:Name="searchResultList"
+                                    IsVisible="False"
+                                    Margin="12,0,12,12"
+                                    HeightRequest="200">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="6"/>
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border BackgroundColor="White" Stroke="#E8E3F5" StrokeThickness="1">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10"/>
+                                    </Border.StrokeShape>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectRouteDestCommand}"
+                                            CommandParameter="{Binding .}"/>
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnSpacing="10" Padding="12,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Image Grid.Column="0" Source="ic_location_pin.svg"
+                                               WidthRequest="15" HeightRequest="15"
+                                               VerticalOptions="Center"/>
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2"
+                                                             VerticalOptions="Center">
+                                            <Label Text="{Binding Name}"
+                                                   FontSize="13" FontAttributes="Bold"
+                                                   TextColor="#1A1035"/>
+                                            <Label Text="{Binding DistanceText}"
+                                                   FontSize="11" TextColor="#94A3B8"/>
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- Hoặc: chọn từ danh sách có sẵn -->
+                    <Label Text="— hoặc chọn từ danh sách —"
+                           FontSize="11" TextColor="#94A3B8"
+                           HorizontalOptions="Center" Margin="0,0,0,8"
+                           x:Name="lblOrPickList"/>
+
+                    <CollectionView x:Name="fullPoiList"
+                                    ItemsSource="{Binding NearbyPOI}"
+                                    Margin="12,0,12,12"
+                                    HeightRequest="200">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Vertical" ItemSpacing="6"/>
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border BackgroundColor="#F8F7FD" Stroke="#E8E3F5" StrokeThickness="1">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10"/>
+                                    </Border.StrokeShape>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectRouteDestCommand}"
+                                            CommandParameter="{Binding .}"/>
+                                    </Border.GestureRecognizers>
+                                    <Grid ColumnSpacing="10" Padding="12,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" BackgroundColor="#512BD4"
+                                                Stroke="Transparent" StrokeThickness="0"
+                                                WidthRequest="30" HeightRequest="30"
+                                                VerticalOptions="Center">
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="8"/>
+                                            </Border.StrokeShape>
+                                            <Label Text="{Binding IndexLabel}"
+                                                   FontSize="12" FontAttributes="Bold"
+                                                   TextColor="White"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"/>
+                                        </Border>
+
+                                        <VerticalStackLayout Grid.Column="1" Spacing="2"
+                                                             VerticalOptions="Center">
+                                            <Label Text="{Binding Name}"
+                                                   FontSize="13" FontAttributes="Bold"
+                                                   TextColor="#1A1035" LineBreakMode="TailTruncation"/>
+                                            <Label Text="{Binding DistanceText}"
+                                                   FontSize="11" TextColor="#94A3B8"/>
+                                        </VerticalStackLayout>
+
+                                        <Image Grid.Column="2" Source="ic_directions.svg"
+                                               WidthRequest="16" HeightRequest="16"
+                                               VerticalOptions="Center" Opacity="0.5"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- ═══ Layer 2: Nút "vị trí của tôi" ════════════════════════════════ -->
+        <Border BackgroundColor="#512BD4" Stroke="Transparent" StrokeThickness="0"
                 WidthRequest="52" HeightRequest="52"
                 HorizontalOptions="End" VerticalOptions="End"
                 Margin="16,0,16,88">
@@ -33,7 +249,7 @@
             </Border.GestureRecognizers>
         </Border>
 
-        <!-- ═══ Layer 2: Nút toggle danh sách POI (góc phải dưới) ══════════ -->
+        <!-- ═══ Layer 3: Nút toggle danh sách POI ════════════════════════════ -->
         <Border BackgroundColor="White" Stroke="#E8E3F5" StrokeThickness="1"
                 WidthRequest="52" HeightRequest="52"
                 HorizontalOptions="End" VerticalOptions="End"
@@ -51,7 +267,7 @@
             </Border.GestureRecognizers>
         </Border>
 
-        <!-- ═══ Layer 3: POI Bottom Sheet (ẩn mặc định, cuộn dọc) ══════════ -->
+        <!-- ═══ Layer 4: POI Bottom Sheet ════════════════════════════════════ -->
         <Border x:Name="poiBottomSheet"
                 BackgroundColor="White" Stroke="#E8E3F5" StrokeThickness="0"
                 VerticalOptions="End" HorizontalOptions="Fill"
@@ -69,25 +285,20 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Header -->
-                <Grid Grid.Row="0" Padding="20,14,20,10" ColumnSpacing="0">
+                <Grid Grid.Row="0" Padding="20,14,20,10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-
                     <VerticalStackLayout Grid.Column="0" Spacing="2">
                         <BoxView BackgroundColor="#DDD6F3" WidthRequest="36" HeightRequest="4"
                                  CornerRadius="2" HorizontalOptions="Start"/>
                         <Label Text="Địa điểm tham quan"
                                FontSize="17" FontAttributes="Bold"
                                TextColor="#1A1035" Margin="0,8,0,0"/>
-                        <Label x:Name="lblPoiCount"
-                               Text="Đang tải..."
+                        <Label x:Name="lblPoiCount" Text="Đang tải..."
                                FontSize="12" TextColor="#94A3B8"/>
                     </VerticalStackLayout>
-
-                    <!-- Nút đóng -->
                     <Border Grid.Column="1" BackgroundColor="#F4F2FB"
                             Stroke="Transparent" StrokeThickness="0"
                             WidthRequest="34" HeightRequest="34" VerticalOptions="Center">
@@ -102,9 +313,7 @@
                     </Border>
                 </Grid>
 
-                <!-- Danh sách POI – cuộn DỌC -->
-                <CollectionView Grid.Row="1"
-                                x:Name="poiCollectionView"
+                <CollectionView Grid.Row="1" x:Name="poiCollectionView"
                                 ItemsSource="{Binding NearbyPOI}"
                                 Margin="16,0,16,16">
                     <CollectionView.ItemsLayout>
@@ -123,51 +332,61 @@
                                         CommandParameter="{Binding .}"/>
                                 </Border.GestureRecognizers>
 
-                                <Grid ColumnSpacing="12" Padding="14,12">
+                                <Grid ColumnSpacing="10" Padding="14,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Số thứ tự / index -->
-                                    <Border Grid.Column="0"
-                                            BackgroundColor="#512BD4" Stroke="Transparent"
-                                            StrokeThickness="0" WidthRequest="36" HeightRequest="36"
-                                            VerticalOptions="Center">
+                                    <Border Grid.Column="0" BackgroundColor="#512BD4"
+                                            Stroke="Transparent" StrokeThickness="0"
+                                            WidthRequest="36" HeightRequest="36" VerticalOptions="Center">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="10"/>
                                         </Border.StrokeShape>
                                         <Label Text="{Binding IndexLabel}"
-                                               FontSize="14" FontAttributes="Bold"
-                                               TextColor="White"
+                                               FontSize="14" FontAttributes="Bold" TextColor="White"
                                                HorizontalOptions="Center" VerticalOptions="Center"/>
                                     </Border>
 
-                                    <!-- Tên + khoảng cách -->
                                     <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
-                                        <Label Text="{Binding Name}"
-                                               FontSize="14" FontAttributes="Bold"
+                                        <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold"
                                                TextColor="#1A1035" LineBreakMode="TailTruncation"/>
-                                        <Label Text="{Binding DistanceText}"
-                                               FontSize="12" TextColor="#64748B"/>
+                                        <Label Text="{Binding DistanceText}" FontSize="12" TextColor="#64748B"/>
                                     </VerticalStackLayout>
 
-                                    <!-- Nút phát audio -->
-                                    <Border Grid.Column="2"
-                                            BackgroundColor="#EDE7FF" Stroke="Transparent"
-                                            StrokeThickness="0"
-                                            WidthRequest="38" HeightRequest="38"
-                                            VerticalOptions="Center">
+                                    <!-- Icon chỉ đường (chọn làm điểm đến) -->
+                                    <Border Grid.Column="2" BackgroundColor="#DBEAFE"
+                                            Stroke="Transparent" StrokeThickness="0"
+                                            WidthRequest="36" HeightRequest="36" VerticalOptions="Center">
                                         <Border.StrokeShape>
-                                            <RoundRectangle CornerRadius="11"/>
+                                            <RoundRectangle CornerRadius="10"/>
+                                        </Border.StrokeShape>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectRouteDestCommand}"
+                                                CommandParameter="{Binding .}"/>
+                                        </Border.GestureRecognizers>
+                                        <Image Source="ic_directions.svg"
+                                               WidthRequest="16" HeightRequest="16"
+                                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                                    </Border>
+
+                                    <!-- Icon play audio -->
+                                    <Border Grid.Column="3" BackgroundColor="#EDE7FF"
+                                            Stroke="Transparent" StrokeThickness="0"
+                                            WidthRequest="36" HeightRequest="36" VerticalOptions="Center">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="10"/>
                                         </Border.StrokeShape>
                                         <Border.GestureRecognizers>
                                             <TapGestureRecognizer
                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
                                                 CommandParameter="{Binding .}"/>
                                         </Border.GestureRecognizers>
-                                        <Image WidthRequest="16" HeightRequest="16"
+                                        <Image WidthRequest="15" HeightRequest="15"
                                                HorizontalOptions="Center" VerticalOptions="Center">
                                             <Image.Triggers>
                                                 <DataTrigger TargetType="Image"
@@ -189,7 +408,7 @@
             </Grid>
         </Border>
 
-        <!-- ═══ Layer 4: POI Detail Card (ẩn mặc định, hiện khi bấm marker) -->
+        <!-- ═══ Layer 5: POI Detail Card ═════════════════════════════════════ -->
         <Border x:Name="poiDetailCard"
                 BackgroundColor="White" Stroke="#E8E3F5" StrokeThickness="1"
                 HorizontalOptions="Fill" VerticalOptions="End"
@@ -209,21 +428,17 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Hàng trên: Tên + nút đóng -->
                 <Grid Grid.Row="0" ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-
                     <VerticalStackLayout Grid.Column="0" Spacing="2">
                         <Label x:Name="lblCardName"
                                FontSize="16" FontAttributes="Bold"
                                TextColor="#1A1035" LineBreakMode="TailTruncation"/>
-                        <Label x:Name="lblCardDistance"
-                               FontSize="12" TextColor="#64748B"/>
+                        <Label x:Name="lblCardDistance" FontSize="12" TextColor="#64748B"/>
                     </VerticalStackLayout>
-
                     <Border Grid.Column="1" BackgroundColor="#F4F2FB"
                             Stroke="Transparent" StrokeThickness="0"
                             WidthRequest="32" HeightRequest="32" VerticalOptions="Start">
@@ -238,40 +453,53 @@
                     </Border>
                 </Grid>
 
-                <!-- Mô tả ngắn -->
                 <Label x:Name="lblCardDesc" Grid.Row="1"
                        FontSize="13" TextColor="#475569"
                        LineBreakMode="WordWrap" MaxLines="3"
                        Margin="0,8,0,0"/>
 
-                <!-- Hàng dưới: nút Audio + nút Xem chi tiết -->
                 <Grid Grid.Row="2" ColumnSpacing="10" Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
+                    <!-- Audio – icon only -->
                     <Border Grid.Column="0" BackgroundColor="#EDE7FF"
-                            Stroke="Transparent" StrokeThickness="0" HeightRequest="42">
+                            Stroke="Transparent" StrokeThickness="0"
+                            WidthRequest="46" HeightRequest="46">
                         <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="12"/>
+                            <RoundRectangle CornerRadius="14"/>
                         </Border.StrokeShape>
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCardPlayAudioTapped"/>
                         </Border.GestureRecognizers>
-                        <HorizontalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="6">
-                            <Image x:Name="imgCardPlay" Source="ic_play.svg"
-                                   WidthRequest="15" HeightRequest="15" VerticalOptions="Center"/>
-                            <Label x:Name="lblCardPlay" Text="Audio giới thiệu"
-                                   FontSize="13" FontAttributes="Bold" TextColor="#512BD4"
-                                   VerticalOptions="Center"/>
-                        </HorizontalStackLayout>
+                        <Image x:Name="imgCardPlay" Source="ic_play.svg"
+                               WidthRequest="20" HeightRequest="20"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
                     </Border>
 
-                    <Border Grid.Column="1" BackgroundColor="#512BD4"
-                            Stroke="Transparent" StrokeThickness="0" HeightRequest="42">
+                    <!-- Chỉ đường – icon only -->
+                    <Border Grid.Column="1" BackgroundColor="#DBEAFE"
+                            Stroke="Transparent" StrokeThickness="0"
+                            WidthRequest="46" HeightRequest="46">
                         <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="12"/>
+                            <RoundRectangle CornerRadius="14"/>
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCardNavigateTapped"/>
+                        </Border.GestureRecognizers>
+                        <Image Source="ic_directions.svg"
+                               WidthRequest="20" HeightRequest="20"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+
+                    <!-- Xem chi tiết -->
+                    <Border Grid.Column="2" BackgroundColor="#512BD4"
+                            Stroke="Transparent" StrokeThickness="0" HeightRequest="46">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="14"/>
                         </Border.StrokeShape>
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCardDetailTapped"/>

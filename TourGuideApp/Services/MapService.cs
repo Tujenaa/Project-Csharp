@@ -1,16 +1,5 @@
 ﻿namespace TourGuideApp.Services;
 
-/// <summary>
-/// Tạo nội dung HTML nhúng Leaflet.js.
-///
-/// JS API (gọi từ C# qua EvaluateJavaScriptAsync):
-///   setUserLocation(lat, lon)
-///   flyTo(lat, lon, zoom)
-///   setPOIs(jsonArray)     – đặt markers POI, KHÔNG vẽ đường nối
-///   clearRoutes()          – xóa tất cả POI markers
-///
-/// C# nhận sự kiện từ JS qua URL scheme: "tourguide://poi/{id}"
-/// </summary>
 public class MapService
 {
     public string BuildLeafletHtml() => """
@@ -38,7 +27,7 @@ const map = L.map('map', {
 }).setView([10.7769, 106.7009], 14);
 
 // Thêm zoom control ở góc trái trên (ít chiếm diện tích hơn)
-L.control.zoom({ position: 'topleft' }).addTo(map);
+//L.control.zoom({ position: 'topleft' }).addTo(map);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   maxZoom: 19

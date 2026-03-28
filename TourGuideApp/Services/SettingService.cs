@@ -15,7 +15,7 @@ public class SettingService : INotifyPropertyChanged
         { "zh", "🇨🇳  中文" },
     };
 
-    string _language = "vi";
+    string _language;
     public string Language
     {
         get => _language;
@@ -62,9 +62,13 @@ public class SettingService : INotifyPropertyChanged
 
     SettingService()
     {
+        // Đọc từ Preferences, nếu không có thì mặc định là "vi"
         _language = Preferences.Get("app_language", "vi");
         _autoPlay = Preferences.Get("auto_play", true);
         _gpsEnabled = Preferences.Get("gps_enabled", true);
+
+        // Log để debug
+        System.Diagnostics.Debug.WriteLine($"SettingService initialized: Language = {_language}");
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
