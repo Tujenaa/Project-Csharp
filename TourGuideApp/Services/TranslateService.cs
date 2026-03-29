@@ -1,9 +1,13 @@
 ﻿using System.Net.Http;
 using System.Text.Json;
-using System.Web;
 
 namespace TourGuideApp.Services;
 
+/// <summary>
+/// Dịch văn bản qua Google Translate free endpoint —
+/// cùng API với web admin (translate.googleapis.com/translate_a/single)
+/// Không cần key, hỗ trợ vi→en/ja/zh/fr/ko/...
+/// </summary>
 public class TranslateService
 {
     readonly HttpClient http = new();
@@ -11,68 +15,73 @@ public class TranslateService
     public TranslateService()
     {
         http.Timeout = TimeSpan.FromSeconds(15);
-        // Thêm User-Agent để tránh bị chặn
-        http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+        // Bắt buộc có User-Agent để Google không trả 403
+        http.DefaultRequestHeaders.TryAddWithoutValidation(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
     }
 
+    /// <summary>
+    /// Dịch <paramref name="text"/> từ tiếng Việt sang <paramref name="toLang"/>.
+    /// Nếu toLang == "vi" trả về text gốc ngay, không gọi mạng.
+    /// </summary>
     public async Task<string> TranslateAsync(string text, string toLang)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            return "";
-
-        // Nếu ngôn ngữ đích là tiếng Việt, không cần dịch
-        if (toLang == "vi")
-        {
-            System.Diagnostics.Debug.WriteLine("Translate: Target language is Vietnamese, no translation needed");
-            return text;
-        }
+        if (string.IsNullOrWhiteSpace(text)) return "";
+        if (toLang == "vi") return text;
 
         try
         {
-            var encodedText = Uri.EscapeDataString(text);
+            // Cùng endpoint với web admin
+            // sl=vi  (source: Vietnamese — script gốc luôn là tiếng Việt)
+            // tl=toLang
+            // dt=t   (chỉ lấy translation, không cần định nghĩa/phiên âm)
+            var url =
+                $"https://translate.googleapis.com/translate_a/single" +
+                $"?client=gtx&sl=vi&tl={Uri.EscapeDataString(toLang)}&dt=t" +
+                $"&q={Uri.EscapeDataString(text)}";
 
-            // Sử dụng API dịch thay thế (LibreTranslate hoặc MyMemory)
-            // Option 1: MyMemory API (free, không cần key)
-            var url = $"https://api.mymemory.translated.net/get?q={encodedText}&langpair=vi|{toLang}";
+            var json = await http.GetStringAsync(url);
 
-            System.Diagnostics.Debug.WriteLine($"Translate API URL: {url}");
-
-            var response = await http.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var json = await response.Content.ReadAsStringAsync();
-            System.Diagnostics.Debug.WriteLine($"Translation response: {json}");
-
+            // Kết quả: [[ ["dịch","gốc",...], ... ], ...]
+            // → nối tất cả phần tử [i][0] lại thành chuỗi
             using var doc = JsonDocument.Parse(json);
-            var translatedText = doc.RootElement
-                .GetProperty("responseData")
-                .GetProperty("translatedText")
-                .GetString();
+            var segments = doc.RootElement[0];
+            var sb = new System.Text.StringBuilder();
+            foreach (var seg in segments.EnumerateArray())
+            {
+                var part = seg[0].GetString();
+                if (!string.IsNullOrEmpty(part))
+                    sb.Append(part);
+            }
 
-            return !string.IsNullOrWhiteSpace(translatedText) ? translatedText : text;
+            var result = sb.ToString().Trim();
+            System.Diagnostics.Debug.WriteLine($"[Translate] {toLang}: {result[..Math.Min(80, result.Length)]}...");
+            return string.IsNullOrWhiteSpace(result) ? text : result;
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Translation error: {ex.Message}");
-            return text;
+            System.Diagnostics.Debug.WriteLine($"[Translate] ERROR: {ex.Message}");
+            return text; // Fallback: đọc text gốc tiếng Việt
         }
     }
 
-    // Hàm dịch với retry mechanism
-    public async Task<string> TranslateWithRetryAsync(string text, string toLang, int maxRetries = 2)
+    /// <summary>Retry wrapper — tối đa <paramref name="maxRetries"/> lần.</summary>
+    public async Task<string> TranslateWithRetryAsync(
+        string text, string toLang, int maxRetries = 2)
     {
         for (int i = 0; i < maxRetries; i++)
         {
             try
             {
-                var result = await TranslateAsync(text, toLang);
-                return result;
+                return await TranslateAsync(text, toLang);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Translation attempt {i + 1} failed: {ex.Message}");
-                if (i == maxRetries - 1)
-                    return text;
+                System.Diagnostics.Debug.WriteLine(
+                    $"[Translate] Attempt {i + 1} failed: {ex.Message}");
+                if (i == maxRetries - 1) return text;
                 await Task.Delay(1000);
             }
         }

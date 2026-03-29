@@ -6,16 +6,29 @@ namespace TourGuideApp.Pages;
 [QueryProperty(nameof(Poi), "poi")]
 public partial class PlaceDetailPage : ContentPage
 {
+    // ── Services ──────────────────────────────────────────────────────────────
     readonly TextToSpeechService ttsService = new();
+    readonly TranslateService translateService = new();
+
+    // ── TTS state (mirror MapViewModel / HomeViewModel) ───────────────────────
     CancellationTokenSource? ttsToken;
-    bool isPlaying = false;
+    bool isPlaying = false;   // đang chạy TTS
+    bool _isPaused = false;  // đã pause (có vị trí câu đang giữ)
 
+    // Ngôn ngữ đang được load trong ttsService
+    // Dùng để detect khi user đổi ngôn ngữ giữa chừng
+    string _currentLoadedLang = "";
+
+    // Cache bản dịch: key = lang, tránh dịch lại khi resume
+    readonly Dictionary<string, string> translationCache = new();
+
+    // ── Waveform bars ─────────────────────────────────────────────────────────
     BoxView[]? _bars;
-
-    // Peak heights and animation delays for each of 7 bars
     static readonly double[] BarPeaks = { 10, 24, 16, 28, 12, 22, 18 };
     static readonly int[] BarDelays = { 0, 80, 160, 40, 200, 100, 140 };
+    CancellationTokenSource? _waveCts;
 
+    // ── POI binding ───────────────────────────────────────────────────────────
     public POI? Poi
     {
         set { BindingContext = value; }
@@ -33,48 +46,105 @@ public partial class PlaceDetailPage : ContentPage
         StopPlayback();
     }
 
+    // ── Navigation ────────────────────────────────────────────────────────────
+
     private async void OnBackTapped(object sender, EventArgs e)
     {
         await this.FadeTo(0.5, 100);
         await Shell.Current.GoToAsync("..");
     }
 
+    // ── Play button handler ───────────────────────────────────────────────────
+
     private async void OnPlayTapped(object sender, EventArgs e)
     {
+        if (BindingContext is not POI poi) return;
+
+        string langNow = SettingService.Instance.Language;
+
+        // ── PAUSE: đang phát → dừng, ghi nhớ vị trí câu ─────────────────────
         if (isPlaying)
         {
-            StopPlayback();
+            ttsToken?.Cancel();
+            isPlaying = false;
+            _isPaused = true;
+            UpdateUI(playing: false);
+            StopWaveAnimation();
+            // ttsService giữ nguyên _sentenceIndex → resume tiếp tục đúng chỗ
             return;
         }
 
-        if (BindingContext is not POI poi) return;
+        // ── RESUME: đã pause cùng ngôn ngữ → tiếp tục từ câu đang dừng ──────
+        if (_isPaused && langNow == _currentLoadedLang)
+        {
+            _isPaused = false;
+            isPlaying = true;
+            UpdateUI(playing: true);
+            StartWaveAnimation();
+
+            ttsToken = new CancellationTokenSource();
+            try
+            {
+                // Không LoadText → giữ nguyên _sentenceIndex (tiếp tục)
+                // Nếu IsFinished == true → tự reset → replay
+                await ttsService.SpeakAsync(ttsToken.Token);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PlaceDetail] RESUME ERROR: {ex.Message}");
+            }
+
+            isPlaying = false;
+            UpdateUI(playing: false);
+            StopWaveAnimation();
+            return;
+        }
+
+        // ── PLAY MỚI hoặc đổi ngôn ngữ sau pause ────────────────────────────
+        // (lần đầu bấm / POI khác / ngôn ngữ thay đổi)
+        _isPaused = false;
+
+        if (langNow != _currentLoadedLang || string.IsNullOrEmpty(_currentLoadedLang))
+        {
+            string freshText = await GetTranslatedTextAsync(poi, langNow);
+            ttsService.LoadText(freshText);
+            _currentLoadedLang = langNow;
+        }
+        else
+        {
+            // Cùng ngôn ngữ, play lại từ đầu
+            ttsService.LoadText(await GetTranslatedTextAsync(poi, langNow));
+        }
 
         isPlaying = true;
         UpdateUI(playing: true);
         StartWaveAnimation();
 
         ttsToken = new CancellationTokenSource();
-        string text =
-         !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
-         !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
-         "Không có dữ liệu";
-
         try
         {
-            await ttsService.SpeakAsync(text, ttsToken.Token);
+            await ttsService.SpeakAsync(ttsToken.Token);
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) { Console.WriteLine(ex.Message); }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[PlaceDetail] TTS ERROR: {ex.Message}");
+        }
 
         isPlaying = false;
         UpdateUI(playing: false);
         StopWaveAnimation();
     }
 
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     void StopPlayback()
     {
         ttsToken?.Cancel();
         isPlaying = false;
+        _isPaused = false;
+        ttsService.LoadText(""); // reset sentence index khi stop hẳn
         UpdateUI(playing: false);
         StopWaveAnimation();
     }
@@ -85,8 +155,32 @@ public partial class PlaceDetailPage : ContentPage
         lblAudioStatus.Text = playing ? "Đang phát âm thanh..." : "Nghe thuyết minh";
     }
 
+    /// <summary>
+    /// Lấy text đã dịch; cache theo lang để không dịch lại khi resume.
+    /// Nếu lang == "vi" trả về text gốc ngay (không gọi mạng).
+    /// </summary>
+    async Task<string> GetTranslatedTextAsync(POI poi, string lang)
+    {
+        string originalText =
+            !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
+            !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
+            "Không có dữ liệu";
+
+        if (lang == "vi") return originalText;
+
+        if (translationCache.TryGetValue(lang, out var cached))
+        {
+            System.Diagnostics.Debug.WriteLine($"[PlaceDetail] Cache hit for lang={lang}");
+            return cached;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"[PlaceDetail] Translating to {lang}...");
+        string translated = await translateService.TranslateWithRetryAsync(originalText, lang);
+        translationCache[lang] = translated;
+        return translated;
+    }
+
     // ── Waveform animation ────────────────────────────────────────────────────
-    CancellationTokenSource? _waveCts;
 
     void StartWaveAnimation()
     {
@@ -109,7 +203,8 @@ public partial class PlaceDetailPage : ContentPage
         }
     }
 
-    static async Task AnimateBarAsync(BoxView bar, double peak, int delayMs, CancellationToken token)
+    static async Task AnimateBarAsync(
+        BoxView bar, double peak, int delayMs, CancellationToken token)
     {
         try
         {
@@ -123,7 +218,8 @@ public partial class PlaceDetailPage : ContentPage
         catch (OperationCanceledException) { }
     }
 
-    static Task AnimateHeight(BoxView box, double target, uint ms, CancellationToken token)
+    static Task AnimateHeight(
+        BoxView box, double target, uint ms, CancellationToken token)
     {
         var tcs = new TaskCompletionSource<bool>();
         if (token.IsCancellationRequested) { tcs.SetCanceled(); return tcs.Task; }

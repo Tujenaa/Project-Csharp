@@ -25,8 +25,18 @@ public class MapViewModel
     readonly HashSet<int> autoPlayedIds = new();
 
     public string MapHtml { get; }
-    int currentPosition = 0;
-    string currentText = "";
+
+    // ── TTS state ─────────────────────────────────────────────────────────────
+    POI? currentPlayingPoi;
+    bool isPlaying = false;
+    CancellationTokenSource? ttsToken;
+
+    // Ngôn ngữ đang được load trong ttsService
+    // Dùng để phát hiện khi user đổi ngôn ngữ giữa chừng
+    string _currentLoadedLang = "";
+
+    // Cache bản dịch: tránh dịch lại khi resume (key = poiId_lang)
+    readonly Dictionary<string, string> translationCache = new();
 
     // ── Events ────────────────────────────────────────────────────────────────
     public event Action? POIUpdated;
@@ -39,10 +49,6 @@ public class MapViewModel
     public Command<POI> SelectRouteDestCommand { get; set; }
 
     public Func<string, Task<string?>>? EvalJs { get; set; }
-
-    POI? currentPlayingPoi;
-    bool isPlaying = false;
-    CancellationTokenSource? ttsToken;
 
     public MapViewModel()
     {
@@ -135,82 +141,107 @@ public class MapViewModel
         POIUpdated?.Invoke();
     }
 
-    // ── Play / Pause ──────────────────────────────────────────────────────────
+    // ── Play / Pause / Resume ─────────────────────────────────────────────────
     async Task HandlePlayPause(POI poi)
     {
         if (poi == null) return;
 
-        // Nếu đang play → pause
+        // ── PAUSE: đang phát cùng POI → dừng, ghi nhớ vị trí câu ────────────
         if (currentPlayingPoi?.Id == poi.Id && isPlaying)
         {
             ttsToken?.Cancel();
             isPlaying = false;
             poi.IsPlaying = false;
-
+            POIUpdated?.Invoke(); // sync card icon ngay
+            // ttsService đã giữ nguyên _sentenceIndex → resume sẽ tiếp tục đúng chỗ
             return;
         }
 
-        // Nếu resume cùng POI
+        // ── RESUME: cùng POI, đang pause ─────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && !isPlaying)
         {
+            string langNow = SettingService.Instance.Language;
+
+            // Nếu ngôn ngữ đổi kể từ lần load → dịch lại, phát từ đầu với ngôn ngữ mới
+            if (langNow != _currentLoadedLang)
+            {
+                string srcText =
+                    !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
+                    !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
+                    "Không có dữ liệu";
+
+                string freshText = await GetTranslatedTextAsync(poi.Id, srcText, langNow);
+                ttsService.LoadText(freshText);
+                _currentLoadedLang = langNow;
+            }
+
             isPlaying = true;
             poi.IsPlaying = true;
+            POIUpdated?.Invoke(); // sync card icon ngay
 
             ttsToken = new CancellationTokenSource();
-
             try
             {
-                string remainingText = currentText.Substring(currentPosition);
-
-                await ttsService.SpeakAsync(remainingText, ttsToken.Token);
+                // Tiếp tục từ _sentenceIndex; nếu IsFinished thì replay từ đầu
+                await ttsService.SpeakAsync(ttsToken.Token);
             }
+            catch (OperationCanceledException) { }
             catch { }
 
             isPlaying = false;
             poi.IsPlaying = false;
+            POIUpdated?.Invoke(); // sync card icon khi kết thúc
             return;
         }
 
-        // Play mới
+        // ── PLAY MỚI: POI khác hoặc lần đầu ─────────────────────────────────
         StopAll();
 
         currentPlayingPoi = poi;
         isPlaying = true;
         poi.IsPlaying = true;
+        POIUpdated?.Invoke(); // sync card icon ngay
 
-        string text =
-    !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
-    !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
-    "Không có dữ liệu";
+        // Lấy text gốc
+        string originalText =
+            !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
+            !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
+            "Không có dữ liệu";
 
-        // 🔥 lấy ngôn ngữ từ setting
         string lang = SettingService.Instance.Language;
+        string finalText = await GetTranslatedTextAsync(poi.Id, originalText, lang);
 
-        string finalText;
-
-        if (lang == "vi")
-        {
-            finalText = text;
-        }
-        else
-        {
-            finalText = await translateService.TranslateAsync(text, lang);
-        }
-
-        currentText = finalText;
-        currentPosition = 0;
+        // Load text mới vào TTS service (reset sentence index)
+        ttsService.LoadText(finalText);
+        _currentLoadedLang = lang;   // ghi nhớ ngôn ngữ đang được load
 
         ttsToken = new CancellationTokenSource();
-
         try
         {
-            await ttsService.SpeakAsync(finalText, ttsToken.Token);
+            await ttsService.SpeakAsync(ttsToken.Token);
         }
+        catch (OperationCanceledException) { }
         catch { }
 
         isPlaying = false;
         poi.IsPlaying = false;
+        POIUpdated?.Invoke(); // sync card icon khi kết thúc
     }
+
+    /// Lấy text đã dịch; cache theo poiId + lang để không dịch lại khi resume
+    async Task<string> GetTranslatedTextAsync(int poiId, string originalText, string lang)
+    {
+        if (lang == "vi") return originalText;
+
+        string cacheKey = $"{poiId}_{lang}";
+        if (translationCache.TryGetValue(cacheKey, out var cached))
+            return cached;
+
+        string translated = await translateService.TranslateWithRetryAsync(originalText, lang);
+        translationCache[cacheKey] = translated;
+        return translated;
+    }
+
     void StopAll()
     {
         ttsToken?.Cancel();

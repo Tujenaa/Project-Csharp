@@ -261,8 +261,9 @@ public partial class MapPage : ContentPage
     private void OnCardPlayAudioTapped(object sender, EventArgs e)
     {
         if (currentDetailPoi == null) return;
+        // PlayAudioCommand là async — IsPlaying chưa update ngay.
+        // Icon sẽ được sync bởi POIUpdated event (OnPOIUpdated) khi IsPlaying thay đổi.
         viewModel.PlayAudioCommand.Execute(currentDetailPoi);
-        UpdateCardPlayButton(currentDetailPoi.IsPlaying);
     }
 
     private async void OnCardNavigateTapped(object sender, EventArgs e)
@@ -301,7 +302,12 @@ public partial class MapPage : ContentPage
             if (currentDetailPoi != null && poiDetailCard.IsVisible)
             {
                 var updated = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == currentDetailPoi.Id);
-                if (updated != null) lblCardDistance.Text = updated.DistanceText;
+                if (updated != null)
+                {
+                    lblCardDistance.Text = updated.DistanceText;
+                    // Sync icon play/pause theo trạng thái IsPlaying thực tế
+                    UpdateCardPlayButton(updated.IsPlaying);
+                }
             }
         });
     }
