@@ -39,7 +39,7 @@
                     HorizontalOptions="End"
                     VerticalOptions="Center"
                     Padding="0"
-                    Clicked="OnClearHistoryClicked"/>
+                    Command="{Binding ClearHistoryCommand}"/>
 			</Grid>
 
 			<HorizontalStackLayout Grid.Row="1" Spacing="10">

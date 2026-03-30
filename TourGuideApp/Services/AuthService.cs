@@ -34,7 +34,7 @@ public static class AuthService
 
             if (user == null)
                 return false;
-
+          
             Preferences.Set(KeyToken, Guid.NewGuid().ToString());
             Preferences.Set(KeyUsername, user.Username);
             Preferences.Set(KeyEmail, user.Email);

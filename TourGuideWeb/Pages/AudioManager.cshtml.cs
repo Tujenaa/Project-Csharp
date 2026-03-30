@@ -38,22 +38,19 @@ public class AudioManagerModel : PageModel
             }
             else
             {
-                // Owner chỉ thấy audio của POI mình
                 Pois = await client.GetFromJsonAsync<List<POI>>($"poi/owner/{MyId}") ?? [];
                 var myPoiIds = Pois.Select(p => p.Id).ToHashSet();
                 Audios = allAudios.Where(a => myPoiIds.Contains(a.PoiId)).ToList();
             }
         }
-        catch
-        {
-            Audios = []; Pois = [];
-        }
+        catch { Audios = []; Pois = []; }
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
         var client = _http.CreateClient("API");
         var payload = new { PoiId, Language, Script, AudioUrl = (string?)null };
+
         HttpResponseMessage res;
         if (Id == 0)
         {

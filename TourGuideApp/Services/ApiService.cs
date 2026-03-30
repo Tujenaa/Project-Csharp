@@ -11,7 +11,7 @@ public class ApiService
 
     public static class ApiConfig
     {
-        public const string BaseUrl = "http://192.168.1.46:5266/api/";
+        public const string BaseUrl = "http://192.168.1.66:5266/api/";
         //public const string BaseUrl = "http://10.0.2.2:5266/api/";
     }
 
@@ -25,16 +25,23 @@ public class ApiService
     }
 
     // Lưu lịch sử
-    public async Task SaveHistory(int poiId)
+    public async Task SaveHistory(int poiId, int userId)
     {
         var json = JsonSerializer.Serialize(new
         {
-            poiId = poiId
+            poiId = poiId,
+            userId = userId
         });
 
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        await client.PostAsync($"{ApiConfig.BaseUrl}POI/history", content);
+        await client.PostAsync($"{ApiConfig.BaseUrl}history", content);
+    }
+    public async Task<List<HistoryDto>> GetHistory(int userId)
+    {
+        return await client.GetFromJsonAsync<List<HistoryDto>>(
+            $"{ApiConfig.BaseUrl}history/user/{userId}"
+        ) ?? new List<HistoryDto>();
     }
 
     // Top POI
@@ -69,7 +76,14 @@ public class ApiService
         if (!response.IsSuccessStatusCode)
             return null;
 
-        return await response.Content.ReadFromJsonAsync<UserDto>();
+        var user = await response.Content.ReadFromJsonAsync<UserDto>();
+
+        if (user != null)
+        {
+            SessionService.CurrentUser = user;
+        }
+
+        return user;
     }
 
     // Đăng ký người dùng mới

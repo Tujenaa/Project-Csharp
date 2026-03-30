@@ -22,6 +22,8 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    /* Gộp luôn rule font-family cho toàn bộ thẻ vào đây */
+    font-family: var(--font);
 }
 
 body {
@@ -359,7 +361,7 @@ body {
     color: #991b1b !important;
 }
 
-/* ── FORMS ── */
+/* ── FORMS & INPUTS ── */
 .form-grid {
     display: grid;
     gap: 18px;
@@ -399,45 +401,48 @@ body {
     font-family: var(--font);
 }
 
-.form-control {
+/* Tích hợp phong cách Input/Select/Textarea từ Layout */
+input, select, textarea,
+input.form-control, select.form-control, textarea.form-control {
     background: var(--bg2) !important;
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 9px 13px;
     color: var(--text) !important;
     -webkit-text-fill-color: var(--text) !important;
-    font-family: var(--font);
+    font-family: var(--font) !important;
     font-size: 14px;
     transition: border-color .15s;
     width: 100%;
 }
 
+    input::placeholder, textarea::placeholder,
     .form-control::placeholder {
         color: var(--text2) !important;
-        opacity: 1;
+        opacity: 1 !important;
     }
 
-    .form-control:focus {
+    .form-control:focus, input:focus, textarea:focus, select:focus {
         outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(124,58,237,.12);
     }
 
-    .form-control:-webkit-autofill,
-    .form-control:-webkit-autofill:focus {
+    input:-webkit-autofill, input:-webkit-autofill:focus,
+    .form-control:-webkit-autofill, .form-control:-webkit-autofill:focus {
         -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
         -webkit-text-fill-color: var(--text) !important;
     }
 
-textarea.form-control {
-    resize: vertical;
-    min-height: 90px;
-}
+    textarea.form-control {
+        resize: vertical;
+        min-height: 90px;
+    }
 
-select.form-control option {
-    background: #fff;
-    color: #111827;
-}
+    select.form-control option {
+        background: #fff;
+        color: #111827;
+    }
 
 .required, .req {
     color: var(--danger);
@@ -599,7 +604,7 @@ select.form-control option {
     flex-shrink: 0;
 }
 
-/* ── MISC ── */
+/* ── MISC & TYPOGRAPHY TỪ LAYOUT ── */
 .action-group {
     display: flex;
     gap: 4px;
@@ -629,8 +634,8 @@ select.form-control option {
     font-weight: 600;
 }
 
-.coord {
-    font-family: var(--mono);
+.coord, .stat-value, code, pre, .mono, .time-chip, .rank-badge, .play-badge {
+    font-family: var(--mono) !important;
     font-size: 12px;
     color: var(--accent);
 }
@@ -647,4 +652,55 @@ select.form-control option {
         opacity: .3;
         display: block;
         margin-bottom: 10px;
+    }
+
+/* ── COMPONENT TỪ LAYOUT (USER CHIP, LOGOUT) ── */
+.user-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+}
+
+    .user-chip .u-name {
+        color: var(--text);
+        font-weight: 600;
+    }
+
+    .user-chip .u-role {
+        font-size: 10px;
+        padding: 2px 7px;
+        border-radius: 20px;
+        font-family: var(--mono);
+    }
+
+.role-admin {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.role-owner {
+    background: #ede9fe;
+    color: #5b21b6;
+}
+
+.btn-logout {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 5px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--font);
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+    .btn-logout:hover {
+        border-color: var(--danger);
+        color: var(--danger);
     }

@@ -3,6 +3,7 @@ using System.Text.Json;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
 using TourGuideApp.Utils;
+using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.ViewModels;
 
@@ -31,11 +32,8 @@ public class MapViewModel
     bool isPlaying = false;
     CancellationTokenSource? ttsToken;
 
-    // Ngôn ngữ đang được load trong ttsService
-    // Dùng để phát hiện khi user đổi ngôn ngữ giữa chừng
     string _currentLoadedLang = "";
 
-    // Cache bản dịch: tránh dịch lại khi resume (key = poiId_lang)
     readonly Dictionary<string, string> translationCache = new();
 
     // ── Events ────────────────────────────────────────────────────────────────
@@ -44,8 +42,6 @@ public class MapViewModel
     // ── Commands ──────────────────────────────────────────────────────────────
     public Command<POI> PlayAudioCommand { get; }
     public Command<POI> GoToDetailCommand { get; }
-
-    /// Được gán lại từ MapPage (để xử lý vẽ đường trên UI thread)
     public Command<POI> SelectRouteDestCommand { get; set; }
 
     public Func<string, Task<string?>>? EvalJs { get; set; }
@@ -63,10 +59,44 @@ public class MapViewModel
                 new Dictionary<string, object> { { "poi", poi } });
         });
 
-        // Default no-op; MapPage sẽ gán lại trong constructor
         SelectRouteDestCommand = new Command<POI>(_ => { });
 
+        // Đăng ký event ghi lịch sử khi TTS phát xong
+        ttsService.OnFinished += OnTtsFinished;
+
         _ = InitAsync();
+    }
+
+    // ── TTS finished callback ─────────────────────────────────────────────────
+
+    async void OnTtsFinished()
+    {
+        if (currentPlayingPoi == null) return;
+
+        var poi = currentPlayingPoi;
+        System.Diagnostics.Debug.WriteLine($"[Map] TTS finished → saving history for {poi.Name}");
+
+        await HistoryStore.AddAsync(poi);
+
+        _ = SaveHistoryToApiAsync(poi.Id);
+
+        // Cập nhật UI icon sau khi kết thúc
+        MainThread.BeginInvokeOnMainThread(() => POIUpdated?.Invoke());
+    }
+
+    async Task SaveHistoryToApiAsync(int poiId)
+    {
+        try
+        {
+            if (SessionService.CurrentUser != null)
+            {
+                await apiService.SaveHistory(poiId, SessionService.CurrentUser.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Map] API save failed: {ex.Message}");
+        }
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
@@ -117,7 +147,7 @@ public class MapViewModel
             await EvalJs($"setPOIs({BuildPOIJson(NearbyPOI)})");
     }
 
-    // ── Tìm kiếm POI theo tên ────────────────────────────────────────────────
+    // ── Tìm kiếm POI ─────────────────────────────────────────────────────────
     public List<POI> SearchPOI(string query)
     {
         if (string.IsNullOrWhiteSpace(query)) return new List<POI>();
@@ -146,23 +176,21 @@ public class MapViewModel
     {
         if (poi == null) return;
 
-        // ── PAUSE: đang phát cùng POI → dừng, ghi nhớ vị trí câu ────────────
+        // ── PAUSE ────────────────────────────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && isPlaying)
         {
             ttsToken?.Cancel();
             isPlaying = false;
             poi.IsPlaying = false;
-            POIUpdated?.Invoke(); // sync card icon ngay
-            // ttsService đã giữ nguyên _sentenceIndex → resume sẽ tiếp tục đúng chỗ
+            POIUpdated?.Invoke();
             return;
         }
 
-        // ── RESUME: cùng POI, đang pause ─────────────────────────────────────
+        // ── RESUME ───────────────────────────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && !isPlaying)
         {
             string langNow = SettingService.Instance.Language;
 
-            // Nếu ngôn ngữ đổi kể từ lần load → dịch lại, phát từ đầu với ngôn ngữ mới
             if (langNow != _currentLoadedLang)
             {
                 string srcText =
@@ -177,12 +205,11 @@ public class MapViewModel
 
             isPlaying = true;
             poi.IsPlaying = true;
-            POIUpdated?.Invoke(); // sync card icon ngay
+            POIUpdated?.Invoke();
 
             ttsToken = new CancellationTokenSource();
             try
             {
-                // Tiếp tục từ _sentenceIndex; nếu IsFinished thì replay từ đầu
                 await ttsService.SpeakAsync(ttsToken.Token);
             }
             catch (OperationCanceledException) { }
@@ -190,19 +217,18 @@ public class MapViewModel
 
             isPlaying = false;
             poi.IsPlaying = false;
-            POIUpdated?.Invoke(); // sync card icon khi kết thúc
+            POIUpdated?.Invoke();
             return;
         }
 
-        // ── PLAY MỚI: POI khác hoặc lần đầu ─────────────────────────────────
+        // ── PLAY MỚI ─────────────────────────────────────────────────────────
         StopAll();
 
         currentPlayingPoi = poi;
         isPlaying = true;
         poi.IsPlaying = true;
-        POIUpdated?.Invoke(); // sync card icon ngay
+        POIUpdated?.Invoke();
 
-        // Lấy text gốc
         string originalText =
             !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
             !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
@@ -211,9 +237,8 @@ public class MapViewModel
         string lang = SettingService.Instance.Language;
         string finalText = await GetTranslatedTextAsync(poi.Id, originalText, lang);
 
-        // Load text mới vào TTS service (reset sentence index)
         ttsService.LoadText(finalText);
-        _currentLoadedLang = lang;   // ghi nhớ ngôn ngữ đang được load
+        _currentLoadedLang = lang;
 
         ttsToken = new CancellationTokenSource();
         try
@@ -225,10 +250,9 @@ public class MapViewModel
 
         isPlaying = false;
         poi.IsPlaying = false;
-        POIUpdated?.Invoke(); // sync card icon khi kết thúc
+        POIUpdated?.Invoke();
     }
 
-    /// Lấy text đã dịch; cache theo poiId + lang để không dịch lại khi resume
     async Task<string> GetTranslatedTextAsync(int poiId, string originalText, string lang)
     {
         if (lang == "vi") return originalText;

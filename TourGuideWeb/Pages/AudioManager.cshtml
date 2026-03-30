@@ -28,10 +28,14 @@
             </tr>
         </thead>
         <tbody>
+            @{
+                int stt = 1;
+            }
             @foreach (var a in Model.Audios)
             {
                 <tr>
-                    <td class="text-muted">#@a.Id</td>
+                    <td class="text-muted">#@(stt++)</td>
+
                     <td style="font-weight:600">@(a.PoiName ?? $"#{a.PoiId}")</td>
                     <td><span class="badge badge-blue">@(a.Language ?? "vi")</span></td>
                     <td class="text-muted"
@@ -43,27 +47,27 @@
                         <div class="action-group">
                             @if (!string.IsNullOrEmpty(a.Script))
                             {
-                                <button class="btn btn-ghost btn-sm btn-icon" title="Phát"
+                                <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Phát"
                                         onclick="playTts(@a.Id)"
                                         id="ttsPlay-@a.Id">
                                     <i class="bi bi-play-circle"></i>
                                 </button>
-                                <button class="btn btn-ghost btn-sm btn-icon" title="Tạm dừng / Tiếp tục"
+                                <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Tạm dừng / Tiếp tục"
                                         onclick="pauseResumeTts(@a.Id)"
                                         id="ttsPause-@a.Id" style="display:none">
                                     <i class="bi bi-pause-circle"></i>
                                 </button>
-                                <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Dừng hẳn"
+                                <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" title="Dừng hẳn"
                                         onclick="stopTtsById(@a.Id)"
                                         id="ttsStop-@a.Id" style="display:none">
                                     <i class="bi bi-stop-circle"></i>
                                 </button>
                             }
-                            <button class="btn btn-ghost btn-sm btn-icon" title="Chỉnh sửa"
+                            <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Chỉnh sửa"
                                     onclick="editAudio(@a.Id)">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
+                            <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
                                     onclick="confirmDeleteAudio(@a.Id, '@(a.PoiName ?? $"#{a.PoiId}")')">
                                 <i class="bi bi-trash"></i>
                             </button>

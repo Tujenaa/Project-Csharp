@@ -79,11 +79,16 @@
                         </label>
                     </td>
                     <td>
-                        <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
-                                data-del-id="@u.Id" data-del-name="@u.Username" data-del-role="@u.Role"
-                                onclick="confirmDelete(this)">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <div class="action-group">
+                            <a href="/Users/Detail/@u.Id" class="btn btn-ghost btn-sm btn-icon" title="Xem chi tiết">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xoá"
+                                    data-del-id="@u.Id" data-del-name="@u.Username" data-del-role="@u.Role"
+                                    onclick="confirmDelete(this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             }

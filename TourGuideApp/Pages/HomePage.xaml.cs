@@ -37,17 +37,21 @@ public partial class HomePage : ContentPage
 
     public Command<POI> GoToDetailCommand { get; }
 
-  
+
     private async void OnPlaceSelected(object sender, SelectionChangedEventArgs e)
     {
         if (e.CurrentSelection.Count == 0)
             return;
 
-        // Sử dụng ép kiểu an toàn và kiểm tra null
         if (e.CurrentSelection[0] is POI poi)
         {
             var api = new ApiService();
-            await api.SaveHistory(poi.Id);
+
+            if (SessionService.CurrentUser != null)
+            {
+                await api.SaveHistory(poi.Id, SessionService.CurrentUser.Id);
+            }
+
             await DisplayAlert("Địa điểm", poi.Name, "OK");
         }
     }

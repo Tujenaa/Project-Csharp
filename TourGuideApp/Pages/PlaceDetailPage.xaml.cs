@@ -1,5 +1,6 @@
 ﻿using TourGuideApp.Models;
 using TourGuideApp.Services;
+using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.Pages;
 
@@ -10,17 +11,19 @@ public partial class PlaceDetailPage : ContentPage
     readonly TextToSpeechService ttsService = new();
     readonly TranslateService translateService = new();
 
-    // ── TTS state (mirror MapViewModel / HomeViewModel) ───────────────────────
+    // ── TTS state ─────────────────────────────────────────────────────────────
     CancellationTokenSource? ttsToken;
-    bool isPlaying = false;   // đang chạy TTS
-    bool _isPaused = false;  // đã pause (có vị trí câu đang giữ)
+    bool isPlaying = false;
+    bool _isPaused = false;
 
     // Ngôn ngữ đang được load trong ttsService
-    // Dùng để detect khi user đổi ngôn ngữ giữa chừng
     string _currentLoadedLang = "";
 
-    // Cache bản dịch: key = lang, tránh dịch lại khi resume
+    // Cache bản dịch: key = lang
     readonly Dictionary<string, string> translationCache = new();
+
+    // POI hiện tại (lưu để ghi lịch sử)
+    POI? _currentPoi;
 
     // ── Waveform bars ─────────────────────────────────────────────────────────
     BoxView[]? _bars;
@@ -31,13 +34,25 @@ public partial class PlaceDetailPage : ContentPage
     // ── POI binding ───────────────────────────────────────────────────────────
     public POI? Poi
     {
-        set { BindingContext = value; }
+        set
+        {
+            _currentPoi = value;
+            BindingContext = value;
+
+            // Reset TTS state khi chuyển sang POI mới
+            StopPlayback();
+            translationCache.Clear();
+            _currentLoadedLang = "";
+        }
     }
 
     public PlaceDetailPage()
     {
         InitializeComponent();
         _bars = new[] { bar0, bar1, bar2, bar3, bar4, bar5, bar6 };
+
+        // Lắng nghe sự kiện phát xong từ TTS service → ghi lịch sử
+        ttsService.OnFinished += OnTtsFinished;
     }
 
     protected override void OnDisappearing()
@@ -70,7 +85,6 @@ public partial class PlaceDetailPage : ContentPage
             _isPaused = true;
             UpdateUI(playing: false);
             StopWaveAnimation();
-            // ttsService giữ nguyên _sentenceIndex → resume tiếp tục đúng chỗ
             return;
         }
 
@@ -86,7 +100,6 @@ public partial class PlaceDetailPage : ContentPage
             try
             {
                 // Không LoadText → giữ nguyên _sentenceIndex (tiếp tục)
-                // Nếu IsFinished == true → tự reset → replay
                 await ttsService.SpeakAsync(ttsToken.Token);
             }
             catch (OperationCanceledException) { }
@@ -102,7 +115,6 @@ public partial class PlaceDetailPage : ContentPage
         }
 
         // ── PLAY MỚI hoặc đổi ngôn ngữ sau pause ────────────────────────────
-        // (lần đầu bấm / POI khác / ngôn ngữ thay đổi)
         _isPaused = false;
 
         if (langNow != _currentLoadedLang || string.IsNullOrEmpty(_currentLoadedLang))
@@ -113,7 +125,7 @@ public partial class PlaceDetailPage : ContentPage
         }
         else
         {
-            // Cùng ngôn ngữ, play lại từ đầu
+            // Cùng ngôn ngữ, bấm play lại sau khi đã phát xong → replay từ đầu
             ttsService.LoadText(await GetTranslatedTextAsync(poi, langNow));
         }
 
@@ -137,6 +149,48 @@ public partial class PlaceDetailPage : ContentPage
         StopWaveAnimation();
     }
 
+    // ── Ghi lịch sử khi phát xong ────────────────────────────────────────────
+
+    /// Được gọi từ TextToSpeechService.OnFinished (có thể từ background thread)
+    void OnTtsFinished()
+    {
+        if (_currentPoi == null) return;
+
+        System.Diagnostics.Debug.WriteLine($"[PlaceDetail] TTS finished → saving history for {_currentPoi.Name}");
+
+        // Ghi vào local history store
+        _ = HistoryStore.AddAsync(_currentPoi);
+
+        // Ghi lên API (fire-and-forget, không block UI)
+        _ = SaveHistoryToApiAsync(_currentPoi.Id);
+
+        // Cập nhật UI trên main thread
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            UpdateUI(playing: false);
+            StopWaveAnimation();
+        });
+    }
+
+    async Task SaveHistoryToApiAsync(int poiId)
+    {
+        try
+        {
+            var api = new ApiService();
+
+            if (SessionService.CurrentUser != null)
+            {
+                await api.SaveHistory(poiId, SessionService.CurrentUser.Id);
+            }
+
+            System.Diagnostics.Debug.WriteLine($"[PlaceDetail] History saved to API: poiId={poiId}");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[PlaceDetail] API save failed: {ex.Message}");
+        }
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     void StopPlayback()
@@ -151,8 +205,17 @@ public partial class PlaceDetailPage : ContentPage
 
     void UpdateUI(bool playing)
     {
-        imgPlayIcon.Source = playing ? "ic_pause.svg" : "ic_white_play.svg";
-        lblAudioStatus.Text = playing ? "Đang phát âm thanh..." : "Nghe thuyết minh";
+        // Nếu TTS vừa kết thúc tự nhiên (IsFinished) → icon play, label "Nghe lại"
+        if (!playing && ttsService.IsFinished)
+        {
+            imgPlayIcon.Source = "ic_white_play.svg";
+            lblAudioStatus.Text = "Nghe lại";
+        }
+        else
+        {
+            imgPlayIcon.Source = playing ? "ic_pause.svg" : "ic_white_play.svg";
+            lblAudioStatus.Text = playing ? "Đang phát âm thanh..." : "Nghe thuyết minh";
+        }
     }
 
     /// <summary>
@@ -169,12 +232,8 @@ public partial class PlaceDetailPage : ContentPage
         if (lang == "vi") return originalText;
 
         if (translationCache.TryGetValue(lang, out var cached))
-        {
-            System.Diagnostics.Debug.WriteLine($"[PlaceDetail] Cache hit for lang={lang}");
             return cached;
-        }
 
-        System.Diagnostics.Debug.WriteLine($"[PlaceDetail] Translating to {lang}...");
         string translated = await translateService.TranslateWithRetryAsync(originalText, lang);
         translationCache[lang] = translated;
         return translated;

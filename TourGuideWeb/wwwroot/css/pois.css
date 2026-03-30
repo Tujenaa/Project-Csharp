@@ -1,7 +1,7 @@
 ﻿/* pois.css */
 .poi-shell {
     display: grid;
-    grid-template-columns: 1fr 290px;
+    grid-template-columns: 3fr 2fr;
     grid-template-rows: 1fr 1fr;
     grid-template-areas: "map list" "map detail";
     height: calc(100vh - 65px);

@@ -40,7 +40,7 @@ public class IndexModel : PageModel
 
         if (IsAdmin)
         {
-            pois = await Fetch<List<POI>>(client, "poi");
+            pois = await Fetch<List<POI>>(client, "poi/all");
             audios = await Fetch<List<AudioItem>>(client, "audio");
             history = await Fetch<List<HistoryItem>>(client, "history");
             users = await Fetch<List<UserItem>>(client, "users");

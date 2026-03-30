@@ -4,19 +4,12 @@ using TourGuideApp.Services;
 /// <summary>
 /// TTS service cho MAUI — logic chọn giọng đồng bộ với web admin (pickVoice).
 ///
-/// Web admin ưu tiên:
-///   vi → Google Vietnamese > Microsoft NamMinh Online > HoaiMy Online
-///   en → Google US English  > Microsoft Aria Online   > Guy Online
-///   ja → Google 日本語       > Microsoft Nanami Online
-///   zh → Google 普通话       > Microsoft Xiaoxiao Online
-///
-/// MAUI Locale map:
-///   vi → vi-VN   en → en-US   ja → ja-JP   zh → zh-CN  (và các biến thể)
-///
 /// Pause/Resume:
 ///   MAUI TTS không có native pause/resume → ta chia text thành CÁC CÂU,
 ///   track sentenceIndex. Pause = cancel + giữ index. Resume = tiếp tục từ index đó.
 ///   Nếu đã phát hết (IsFinished) → lần phát tiếp sẽ reset từ câu 0 (replay).
+///
+/// Khi phát xong toàn bộ → raise event OnFinished.
 /// </summary>
 public class TextToSpeechService
 {
@@ -27,8 +20,10 @@ public class TextToSpeechService
 
     public bool IsFinished => _finished;
 
-    // ── Voice priority table (mirror của pickVoice trong web admin) ───────────
-    // key = language code, value = preferred locale codes theo thứ tự ưu tiên
+    /// <summary>Raised sau khi phát xong câu cuối cùng (không bị cancel).</summary>
+    public event Action? OnFinished;
+
+    // ── Voice priority table ──────────────────────────────────────────────────
     private static readonly Dictionary<string, string[]> LocalePriority = new()
     {
         ["vi"] = new[] { "vi-VN" },
@@ -60,6 +55,7 @@ public class TextToSpeechService
     /// Phát từ sentenceIndex hiện tại.
     /// - Nếu IsFinished → reset về câu 0 trước khi phát (replay).
     /// - Nếu cancel token bị trigger (pause) → dừng, giữ nguyên sentenceIndex.
+    /// - Khi phát xong hết → raise OnFinished.
     /// </summary>
     public async Task SpeakAsync(CancellationToken cancelToken = default)
     {
@@ -117,6 +113,9 @@ public class TextToSpeechService
         // Phát xong toàn bộ
         _finished = true;
         System.Diagnostics.Debug.WriteLine("[TTS] Finished all sentences");
+
+        // Raise event để caller ghi lịch sử
+        OnFinished?.Invoke();
     }
 
     /// <summary>
@@ -129,13 +128,12 @@ public class TextToSpeechService
         await SpeakAsync(cancelToken);
     }
 
-    // ── Voice resolution (tương đương pickVoice của web) ─────────────────────
+    // ── Voice resolution ──────────────────────────────────────────────────────
 
     private async Task<Locale?> ResolveLocaleAsync(string lang)
     {
         var locales = await TextToSpeech.GetLocalesAsync();
 
-        // 1. Tìm theo bảng ưu tiên (mirror pickVoice)
         if (LocalePriority.TryGetValue(lang.ToLowerInvariant(), out var preferred))
         {
             foreach (var code in preferred)
@@ -153,22 +151,16 @@ public class TextToSpeechService
             }
         }
 
-        // 2. Fallback: bất kỳ locale nào có prefix ngôn ngữ khớp
         var fallback = locales.FirstOrDefault(l =>
             l.Language.StartsWith(lang, StringComparison.OrdinalIgnoreCase));
         if (fallback != null) return fallback;
 
-        // 3. Ultimate fallback: tiếng Việt (giống web khi không tìm được voice)
         return locales.FirstOrDefault(l =>
             l.Language.StartsWith("vi", StringComparison.OrdinalIgnoreCase));
     }
 
     // ── Text splitting ────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Chia văn bản thành danh sách câu.
-    /// Tách theo dấu câu kết thúc: . ! ? và newline.
-    /// </summary>
     private static List<string> SplitToSentences(string text)
     {
         if (string.IsNullOrWhiteSpace(text))

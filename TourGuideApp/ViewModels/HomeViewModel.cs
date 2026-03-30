@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Windows.Input;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
+using TourGuideApp.ViewModels;
 
 public class HomeViewModel : INotifyPropertyChanged
 {
@@ -21,10 +22,9 @@ public class HomeViewModel : INotifyPropertyChanged
     bool isPlaying = false;
     CancellationTokenSource? ttsToken;
 
-    // Ngôn ngữ đang được load trong ttsService
     string _currentLoadedLang = "";
 
-    // Cache bản dịch: tránh dịch lại khi resume (key = poiId_lang)
+    // Cache bản dịch: key = poiId_lang
     readonly Dictionary<string, string> translationCache = new();
 
     public HomeViewModel()
@@ -43,7 +43,10 @@ public class HomeViewModel : INotifyPropertyChanged
             await HandlePlayPause(poi);
         });
 
-        System.Diagnostics.Debug.WriteLine($"HomeViewModel created. Current language: {SettingService.Instance.Language}");
+        // Đăng ký event ghi lịch sử khi TTS phát xong
+        ttsService.OnFinished += OnTtsFinished;
+
+        System.Diagnostics.Debug.WriteLine($"HomeViewModel created. Language: {SettingService.Instance.Language}");
     }
 
     private int _poiCount;
@@ -81,21 +84,51 @@ public class HomeViewModel : INotifyPropertyChanged
     void OnPropertyChanged(string name) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
+    // ── TTS finished callback ─────────────────────────────────────────────────
+
+    async void OnTtsFinished()
+    {
+        if (currentPlayingPoi == null) return;
+
+        var poi = currentPlayingPoi;
+        System.Diagnostics.Debug.WriteLine($"[Home] TTS finished → saving history for {poi.Name}");
+
+        // Ghi lịch sử local
+        await HistoryStore.AddAsync(poi);
+
+        // Ghi lên API (fire-and-forget)
+        _ = SaveHistoryToApiAsync(poi.Id);
+    }
+
+    async Task SaveHistoryToApiAsync(int poiId)
+    {
+        try
+        {
+            if (SessionService.CurrentUser != null)
+            {
+                await _poiService.SaveHistory(poiId, SessionService.CurrentUser.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Home] API save failed: {ex.Message}");
+        }
+    }
+
+    // ── Play / Pause / Resume ─────────────────────────────────────────────────
+
     async Task HandlePlayPause(POI poi)
     {
         if (poi == null) return;
 
         string currentLang = SettingService.Instance.Language;
-        System.Diagnostics.Debug.WriteLine($"HandlePlayPause: POI={poi.Name}, Lang={currentLang}");
 
-        // ── PAUSE: đang phát cùng POI → dừng, ghi nhớ vị trí câu ────────────
+        // ── PAUSE: đang phát cùng POI ────────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && isPlaying)
         {
-            System.Diagnostics.Debug.WriteLine("Pausing playback");
             ttsToken?.Cancel();
             isPlaying = false;
             poi.IsPlaying = false;
-            // ttsService giữ nguyên _sentenceIndex → resume tiếp tục đúng chỗ
             return;
         }
 
@@ -104,10 +137,8 @@ public class HomeViewModel : INotifyPropertyChanged
         {
             string langNow = SettingService.Instance.Language;
 
-            // Nếu ngôn ngữ đổi kể từ lần load → dịch lại, phát từ đầu với ngôn ngữ mới
             if (langNow != _currentLoadedLang)
             {
-                System.Diagnostics.Debug.WriteLine($"Language changed: {_currentLoadedLang} → {langNow}, reloading text");
                 string srcText =
                     !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
                     !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
@@ -116,10 +147,6 @@ public class HomeViewModel : INotifyPropertyChanged
                 string freshText = await GetTranslatedTextAsync(poi.Id, srcText, langNow);
                 ttsService.LoadText(freshText);
                 _currentLoadedLang = langNow;
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine("Resuming playback (same language)");
             }
 
             isPlaying = true;
@@ -143,14 +170,12 @@ public class HomeViewModel : INotifyPropertyChanged
         }
 
         // ── PLAY MỚI: POI khác hoặc lần đầu ─────────────────────────────────
-        System.Diagnostics.Debug.WriteLine("Starting new playback");
         StopAll();
 
         currentPlayingPoi = poi;
         isPlaying = true;
         poi.IsPlaying = true;
 
-        // Lấy text gốc (tiếng Việt)
         string originalText =
             !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
             !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
@@ -158,9 +183,8 @@ public class HomeViewModel : INotifyPropertyChanged
 
         string finalText = await GetTranslatedTextAsync(poi.Id, originalText, currentLang);
 
-        // Load text mới vào TTS service (reset sentence index về 0)
         ttsService.LoadText(finalText);
-        _currentLoadedLang = currentLang;   // ghi nhớ ngôn ngữ đang được load
+        _currentLoadedLang = currentLang;
 
         ttsToken = new CancellationTokenSource();
         try
@@ -177,22 +201,16 @@ public class HomeViewModel : INotifyPropertyChanged
         poi.IsPlaying = false;
     }
 
-    /// Lấy text đã dịch; cache theo poiId + lang để không dịch lại khi resume
     async Task<string> GetTranslatedTextAsync(int poiId, string originalText, string lang)
     {
         if (lang == "vi") return originalText;
 
         string cacheKey = $"{poiId}_{lang}";
         if (translationCache.TryGetValue(cacheKey, out var cached))
-        {
-            System.Diagnostics.Debug.WriteLine($"Using cached translation for {cacheKey}");
             return cached;
-        }
 
-        System.Diagnostics.Debug.WriteLine($"Translating POI {poiId} to {lang}...");
         string translated = await translateService.TranslateWithRetryAsync(originalText, lang);
         translationCache[cacheKey] = translated;
-        System.Diagnostics.Debug.WriteLine($"Translation cached for {cacheKey}");
         return translated;
     }
 
