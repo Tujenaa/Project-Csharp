@@ -1,4 +1,4 @@
-﻿using TourGuideApp.Services;
+using TourGuideApp.Services;
 
 namespace TourGuideApp.Pages;
 
@@ -60,6 +60,13 @@ public partial class LoginPage : ContentPage
 
         SetLoginLoading(true);
 
+        if (!await ConnectivityService.CanReachApiAsync())
+        {
+            SetLoginLoading(false);
+            ShowLoginError("Bạn đang offline. Không thể kết nối đến máy chủ.");
+            return;
+        }
+
         try
         {
             bool ok = await AuthService.LoginAsync(username, password);
@@ -117,6 +124,13 @@ public partial class LoginPage : ContentPage
 
         SetRegisterLoading(true);
 
+        if (!await ConnectivityService.CanReachApiAsync())
+        {
+            SetRegisterLoading(false);
+            ShowRegError("Bạn đang offline. Không thể kết nối đến máy chủ.");
+            return;
+        }
+
         try
         {
             bool ok = await AuthService.RegisterAsync(username, name, email, password);
@@ -139,7 +153,11 @@ public partial class LoginPage : ContentPage
 
     // ─── Guest ────────────────────────────────────────────────────────────────
 
-    private void OnGuestLoginClicked(object sender, EventArgs e) => GoToShell();
+    private void OnGuestLoginClicked(object sender, EventArgs e)
+    {
+        AuthService.LoginOfflineAsGuest();
+        GoToShell();
+    }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 

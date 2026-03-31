@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
 using TourGuideApp.Models;
@@ -95,6 +95,9 @@ namespace TourGuideApp.ViewModels
             TotalListened = allItems.Count;
             TotalDuration = allItems.Count * 3;
             IsHistoryEmpty = allItems.Count == 0;
+            
+            OnPropertyChanged(nameof(IsLoggedIn));
+            OnPropertyChanged(nameof(IsNotLoggedIn));
         }
 
         static string DateLabel(DateTime date)
@@ -105,39 +108,9 @@ namespace TourGuideApp.ViewModels
             return date.ToString("dd/MM/yyyy");
         }
 
-        public async Task LoadFromApi()
-        {
-            if (SessionService.CurrentUser == null) return;
+        public bool IsLoggedIn => AuthService.IsLoggedIn;
+        public bool IsNotLoggedIn => !AuthService.IsLoggedIn;
 
-            var api = new ApiService();
-            var data = await api.GetHistory(SessionService.CurrentUser.Id);
-
-            HistoryGroups.Clear();
-
-            var grouped = data
-                .GroupBy(h => h.PlayTime.Date)
-                .OrderByDescending(g => g.Key);
-
-            foreach (var g in grouped)
-            {
-                var group = new HistoryGroup(g.Key.ToString("dd/MM/yyyy"));
-
-                foreach (var item in g)
-                {
-                    group.Add(new HistoryItem
-                    {
-                        Poi = new POI
-                        {
-                            Id = item.PoiId,
-                            Name = item.PoiName ?? ""
-                        },
-                        ListenedAt = item.PlayTime
-                    });
-                }
-
-                HistoryGroups.Add(group);
-            }
-        }
         public event PropertyChangedEventHandler? PropertyChanged;
         void OnPropertyChanged(string name) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

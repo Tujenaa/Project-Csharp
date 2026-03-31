@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using Microsoft.Maui.ApplicationModel;
 
 using TourGuideApp.Pages;
@@ -38,21 +38,15 @@ public partial class HomePage : ContentPage
     public Command<POI> GoToDetailCommand { get; }
 
 
-    private async void OnPlaceSelected(object sender, SelectionChangedEventArgs e)
+    private void OnPlaceSelected(object sender, SelectionChangedEventArgs e)
     {
         if (e.CurrentSelection.Count == 0)
             return;
 
-        if (e.CurrentSelection[0] is POI poi)
+        // Chỉ reset selection, không lưu history ở đây (tránh duplicate với TTS)
+        if (sender is CollectionView cv)
         {
-            var api = new ApiService();
-
-            if (SessionService.CurrentUser != null)
-            {
-                await api.SaveHistory(poi.Id, SessionService.CurrentUser.Id);
-            }
-
-            await DisplayAlert("Địa điểm", poi.Name, "OK");
+            cv.SelectedItem = null;
         }
     }
 

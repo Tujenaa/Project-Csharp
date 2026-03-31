@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using TourGuideApp.Models;
 namespace TourGuideApp.Services;
 
@@ -21,6 +21,17 @@ public static class AuthService
             var n = Name;
             return n.Length > 0 ? n[0].ToString().ToUpper() : "U";
         }
+    }
+
+    // Đăng nhập dạng khách offline
+    public static void LoginOfflineAsGuest()
+    {
+        Preferences.Set(KeyToken, "offline_guest_token");
+        Preferences.Set(KeyUsername, "guest");
+        Preferences.Set(KeyEmail, "guest@tourguide.local");
+        Preferences.Set(KeyName, "Khách (Sử dụng Offline)");
+        Preferences.Set(KeyPhone, "000000000");
+        Preferences.Set("user_id", 0);
     }
 
     // Đang nhập bằng username 

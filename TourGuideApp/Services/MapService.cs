@@ -1,4 +1,4 @@
-﻿namespace TourGuideApp.Services;
+namespace TourGuideApp.Services;
 
 public class MapService
 {
@@ -55,17 +55,20 @@ const userIcon = L.divIcon({
   iconSize: [18, 18], iconAnchor: [9, 9]
 });
 
-function makePOIIcon() {
+function makePOIIcon(isHighlighted = false) {
+  const bgColor = isHighlighted ? '#F59E0B' : '#EF4444'; // Orange or Red
+  const scale = isHighlighted ? 'scale(1.2)' : 'scale(1)';
   return L.divIcon({
     className: '',
     html: `<div style="
       width:30px;
       height:30px;
-      background:#EF4444;
+      background:${bgColor};
       border-radius:50% 50% 50% 0;
-      transform: rotate(-45deg);
+      transform: rotate(-45deg) ${scale};
       border:2px solid white;
       box-shadow:0 2px 8px rgba(0,0,0,.3);
+      transition: all 0.2s ease-in-out;
     "></div>`,
     iconSize: [30, 30],
     iconAnchor: [15, 30]
@@ -113,7 +116,7 @@ function setPOIs(jsonArray) {
 
   pois.forEach((poi, idx) => {
     const m = L.marker([poi.latitude, poi.longitude], {
-      icon: makePOIIcon(),
+      icon: makePOIIcon(false),
       zIndexOffset: 100
     }).addTo(map);
 
@@ -137,11 +140,9 @@ function setPOIs(jsonArray) {
 
 function highlightPOI(id) {
   poiMarkers.forEach(m => {
-    if (m.poiId === id) {
-      m.setZIndexOffset(1000); // nổi lên
-    } else {
-      m.setZIndexOffset(100);
-    }
+    const isHigh = (m.poiId === id);
+    m.setIcon(makePOIIcon(isHigh));
+    m.setZIndexOffset(isHigh ? 1000 : 100);
   });
 }
 // Vẽ đường nối giữa 2 điểm (ví dụ: user → POI)

@@ -1,4 +1,4 @@
-﻿using TourGuideApp.Models;
+using TourGuideApp.Models;
 using TourGuideApp.Services;
 using TourGuideApp.ViewModels;
 
@@ -53,6 +53,17 @@ public partial class PlaceDetailPage : ContentPage
 
         // Lắng nghe sự kiện phát xong từ TTS service → ghi lịch sử
         ttsService.OnFinished += OnTtsFinished;
+        ttsService.OnProgress += OnTtsProgress;
+    }
+
+    void OnTtsProgress(int current, int total)
+    {
+        if (_currentPoi == null || total == 0) return;
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            _currentPoi.AudioProgress = (double)current / total;
+            _currentPoi.AudioDuration = $"{current}/{total} câu";
+        });
     }
 
     protected override void OnDisappearing()
@@ -69,15 +80,10 @@ public partial class PlaceDetailPage : ContentPage
         await Shell.Current.GoToAsync("..");
     }
 
-    // ── Play button handler ───────────────────────────────────────────────────
+    // ── Nút Tạm dừng ──────────────────────────────────────────────────────────
 
-    private async void OnPlayTapped(object sender, EventArgs e)
+    private void OnPauseTapped(object sender, EventArgs e)
     {
-        if (BindingContext is not POI poi) return;
-
-        string langNow = SettingService.Instance.Language;
-
-        // ── PAUSE: đang phát → dừng, ghi nhớ vị trí câu ─────────────────────
         if (isPlaying)
         {
             ttsToken?.Cancel();
@@ -85,8 +91,19 @@ public partial class PlaceDetailPage : ContentPage
             _isPaused = true;
             UpdateUI(playing: false);
             StopWaveAnimation();
-            return;
         }
+    }
+
+    // ── Play button handler (Chỉ Play/Resume) ─────────────────────────────────
+
+    private async void OnPlayTapped(object sender, EventArgs e)
+    {
+        if (BindingContext is not POI poi) return;
+
+        // Nếu đang phát thì không làm gì (hoặc có thể pause tuỳ thiết kế, nhưng ta đã có nút pause riêng)
+        if (isPlaying) return;
+
+        string langNow = SettingService.Instance.Language;
 
         // ── RESUME: đã pause cùng ngôn ngữ → tiếp tục từ câu đang dừng ──────
         if (_isPaused && langNow == _currentLoadedLang)
@@ -158,11 +175,8 @@ public partial class PlaceDetailPage : ContentPage
 
         System.Diagnostics.Debug.WriteLine($"[PlaceDetail] TTS finished → saving history for {_currentPoi.Name}");
 
-        // Ghi vào local history store
+        // Ghi vào local history store (hàm này sẽ tự động gọi API)
         _ = HistoryStore.AddAsync(_currentPoi);
-
-        // Ghi lên API (fire-and-forget, không block UI)
-        _ = SaveHistoryToApiAsync(_currentPoi.Id);
 
         // Cập nhật UI trên main thread
         MainThread.BeginInvokeOnMainThread(() =>
@@ -170,25 +184,6 @@ public partial class PlaceDetailPage : ContentPage
             UpdateUI(playing: false);
             StopWaveAnimation();
         });
-    }
-
-    async Task SaveHistoryToApiAsync(int poiId)
-    {
-        try
-        {
-            var api = new ApiService();
-
-            if (SessionService.CurrentUser != null)
-            {
-                await api.SaveHistory(poiId, SessionService.CurrentUser.Id);
-            }
-
-            System.Diagnostics.Debug.WriteLine($"[PlaceDetail] History saved to API: poiId={poiId}");
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[PlaceDetail] API save failed: {ex.Message}");
-        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -208,12 +203,10 @@ public partial class PlaceDetailPage : ContentPage
         // Nếu TTS vừa kết thúc tự nhiên (IsFinished) → icon play, label "Nghe lại"
         if (!playing && ttsService.IsFinished)
         {
-            imgPlayIcon.Source = "ic_white_play.svg";
             lblAudioStatus.Text = "Nghe lại";
         }
         else
         {
-            imgPlayIcon.Source = playing ? "ic_pause.svg" : "ic_white_play.svg";
             lblAudioStatus.Text = playing ? "Đang phát âm thanh..." : "Nghe thuyết minh";
         }
     }

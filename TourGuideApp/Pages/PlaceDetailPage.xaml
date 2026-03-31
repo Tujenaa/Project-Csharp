@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
     x:Name="page"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
@@ -80,27 +80,54 @@
 
                     <Grid ColumnSpacing="14">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="50"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Play / Pause button (purple circle) -->
-                        <Border Grid.Column="0"
-                                BackgroundColor="#512BD4"
-                                WidthRequest="50" HeightRequest="50"
-                                StrokeThickness="0">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="14"/>
-                            </Border.StrokeShape>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnPlayTapped"/>
-                            </Border.GestureRecognizers>
-                            <!-- icon changes via code-behind -->
-                            <Image x:Name="imgPlayIcon"
-                                   Source="ic_white_play.svg"
-                                   WidthRequest="20" HeightRequest="20"
-                                   HorizontalOptions="Center" VerticalOptions="Center"/>
-                        </Border>
+                        <!-- Play and Pause buttons -->
+                        <HorizontalStackLayout Grid.Column="0" Spacing="8" VerticalOptions="Center">
+                            <!-- Play button -->
+                            <Border BackgroundColor="#512BD4"
+                                    WidthRequest="46" HeightRequest="46"
+                                    StrokeThickness="0">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="IsVisible" Value="False"/>
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12"/>
+                                </Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnPlayTapped"/>
+                                </Border.GestureRecognizers>
+                                <Image x:Name="imgPlayIcon"
+                                       Source="ic_white_play.svg"
+                                       WidthRequest="18" HeightRequest="18"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+
+                            <!-- Pause button -->
+                            <Border BackgroundColor="#E8E3F5"
+                                    WidthRequest="46" HeightRequest="46"
+                                    StrokeThickness="0"
+                                    IsVisible="False">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="IsVisible" Value="True"/>
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12"/>
+                                </Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnPauseTapped"/>
+                                </Border.GestureRecognizers>
+                                <Image Source="ic_white_pause.svg"
+                                       WidthRequest="18" HeightRequest="18"
+                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                            </Border>
+                        </HorizontalStackLayout>
 
                         <!-- Status text + waveform bars + duration -->
                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="6">

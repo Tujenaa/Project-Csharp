@@ -374,32 +374,49 @@
                                                HorizontalOptions="Center" VerticalOptions="Center"/>
                                     </Border>
 
-                                    <!-- Icon play audio -->
-                                    <Border Grid.Column="3" BackgroundColor="#EDE7FF"
-                                            Stroke="Transparent" StrokeThickness="0"
-                                            WidthRequest="36" HeightRequest="36" VerticalOptions="Center">
-                                        <Border.StrokeShape>
-                                            <RoundRectangle CornerRadius="10"/>
-                                        </Border.StrokeShape>
-                                        <Border.GestureRecognizers>
-                                            <TapGestureRecognizer
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
-                                                CommandParameter="{Binding .}"/>
-                                        </Border.GestureRecognizers>
-                                        <Image WidthRequest="15" HeightRequest="15"
-                                               HorizontalOptions="Center" VerticalOptions="Center">
-                                            <Image.Triggers>
-                                                <DataTrigger TargetType="Image"
-                                                             Binding="{Binding IsPlaying}" Value="True">
-                                                    <Setter Property="Source" Value="ic_pause.svg"/>
+                                    <!-- Play and Pause audio -->
+                                    <HorizontalStackLayout Grid.Column="3" Spacing="8" VerticalOptions="Center">
+                                        <Border BackgroundColor="#EDE7FF"
+                                                Stroke="Transparent" StrokeThickness="0"
+                                                WidthRequest="36" HeightRequest="36">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                                    <Setter Property="IsVisible" Value="False"/>
                                                 </DataTrigger>
-                                                <DataTrigger TargetType="Image"
-                                                             Binding="{Binding IsPlaying}" Value="False">
-                                                    <Setter Property="Source" Value="ic_play.svg"/>
+                                            </Border.Triggers>
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="10"/>
+                                            </Border.StrokeShape>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                                            </Border.GestureRecognizers>
+                                            <Image Source="ic_play.svg" WidthRequest="15" HeightRequest="15"
+                                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+                                        
+                                        <Border BackgroundColor="#FCE7F3"
+                                                Stroke="Transparent" StrokeThickness="0"
+                                                WidthRequest="36" HeightRequest="36"
+                                                IsVisible="False">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                                    <Setter Property="IsVisible" Value="True"/>
                                                 </DataTrigger>
-                                            </Image.Triggers>
-                                        </Image>
-                                    </Border>
+                                            </Border.Triggers>
+                                            <Border.StrokeShape>
+                                                <RoundRectangle CornerRadius="10"/>
+                                            </Border.StrokeShape>
+                                            <Border.GestureRecognizers>
+                                                <TapGestureRecognizer
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PauseAudioCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                                            </Border.GestureRecognizers>
+                                            <Image Source="ic_pause.svg" WidthRequest="15" HeightRequest="15"
+                                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                                        </Border>
+                                    </HorizontalStackLayout>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -465,20 +482,39 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Audio – icon only -->
-                    <Border Grid.Column="0" BackgroundColor="#EDE7FF"
-                            Stroke="Transparent" StrokeThickness="0"
-                            WidthRequest="46" HeightRequest="46">
-                        <Border.StrokeShape>
-                            <RoundRectangle CornerRadius="14"/>
-                        </Border.StrokeShape>
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnCardPlayAudioTapped"/>
-                        </Border.GestureRecognizers>
-                        <Image x:Name="imgCardPlay" Source="ic_play.svg"
-                               WidthRequest="20" HeightRequest="20"
-                               HorizontalOptions="Center" VerticalOptions="Center"/>
-                    </Border>
+                    <!-- Audio – play and pause icons -->
+                    <HorizontalStackLayout Grid.Column="0" Spacing="6" VerticalOptions="Center">
+                        <Border x:Name="btnCardPlayAudio"
+                                BackgroundColor="#EDE7FF"
+                                Stroke="Transparent" StrokeThickness="0"
+                                WidthRequest="46" HeightRequest="46">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14"/>
+                            </Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnCardPlayAudioTapped"/>
+                            </Border.GestureRecognizers>
+                            <Image Source="ic_play.svg"
+                                   WidthRequest="20" HeightRequest="20"
+                                   HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                        
+                        <Border x:Name="btnCardPauseAudio"
+                                BackgroundColor="#FCE7F3"
+                                Stroke="Transparent" StrokeThickness="0"
+                                WidthRequest="46" HeightRequest="46"
+                                IsVisible="False">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="14"/>
+                            </Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnCardPauseAudioTapped"/>
+                            </Border.GestureRecognizers>
+                            <Image Source="ic_pause.svg"
+                                   WidthRequest="20" HeightRequest="20"
+                                   HorizontalOptions="Center" VerticalOptions="Center"/>
+                        </Border>
+                    </HorizontalStackLayout>
 
                     <!-- Chỉ đường – icon only -->
                     <Border Grid.Column="1" BackgroundColor="#DBEAFE"

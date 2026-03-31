@@ -1,4 +1,4 @@
-﻿using TourGuideApp.Models;
+using TourGuideApp.Models;
 using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.Pages;
@@ -75,6 +75,8 @@ public partial class MapPage : ContentPage
         {
             poiDetailCard.IsVisible = false;
             currentDetailPoi = null;
+            if (viewModel.EvalJs != null)
+                _ = viewModel.EvalJs("highlightPOI(-1)");
         }
         // Đóng bottom sheet nếu mở
         if (poiListVisible)
@@ -144,7 +146,7 @@ public partial class MapPage : ContentPage
         // 2. Đóng panel search
         CloseSearchPanel();
 
-        // 3. Highlight marker POI
+        // 3. Highlight marker POI (đã được gọi trong ShowDetailCard, giữ nguyên cũng được)
         if (viewModel.EvalJs != null)
             await viewModel.EvalJs($"highlightPOI({poi.Id})");
 
@@ -183,7 +185,10 @@ public partial class MapPage : ContentPage
         btnClearRoute.IsVisible = false;
 
         if (viewModel.EvalJs != null)
+        {
             await viewModel.EvalJs("if(typeof routeLine !== 'undefined' && routeLine) { map.removeLayer(routeLine); routeLine = null; }");
+            await viewModel.EvalJs("highlightPOI(-1)");
+        }
 
         poiDetailCard.IsVisible = false;
         currentDetailPoi = null;
@@ -203,6 +208,8 @@ public partial class MapPage : ContentPage
         {
             poiDetailCard.IsVisible = false;
             currentDetailPoi = null;
+            if (viewModel.EvalJs != null)
+                _ = viewModel.EvalJs("highlightPOI(-1)");
         }
     }
 
@@ -245,6 +252,9 @@ public partial class MapPage : ContentPage
         UpdateCardPlayButton(poi.IsPlaying);
         poiDetailCard.IsVisible = true;
 
+        if (viewModel.EvalJs != null)
+            _ = viewModel.EvalJs($"highlightPOI({poi.Id})");
+
         if (poiListVisible)
         {
             poiListVisible = false;
@@ -256,14 +266,20 @@ public partial class MapPage : ContentPage
     {
         poiDetailCard.IsVisible = false;
         currentDetailPoi = null;
+        if (viewModel.EvalJs != null)
+            _ = viewModel.EvalJs("highlightPOI(-1)");
     }
 
     private void OnCardPlayAudioTapped(object sender, EventArgs e)
     {
         if (currentDetailPoi == null) return;
-        // PlayAudioCommand là async — IsPlaying chưa update ngay.
-        // Icon sẽ được sync bởi POIUpdated event (OnPOIUpdated) khi IsPlaying thay đổi.
         viewModel.PlayAudioCommand.Execute(currentDetailPoi);
+    }
+
+    private void OnCardPauseAudioTapped(object sender, EventArgs e)
+    {
+        if (currentDetailPoi == null) return;
+        viewModel.PauseAudioCommand.Execute(currentDetailPoi);
     }
 
     private async void OnCardNavigateTapped(object sender, EventArgs e)
@@ -281,7 +297,8 @@ public partial class MapPage : ContentPage
 
     void UpdateCardPlayButton(bool isPlaying)
     {
-        imgCardPlay.Source = isPlaying ? "ic_pause.svg" : "ic_play.svg";
+        btnCardPlayAudio.IsVisible = !isPlaying;
+        btnCardPauseAudio.IsVisible = isPlaying;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -305,7 +322,6 @@ public partial class MapPage : ContentPage
                 if (updated != null)
                 {
                     lblCardDistance.Text = updated.DistanceText;
-                    // Sync icon play/pause theo trạng thái IsPlaying thực tế
                     UpdateCardPlayButton(updated.IsPlaying);
                 }
             }

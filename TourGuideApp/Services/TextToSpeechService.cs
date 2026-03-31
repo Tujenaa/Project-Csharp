@@ -1,4 +1,4 @@
-﻿using Microsoft.Maui.Media;
+using Microsoft.Maui.Media;
 using TourGuideApp.Services;
 
 /// <summary>
@@ -22,6 +22,9 @@ public class TextToSpeechService
 
     /// <summary>Raised sau khi phát xong câu cuối cùng (không bị cancel).</summary>
     public event Action? OnFinished;
+    
+    /// <summary>Raised each time a new sentence starts playing (currentIndex, totalCount).</summary>
+    public event Action<int, int>? OnProgress;
 
     // ── Voice priority table ──────────────────────────────────────────────────
     private static readonly Dictionary<string, string[]> LocalePriority = new()
@@ -85,6 +88,8 @@ public class TextToSpeechService
                 return; // Giữ nguyên index để resume tiếp tục
             }
 
+            OnProgress?.Invoke(_sentenceIndex, _sentences.Count);
+
             var sentence = _sentences[_sentenceIndex];
             if (!string.IsNullOrWhiteSpace(sentence))
             {
@@ -113,6 +118,7 @@ public class TextToSpeechService
         // Phát xong toàn bộ
         _finished = true;
         System.Diagnostics.Debug.WriteLine("[TTS] Finished all sentences");
+        OnProgress?.Invoke(_sentences.Count, _sentences.Count); // 100%
 
         // Raise event để caller ghi lịch sử
         OnFinished?.Invoke();

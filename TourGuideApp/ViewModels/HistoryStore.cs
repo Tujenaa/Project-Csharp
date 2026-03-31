@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
 
@@ -33,6 +33,13 @@ namespace TourGuideApp.ViewModels
         {
             if (poi == null) return;
 
+            int userId = Preferences.Get("user_id", -1);
+            if (userId <= 0)
+            {
+                // Khách không lưu lịch sử
+                return;
+            }
+
             var item = new HistoryItem
             {
                 Poi = poi,
@@ -43,12 +50,33 @@ namespace TourGuideApp.ViewModels
 
             OnItemAdded?.Invoke(item);
 
-            if (SessionService.CurrentUser != null)
+            await new ApiService().SaveHistory(poi.Id, userId);
+        }
+
+        public static async Task LoadFromApiAsync()
+        {
+            int userId = Preferences.Get("user_id", -1);
+            if (userId <= 0) return;
+
+            var items = await new ApiService().GetHistory(userId);
+
+            if (items == null) return;
+
+            lock (_lock)
             {
-                await new ApiService().SaveHistory(
-                    poi.Id,
-                    SessionService.CurrentUser.Id
-                );
+                _items.Clear();
+                foreach (var item in items.OrderBy(i => (DateTime)i.PlayTime))
+                {
+                    _items.Insert(0, new HistoryItem
+                    {
+                        Poi = new POI
+                        {
+                            Id = item.PoiId,
+                            Name = item.PoiName ?? ""
+                        },
+                        ListenedAt = item.PlayTime
+                    });
+                }
             }
         }
 

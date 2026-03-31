@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace TourGuideApp.Models;
@@ -23,6 +23,20 @@ public class POI : INotifyPropertyChanged
     {
         get => _isPlaying;
         set => SetProperty(ref _isPlaying, value);
+    }
+
+    private double _audioProgress;
+    public double AudioProgress
+    {
+        get => _audioProgress;
+        set => SetProperty(ref _audioProgress, value);
+    }
+
+    private string _audioDuration = "0:00";
+    public string AudioDuration
+    {
+        get => _audioDuration;
+        set => SetProperty(ref _audioDuration, value);
     }
 
     // =============================

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -74,8 +74,47 @@
 			</HorizontalStackLayout>
 		</Grid>
 
+		<!-- Trạng thái chưa đăng nhập -->
+		<VerticalStackLayout
+			Grid.Row="1"
+			IsVisible="{Binding IsNotLoggedIn}"
+			HorizontalOptions="Center"
+			Margin="0,60,0,0"
+			Spacing="14">
+			<Border
+				BackgroundColor="#EDE7FF"
+				Stroke="Transparent"
+				StrokeThickness="0"
+				WidthRequest="64"
+				HeightRequest="64"
+				HorizontalOptions="Center">
+				<Border.StrokeShape>
+					<RoundRectangle CornerRadius="20"/>
+				</Border.StrokeShape>
+				<Image
+					Source="ic_headphones.svg"
+					WidthRequest="32"
+					HeightRequest="32"
+					HorizontalOptions="Center"
+					VerticalOptions="Center"/>
+			</Border>
+			<Label
+				Text="Bạn chưa đăng nhập"
+				FontSize="17"
+				FontAttributes="Bold"
+				TextColor="#1A1035"
+				HorizontalOptions="Center"/>
+			<Label
+				Text="Hãy đăng nhập hoặc đăng kí&#10;để xem lịch sử nghe"
+				FontSize="13"
+				TextColor="#6B7280"
+				HorizontalOptions="Center"
+				HorizontalTextAlignment="Center"
+				LineHeight="1.5"/>
+		</VerticalStackLayout>
+
 		<!-- List -->
-		<ScrollView Grid.Row="1">
+		<ScrollView Grid.Row="1" IsVisible="{Binding IsLoggedIn}">
 			<VerticalStackLayout Padding="18,16,18,24" Spacing="0">
 
 				<!-- Empty state -->
@@ -198,32 +237,7 @@
 										</Border>
 									</VerticalStackLayout>
 
-									<!-- Replay button với SVG icon -->
-									<Border
-                                        Grid.Column="2"
-                                        BackgroundColor="#F4F2FB"
-                                        Stroke="#E8E3F5"
-                                        StrokeThickness="1"
-                                        WidthRequest="38"
-                                        HeightRequest="38"
-                                        VerticalOptions="Center">
-										<Border.StrokeShape>
-											<RoundRectangle CornerRadius="12"/>
-										</Border.StrokeShape>
-										<Image
-                                            Source="ic_play.svg"
-                                            WidthRequest="18"
-                                            HeightRequest="18"
-                                            HorizontalOptions="Center"
-                                            VerticalOptions="Center"/>
-										<Border.GestureRecognizers>
-											<TapGestureRecognizer
-                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ReplayCommand}"
-                                                CommandParameter="{Binding .}"/>
-										</Border.GestureRecognizers>
-									</Border>
-
-								</Grid>
+									<!-- Đã xoá nút Replay -->								</Grid>
 							</Border>
 						</DataTemplate>
 					</CollectionView.ItemTemplate>

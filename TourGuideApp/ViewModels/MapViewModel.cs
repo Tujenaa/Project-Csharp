@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
@@ -41,6 +41,7 @@ public class MapViewModel
 
     // ── Commands ──────────────────────────────────────────────────────────────
     public Command<POI> PlayAudioCommand { get; }
+    public Command<POI> PauseAudioCommand { get; }
     public Command<POI> GoToDetailCommand { get; }
     public Command<POI> SelectRouteDestCommand { get; set; }
 
@@ -50,7 +51,8 @@ public class MapViewModel
     {
         MapHtml = mapService.BuildLeafletHtml();
 
-        PlayAudioCommand = new Command<POI>(poi => _ = HandlePlayPause(poi));
+        PlayAudioCommand = new Command<POI>(poi => _ = HandlePlay(poi));
+        PauseAudioCommand = new Command<POI>(poi => HandlePause(poi));
 
         GoToDetailCommand = new Command<POI>(async poi =>
         {
@@ -63,11 +65,22 @@ public class MapViewModel
 
         // Đăng ký event ghi lịch sử khi TTS phát xong
         ttsService.OnFinished += OnTtsFinished;
+        ttsService.OnProgress += OnTtsProgress;
 
         _ = InitAsync();
     }
 
-    // ── TTS finished callback ─────────────────────────────────────────────────
+    // ── TTS callbacks ─────────────────────────────────────────────────────────
+
+    void OnTtsProgress(int current, int total)
+    {
+        if (currentPlayingPoi == null || total == 0) return;
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            currentPlayingPoi.AudioProgress = (double)current / total;
+            currentPlayingPoi.AudioDuration = $"{current}/{total} câu";
+        });
+    }
 
     async void OnTtsFinished()
     {
@@ -78,30 +91,19 @@ public class MapViewModel
 
         await HistoryStore.AddAsync(poi);
 
-        _ = SaveHistoryToApiAsync(poi.Id);
-
         // Cập nhật UI icon sau khi kết thúc
         MainThread.BeginInvokeOnMainThread(() => POIUpdated?.Invoke());
-    }
-
-    async Task SaveHistoryToApiAsync(int poiId)
-    {
-        try
-        {
-            if (SessionService.CurrentUser != null)
-            {
-                await apiService.SaveHistory(poiId, SessionService.CurrentUser.Id);
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[Map] API save failed: {ex.Message}");
-        }
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
     async Task InitAsync()
     {
+        // Chờ đến khi người dùng đăng nhập mới khởi tạo
+        while (!AuthService.IsLoggedIn)
+        {
+            await Task.Delay(1500);
+        }
+
         var locationTask = locationService.GetCurrentLocationAsync();
         var poisTask = apiService.GetPOI();
         await Task.WhenAll(locationTask, poisTask);
@@ -171,20 +173,25 @@ public class MapViewModel
         POIUpdated?.Invoke();
     }
 
-    // ── Play / Pause / Resume ─────────────────────────────────────────────────
-    async Task HandlePlayPause(POI poi)
+    // ── Tạm Dừng (Pause) ──────────────────────────────────────────────────────
+    void HandlePause(POI poi)
     {
         if (poi == null) return;
-
-        // ── PAUSE ────────────────────────────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && isPlaying)
         {
             ttsToken?.Cancel();
             isPlaying = false;
             poi.IsPlaying = false;
             POIUpdated?.Invoke();
-            return;
         }
+    }
+
+    // ── Phát / Tiếp tục (Play / Resume) ───────────────────────────────────────
+    async Task HandlePlay(POI poi)
+    {
+        if (poi == null) return;
+
+        if (currentPlayingPoi?.Id == poi.Id && isPlaying) return;
 
         // ── RESUME ───────────────────────────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && !isPlaying)
@@ -273,24 +280,37 @@ public class MapViewModel
         isPlaying = false;
     }
 
-    public void PlayPOIManually(POI poi) => _ = HandlePlayPause(poi);
+    public void PlayPOIManually(POI poi) => _ = HandlePlay(poi);
 
     // ── Auto-play ─────────────────────────────────────────────────────────────
     void CheckNearbyPOI(double lat, double lon)
     {
         if (!SettingService.Instance.AutoPlay) return;
 
+        POI? closestPoi = null;
+        double minDistance = double.MaxValue;
+
         foreach (var poi in NearbyPOI)
         {
             double dist = DistanceHelper.GetDistance(lat, lon, poi.Latitude, poi.Longitude);
-            if (dist < poi.Radius && !autoPlayedIds.Contains(poi.Id) && !isPlaying)
-            {
-                autoPlayedIds.Add(poi.Id);
-                _ = HandlePlayPause(poi);
-                break;
-            }
+            
             if (dist > poi.Radius * 2 && autoPlayedIds.Contains(poi.Id))
                 autoPlayedIds.Remove(poi.Id);
+
+            if (dist < poi.Radius && !autoPlayedIds.Contains(poi.Id) && !isPlaying)
+            {
+                if (dist < minDistance)
+                {
+                    minDistance = dist;
+                    closestPoi = poi;
+                }
+            }
+        }
+
+        if (closestPoi != null)
+        {
+            autoPlayedIds.Add(closestPoi.Id);
+            _ = HandlePlay(closestPoi);
         }
     }
 
@@ -299,29 +319,47 @@ public class MapViewModel
     {
         while (true)
         {
-            await Task.Delay(5000);
-
-            if (!SettingService.Instance.GpsEnabled) continue;
-
-            var loc = await locationService.GetCurrentLocationAsync();
-            if (loc == null) continue;
-
-            userLat = loc.Latitude;
-            userLon = loc.Longitude;
-
-            if (EvalJs != null)
+            if (!AuthService.IsLoggedIn)
             {
-                var lat = loc.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                var lon = loc.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                await EvalJs($"setUserLocation({lat},{lon})");
+                StopAll();
+                await Task.Delay(3000);
+                continue;
             }
 
-            foreach (var poi in NearbyPOI)
-                poi.DistanceText = FormatDistance(
-                    DistanceHelper.GetDistance(loc.Latitude, loc.Longitude, poi.Latitude, poi.Longitude));
+            if (!SettingService.Instance.GpsEnabled)
+            {
+                await Task.Delay(3000);
+                continue;
+            }
 
-            POIUpdated?.Invoke();
-            CheckNearbyPOI(loc.Latitude, loc.Longitude);
+            var loc = await locationService.GetCurrentLocationAsync();
+            if (loc != null)
+            {
+                userLat = loc.Latitude;
+                userLon = loc.Longitude;
+
+                if (EvalJs != null)
+                {
+                    try
+                    {
+                        var lat = loc.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        var lon = loc.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                        await EvalJs($"setUserLocation({lat},{lon})");
+                    }
+                    catch { /* Bỏ qua lỗi nếu WebView không active / disposed */ }
+                }
+
+                foreach (var poi in NearbyPOI)
+                {
+                    poi.DistanceText = FormatDistance(
+                        DistanceHelper.GetDistance(loc.Latitude, loc.Longitude, poi.Latitude, poi.Longitude));
+                }
+
+                POIUpdated?.Invoke();
+                CheckNearbyPOI(loc.Latitude, loc.Longitude);
+            }
+
+            await Task.Delay(3000);
         }
     }
 

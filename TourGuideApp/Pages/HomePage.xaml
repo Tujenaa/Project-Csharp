@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
@@ -191,37 +191,55 @@
                                     TextColor="#94A3B8"/>   
                                 </VerticalStackLayout>
 
-                                <!-- Play icon -->
-                                <Border
-                                    Grid.Column="1"
-                                    BackgroundColor="#EDE7FF"
-                                    WidthRequest="38"
-                                    HeightRequest="38"
-                                    VerticalOptions="Center">
-
-                                    <Border.StrokeShape>
-                                        <RoundRectangle CornerRadius="12"/>
-                                    </Border.StrokeShape>
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer
-                                            Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
-                                            CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Image Source="ic_play.svg"
-                                           WidthRequest="18"
-                                           HeightRequest="18">
-
-                                        <Image.Triggers>
-
-                                            <DataTrigger TargetType="Image"
-                                                 Binding="{Binding IsPlaying}"
-                                                 Value="True">
-                                                <Setter Property="Source" Value="ic_pause.svg"/>
+                                <!-- Play and Pause icons -->
+                                <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                    <Border BackgroundColor="#EDE7FF"
+                                            WidthRequest="38"
+                                            HeightRequest="38"
+                                            StrokeThickness="0">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                                <Setter Property="IsVisible" Value="False"/>
                                             </DataTrigger>
-
-                                        </Image.Triggers>
-                                    </Image>
-                                </Border>
+                                        </Border.Triggers>
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12"/>
+                                        </Border.StrokeShape>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+                                        <Image Source="ic_play.svg"
+                                               WidthRequest="16"
+                                               HeightRequest="16"
+                                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                                    </Border>
+                                    
+                                    <Border BackgroundColor="#FCE7F3"
+                                            WidthRequest="38"
+                                            HeightRequest="38"
+                                            StrokeThickness="0"
+                                            IsVisible="False">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                                <Setter Property="IsVisible" Value="True"/>
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="12"/>
+                                        </Border.StrokeShape>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PauseAudioCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
+                                        <Image Source="ic_pause.svg"
+                                               WidthRequest="16"
+                                               HeightRequest="16"
+                                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                                    </Border>
+                                </HorizontalStackLayout>
 
                             </Grid>
                         </Border>

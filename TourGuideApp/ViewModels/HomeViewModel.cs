@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Input;
 using TourGuideApp.Models;
@@ -13,6 +13,7 @@ public class HomeViewModel : INotifyPropertyChanged
 
     public ICommand GoToDetailCommand { get; }
     public Command<POI> PlayAudioCommand { get; }
+    public Command<POI> PauseAudioCommand { get; }
 
     readonly TextToSpeechService ttsService = new();
     readonly TranslateService translateService = new();
@@ -40,11 +41,17 @@ public class HomeViewModel : INotifyPropertyChanged
 
         PlayAudioCommand = new Command<POI>(async (poi) =>
         {
-            await HandlePlayPause(poi);
+            await HandlePlay(poi);
+        });
+
+        PauseAudioCommand = new Command<POI>((poi) =>
+        {
+            HandlePause(poi);
         });
 
         // Đăng ký event ghi lịch sử khi TTS phát xong
         ttsService.OnFinished += OnTtsFinished;
+        ttsService.OnProgress += OnTtsProgress;
 
         System.Diagnostics.Debug.WriteLine($"HomeViewModel created. Language: {SettingService.Instance.Language}");
     }
@@ -84,7 +91,17 @@ public class HomeViewModel : INotifyPropertyChanged
     void OnPropertyChanged(string name) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    // ── TTS finished callback ─────────────────────────────────────────────────
+    // ── TTS callbacks ─────────────────────────────────────────────────────────
+
+    void OnTtsProgress(int current, int total)
+    {
+        if (currentPlayingPoi == null || total == 0) return;
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            currentPlayingPoi.AudioProgress = (double)current / total;
+            currentPlayingPoi.AudioDuration = $"{current}/{total} câu";
+        });
+    }
 
     async void OnTtsFinished()
     {
@@ -93,49 +110,38 @@ public class HomeViewModel : INotifyPropertyChanged
         var poi = currentPlayingPoi;
         System.Diagnostics.Debug.WriteLine($"[Home] TTS finished → saving history for {poi.Name}");
 
-        // Ghi lịch sử local
+        // Ghi lịch sử local và tự động gọi API trong AddAsync
         await HistoryStore.AddAsync(poi);
-
-        // Ghi lên API (fire-and-forget)
-        _ = SaveHistoryToApiAsync(poi.Id);
     }
 
-    async Task SaveHistoryToApiAsync(int poiId)
-    {
-        try
-        {
-            if (SessionService.CurrentUser != null)
-            {
-                await _poiService.SaveHistory(poiId, SessionService.CurrentUser.Id);
-            }
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[Home] API save failed: {ex.Message}");
-        }
-    }
+    // ── Nút Tạm Dừng ──────────────────────────────────────────────────────────
 
-    // ── Play / Pause / Resume ─────────────────────────────────────────────────
-
-    async Task HandlePlayPause(POI poi)
+    void HandlePause(POI poi)
     {
         if (poi == null) return;
-
-        string currentLang = SettingService.Instance.Language;
-
-        // ── PAUSE: đang phát cùng POI ────────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && isPlaying)
         {
             ttsToken?.Cancel();
             isPlaying = false;
             poi.IsPlaying = false;
-            return;
         }
+    }
+
+    // ── Phát & Tiếp Tục (Play / Resume) ───────────────────────────────────────
+
+    async Task HandlePlay(POI poi)
+    {
+        if (poi == null) return;
+
+        // Nếu đang phát cùng POI thì không làm gì
+        if (currentPlayingPoi?.Id == poi.Id && isPlaying) return;
+
+        string currentLang = SettingService.Instance.Language;
 
         // ── RESUME: cùng POI, đang pause ─────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && !isPlaying)
         {
-            string langNow = SettingService.Instance.Language;
+            string langNow = currentLang;
 
             if (langNow != _currentLoadedLang)
             {
