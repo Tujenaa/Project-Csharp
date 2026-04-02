@@ -13,7 +13,7 @@
 
             <!-- Hero image -->
             <Grid HeightRequest="300">
-                <Image Source="{Binding ImageUrl}" Aspect="AspectFill"/>
+                <Image Source="{Binding MainImage}" Aspect="AspectFill"/>
                 <BoxView>
                     <BoxView.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -52,7 +52,7 @@
             </Grid>
 
             <!-- Gallery strip -->
-            <CollectionView ItemsSource="{Binding GalleryImages}"
+            <CollectionView ItemsSource="{Binding FullImages}"
                             ItemsLayout="HorizontalList"
                             HeightRequest="96" BackgroundColor="#1A1035">
                 <CollectionView.ItemTemplate>

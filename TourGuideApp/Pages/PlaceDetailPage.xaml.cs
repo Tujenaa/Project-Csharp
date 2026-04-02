@@ -19,9 +19,6 @@ public partial class PlaceDetailPage : ContentPage
     // Ngôn ngữ đang được load trong ttsService
     string _currentLoadedLang = "";
 
-    // Cache bản dịch: key = lang
-    readonly Dictionary<string, string> translationCache = new();
-
     // POI hiện tại (lưu để ghi lịch sử)
     POI? _currentPoi;
 
@@ -41,7 +38,6 @@ public partial class PlaceDetailPage : ContentPage
 
             // Reset TTS state khi chuyển sang POI mới
             StopPlayback();
-            translationCache.Clear();
             _currentLoadedLang = "";
         }
     }
@@ -136,14 +132,14 @@ public partial class PlaceDetailPage : ContentPage
 
         if (langNow != _currentLoadedLang || string.IsNullOrEmpty(_currentLoadedLang))
         {
-            string freshText = await GetTranslatedTextAsync(poi, langNow);
+            string freshText = GetScriptForLang(poi, langNow);
             ttsService.LoadText(freshText);
             _currentLoadedLang = langNow;
         }
         else
         {
             // Cùng ngôn ngữ, bấm play lại sau khi đã phát xong → replay từ đầu
-            ttsService.LoadText(await GetTranslatedTextAsync(poi, langNow));
+            ttsService.LoadText(GetScriptForLang(poi, langNow));
         }
 
         isPlaying = true;
@@ -211,25 +207,20 @@ public partial class PlaceDetailPage : ContentPage
         }
     }
 
-    /// <summary>
-    /// Lấy text đã dịch; cache theo lang để không dịch lại khi resume.
-    /// Nếu lang == "vi" trả về text gốc ngay (không gọi mạng).
-    /// </summary>
-    async Task<string> GetTranslatedTextAsync(POI poi, string lang)
+    private string GetScriptForLang(POI poi, string lang)
     {
-        string originalText =
-            !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
-            !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
-            "Không có dữ liệu";
+        string? script = lang switch
+        {
+            "en" => poi.ScriptEn,
+            "ja" => poi.ScriptJa,
+            "zh" => poi.ScriptZh,
+            _ => poi.ScriptVi
+        };
 
-        if (lang == "vi") return originalText;
-
-        if (translationCache.TryGetValue(lang, out var cached))
-            return cached;
-
-        string translated = await translateService.TranslateWithRetryAsync(originalText, lang);
-        translationCache[lang] = translated;
-        return translated;
+        if (string.IsNullOrWhiteSpace(script)) 
+            script = poi.Description ?? "Không có dữ liệu thuyết minh";
+            
+        return script;
     }
 
     // ── Waveform animation ────────────────────────────────────────────────────

@@ -16,7 +16,21 @@ public class HomeViewModel : INotifyPropertyChanged
     public Command<POI> PauseAudioCommand { get; }
 
     readonly TextToSpeechService ttsService = new();
-    readonly TranslateService translateService = new();
+    
+    // ── GPS & Distance ────────────────────────────────────────────────────────
+    private string _nearestPoiName = "Đang tìm...";
+    public string NearestPoiName
+    {
+        get => _nearestPoiName;
+        set { _nearestPoiName = value; OnPropertyChanged(nameof(NearestPoiName)); }
+    }
+
+    private string _nearestPoiDist = "-- m";
+    public string NearestPoiDist
+    {
+        get => _nearestPoiDist;
+        set { _nearestPoiDist = value; OnPropertyChanged(nameof(NearestPoiDist)); }
+    }
 
     // ── TTS state ─────────────────────────────────────────────────────────────
     POI? currentPlayingPoi;
@@ -24,9 +38,6 @@ public class HomeViewModel : INotifyPropertyChanged
     CancellationTokenSource? ttsToken;
 
     string _currentLoadedLang = "";
-
-    // Cache bản dịch: key = poiId_lang
-    readonly Dictionary<string, string> translationCache = new();
 
     public HomeViewModel()
     {
@@ -78,13 +89,49 @@ public class HomeViewModel : INotifyPropertyChanged
         PoiCount = await _poiService.GetPoiCount();
         AudioCount = await _poiService.GetAudioCount();
 
+        // Lấy vị trí GPS để tính khoảng cách
+        Location? myLoc = null;
+        try {
+            myLoc = await Geolocation.GetLastKnownLocationAsync() 
+                    ?? await Geolocation.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(5)));
+        } catch { }
+
         TopPOIs.Clear();
-        foreach (var item in top) TopPOIs.Add(item);
+        foreach (var item in top) 
+        {
+            if (myLoc != null) UpdatePoiDistance(item, myLoc);
+            TopPOIs.Add(item);
+        }
 
         AllPOIs.Clear();
-        foreach (var item in all) AllPOIs.Add(item);
+        POI? nearest = null;
+        double minDist = double.MaxValue;
 
-        System.Diagnostics.Debug.WriteLine($"Loaded {TopPOIs.Count} top POIs and {AllPOIs.Count} all POIs");
+        foreach (var item in all) 
+        {
+            if (myLoc != null) 
+            {
+                var d = UpdatePoiDistance(item, myLoc);
+                if (d < minDist) { minDist = d; nearest = item; }
+            }
+            AllPOIs.Add(item);
+        }
+
+        if (nearest != null)
+        {
+            NearestPoiName = nearest.Name ?? "Chưa rõ";
+            NearestPoiDist = nearest.DistanceText;
+        }
+
+        System.Diagnostics.Debug.WriteLine($"Loaded {TopPOIs.Count} top POIs and {AllPOIs.Count} all POIs. Nearest: {NearestPoiName}");
+    }
+
+    private double UpdatePoiDistance(POI poi, Location myLoc)
+    {
+        var target = new Location(poi.Latitude, poi.Longitude);
+        var dist = myLoc.CalculateDistance(target, DistanceUnits.Kilometers) * 1000; // mét
+        poi.DistanceText = dist < 1000 ? $"{(int)dist}m" : $"{(dist/1000.0):F1}km";
+        return dist;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -141,18 +188,11 @@ public class HomeViewModel : INotifyPropertyChanged
         // ── RESUME: cùng POI, đang pause ─────────────────────────────────────
         if (currentPlayingPoi?.Id == poi.Id && !isPlaying)
         {
-            string langNow = currentLang;
-
-            if (langNow != _currentLoadedLang)
+            if (currentLang != _currentLoadedLang)
             {
-                string srcText =
-                    !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
-                    !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
-                    "Không có dữ liệu";
-
-                string freshText = await GetTranslatedTextAsync(poi.Id, srcText, langNow);
+                string freshText = GetScriptForLang(poi, currentLang);
                 ttsService.LoadText(freshText);
-                _currentLoadedLang = langNow;
+                _currentLoadedLang = currentLang;
             }
 
             isPlaying = true;
@@ -161,7 +201,6 @@ public class HomeViewModel : INotifyPropertyChanged
             ttsToken = new CancellationTokenSource();
             try
             {
-                // Tiếp tục từ _sentenceIndex; nếu IsFinished thì replay từ đầu
                 await ttsService.SpeakAsync(ttsToken.Token);
             }
             catch (OperationCanceledException) { }
@@ -182,12 +221,7 @@ public class HomeViewModel : INotifyPropertyChanged
         isPlaying = true;
         poi.IsPlaying = true;
 
-        string originalText =
-            !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
-            !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
-            "Không có dữ liệu";
-
-        string finalText = await GetTranslatedTextAsync(poi.Id, originalText, currentLang);
+        string finalText = GetScriptForLang(poi, currentLang);
 
         ttsService.LoadText(finalText);
         _currentLoadedLang = currentLang;
@@ -207,17 +241,20 @@ public class HomeViewModel : INotifyPropertyChanged
         poi.IsPlaying = false;
     }
 
-    async Task<string> GetTranslatedTextAsync(int poiId, string originalText, string lang)
+    private string GetScriptForLang(POI poi, string lang)
     {
-        if (lang == "vi") return originalText;
+        string? script = lang switch
+        {
+            "en" => poi.ScriptEn,
+            "ja" => poi.ScriptJa,
+            "zh" => poi.ScriptZh,
+            _ => poi.ScriptVi
+        };
 
-        string cacheKey = $"{poiId}_{lang}";
-        if (translationCache.TryGetValue(cacheKey, out var cached))
-            return cached;
-
-        string translated = await translateService.TranslateWithRetryAsync(originalText, lang);
-        translationCache[cacheKey] = translated;
-        return translated;
+        if (string.IsNullOrWhiteSpace(script)) 
+            script = poi.Description ?? "Không có dữ liệu thuyết minh";
+            
+        return script;
     }
 
     void StopAll()

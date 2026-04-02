@@ -101,7 +101,7 @@
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- AUDIO -->
+                <!-- NƠI GẦN NHẤT -->
                 <Border
                     Grid.Column="1"
                     BackgroundColor="White"
@@ -112,16 +112,18 @@
                         <RoundRectangle CornerRadius="16"/>
                     </Border.StrokeShape>
 
-                    <VerticalStackLayout Padding="12,14" Spacing="4">
+                    <VerticalStackLayout Padding="8,14" Spacing="4" VerticalOptions="Center">
                         <Label
-                            Text=""
-                            FontSize="20"
+                            Text="{Binding NearestPoiName}"
+                            FontSize="15"
                             FontAttributes="Bold"
                             TextColor="#1A1035"
-                            HorizontalOptions="Center"/>
+                            LineBreakMode="TailTruncation"
+                            HorizontalOptions="Center"
+                            HorizontalTextAlignment="Center"/>
 
                         <Label
-                            Text="Khoảng cách đến nơi gần nhất"
+                            Text="{Binding NearestPoiDist, StringFormat='Nơi gần nhất: {0}'}"
                             FontSize="11"
                             TextColor="#6B7280"
                             HorizontalOptions="Center"/>
@@ -160,12 +162,21 @@
 
                             <Grid Padding="16,14" ColumnSpacing="14">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
+                                <!-- Hình ảnh POI -->
+                                <Border Grid.Column="0" StrokeThickness="0" BackgroundColor="#F3F4F6" WidthRequest="60" HeightRequest="60" VerticalOptions="Start">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="12"/>
+                                    </Border.StrokeShape>
+                                    <Image Source="{Binding MainImage}" Aspect="AspectFill" />
+                                </Border>
+
                                 <VerticalStackLayout
-                                    Grid.Column="0"
+                                    Grid.Column="1"
                                     VerticalOptions="Center"
                                     Spacing="3">
                                     <VerticalStackLayout.GestureRecognizers>
@@ -181,18 +192,19 @@
                                     LineBreakMode="TailTruncation"/>
 
                                     <Label
-                                    Text="4.8  ·  500m"
+                                    Text="{Binding DistanceText}"
                                     FontSize="12"
                                     TextColor="#6B7280"/>
 
                                     <Label
-                                    Text="Địa điểm du lịch nổi bật"
+                                    Text="{Binding Description}"
                                     FontSize="12"
-                                    TextColor="#94A3B8"/>   
+                                    TextColor="#94A3B8"
+                                    LineBreakMode="TailTruncation"/>   
                                 </VerticalStackLayout>
 
                                 <!-- Play and Pause icons -->
-                                <HorizontalStackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                <HorizontalStackLayout Grid.Column="2" Spacing="6" VerticalOptions="Center">
                                     <Border BackgroundColor="#EDE7FF"
                                             WidthRequest="38"
                                             HeightRequest="38"

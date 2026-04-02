@@ -1,0 +1,198 @@
+@page
+@model GPSGuide.Web.Pages.ApprovalModel
+@{
+    ViewData["Title"] = "Phê duyệt POI"; ViewData["Active"] = "approval";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/users.css" asp-append-version="true" />
+}
+
+@if (!string.IsNullOrEmpty(Model.Msg))
+{
+    <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
+}
+
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+        <div>
+            <h2>Phê duyệt POI</h2>
+            <div class="sub">Các điểm thuyết minh đang chờ Admin xét duyệt</div>
+        </div>
+        @if (Model.AllPois.Any(p => p.Status == "REJECTED" || p.Status == null))
+        {
+            <form method="post" asp-page-handler="DeleteRejected" onsubmit="return confirm('Bạn có chắc muốn xóa vĩnh viễn tất cả POI đã bị từ chối?')">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="bi bi-trash"></i> Xóa tất cả POI bị từ chối
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="user-tabs" style="margin-bottom:20px">
+    <button class="utab active" onclick="filterStatus('PENDING', this)">
+        ⏳ Chờ duyệt
+        <span class="utab-count">@Model.AllPois.Count(p => p.Status == "PENDING")</span>
+    </button>
+    <button class="utab" onclick="filterStatus('APPROVED', this)">
+        ✅ Đã duyệt
+        <span class="utab-count">@Model.AllPois.Count(p => p.Status == "APPROVED")</span>
+    </button>
+    <button class="utab" onclick="filterStatus('REJECTED', this)">
+        ❌ Từ chối
+        <span class="utab-count">@Model.AllPois.Count(p => p.Status == "REJECTED")</span>
+    </button>
+</div>
+
+<div class="card">
+    <table class="tg-table" id="approvalTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên POI</th>
+                <th>Chủ sở hữu</th>
+                <th>Toạ độ</th>
+                <th>Bán kính</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model.AllPois.OrderByDescending(x => x.Id))
+            {
+                <tr data-status="@p.Status">
+                    <td style="color:#6b7280">#@p.Id</td>
+                    <td>
+                        <strong style="color:#111827">@p.Name</strong>
+                        @if (!string.IsNullOrEmpty(p.Description))
+                        {
+                            <div style="font-size:12px;color:#6b7280;margin-top:2px">@(p.Description.Length > 60 ? p.Description[..60] + "…" : p.Description)</div>
+                        }
+                    </td>
+                    <td style="color:#374151">@(p.OwnerName ?? $"#{p.OwnerId}")</td>
+                    <td style="font-family:var(--mono);font-size:11px;color:#5b21b6">
+                        @p.Latitude.ToString("F4"), @p.Longitude.ToString("F4")
+                    </td>
+                    <td style="color:#374151">@p.Radius m</td>
+                    <td>
+                        @if (p.Status == "PENDING")
+                        {
+                            <span class="badge badge-yellow">⏳ Chờ duyệt</span>
+                        }
+                        else if (p.Status == "APPROVED")
+                        {
+                            <span class="badge badge-green">✅ Đã duyệt</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-red" title="@p.RejectReason">❌ Từ chối</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="action-group">
+                            @if (p.Status == "PENDING")
+                            {
+                                <form method="post" asp-page-handler="Approve" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="PoiId" value="@p.Id" />
+                                    <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600">
+                                        <i class="bi bi-check-lg"></i> Duyệt
+                                    </button>
+                                </form>
+                                <button type="button" class="btn btn-danger btn-sm"
+                                        onclick="openReject(@p.Id, '@p.Name')">
+                                    <i class="bi bi-x-lg"></i> Từ chối
+                                </button>
+                            }
+                            else if (p.Status == "REJECTED")
+                            {
+                                <form method="post" asp-page-handler="Approve" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="PoiId" value="@p.Id" />
+                                    <button type="submit" class="btn btn-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-weight:600">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Duyệt lại
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form method="post" asp-page-handler="Revoke" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="PoiId" value="@p.Id" />
+                                    <button type="submit" class="btn btn-ghost btn-sm">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Rút duyệt
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!Model.AllPois.Any())
+            {
+                <tr><td colspan="7" class="empty-state">Không có POI nào.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal từ chối -->
+<div id="rejectModal" class="modal-backdrop" style="display:none"
+     onclick="if(event.target===this)closeReject()">
+    <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4>Từ chối POI</h4>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeReject()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <form method="post" asp-page-handler="Reject">
+            @Html.AntiForgeryToken()
+            <div class="modal-body">
+                <p style="color:#374151;margin-bottom:12px">
+                    Từ chối POI: <strong id="rejectPoiName"></strong>
+                </p>
+                <input type="hidden" name="PoiId" id="rejectPoiId" />
+                <div class="form-group">
+                    <label class="form-label">Lý do từ chối <span style="color:red">*</span></label>
+                    <textarea name="Reason" class="form-control" rows="3"
+                              placeholder="VD: Toạ độ không chính xác, thiếu mô tả..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeReject()">Huỷ</button>
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-x-lg"></i> Xác nhận từ chối
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openReject(id, name) {
+        document.getElementById('rejectPoiId').value = id;
+        document.getElementById('rejectPoiName').textContent = name;
+        document.getElementById('rejectModal').style.display = 'flex';
+    }
+    function closeReject() {
+        document.getElementById('rejectModal').style.display = 'none';
+    }
+
+    function filterStatus(status, btn) {
+        document.querySelectorAll('.utab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('#approvalTable tbody tr[data-status]').forEach(row => {
+            row.style.display = (row.dataset.status === status) ? '' : 'none';
+        });
+    }
+
+    // Mặc định hiện PENDING
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('#approvalTable tbody tr[data-status]').forEach(row => {
+            if (row.dataset.status !== 'PENDING') row.style.display = 'none';
+        });
+    });
+</script>

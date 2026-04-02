@@ -1,4 +1,6 @@
-﻿namespace TourGuideAPI.Models
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TourGuideAPI.Models
 {
     public class POI
     {
@@ -10,9 +12,13 @@
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public int Radius { get; set; }
-        public int? OwnerId { get; set; }  // nullable — web cần, app bỏ qua null
+        public int? OwnerId { get; set; }
+        [NotMapped]
         public string? OwnerName { get; set; }
-
-    
+        // ── MỚI ──
+        [NotMapped]
+        public string? ImageUrl { get; set; }
+        public string Status { get; set; } = "APPROVED";
+        public string? RejectReason { get; set; }
     }
 }

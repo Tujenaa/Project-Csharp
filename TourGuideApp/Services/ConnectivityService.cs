@@ -17,13 +17,18 @@ public static class ConnectivityService
         try
         {
             using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-            var response = await client.GetAsync(
-                ApiService.ApiConfig.BaseUrl.TrimEnd('/').Replace("/api", "/health"));
-            return response.IsSuccessStatusCode;
+            // Thử gọi đến base URL (không có /health)
+            var url = ApiService.ApiConfig.BaseUrl.TrimEnd('/').Replace("/api", "");
+            var response = await client.GetAsync(url);
+            
+            // Nếu nhận được phản hồi (kể cả 404, 401...) từ server thì coi như là Reachable
+            return true;
         }
-        catch
+        catch (Exception ex)
         {
-            // Nếu không có /health endpoint thì chỉ cần có mạng là được
+            System.Diagnostics.Debug.WriteLine($"[Connectivity] Server unreachable: {ex.Message}");
+            // Trong trường hợp lỗi kết nối thực sự, ta vẫn trả về IsConnected 
+            // để cho phép app tiếp tục thử gọi API (ApiService sẽ tự handle lỗi tiếp)
             return IsConnected;
         }
     }

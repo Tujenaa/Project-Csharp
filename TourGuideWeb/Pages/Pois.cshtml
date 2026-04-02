@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model GPSGuide.Web.Pages.PoisModel
 @{
     ViewData["Title"] = "Điểm thuyết minh"; ViewData["Active"] = "pois";
@@ -51,7 +51,14 @@
                      onclick="selectPoiById(@p.Id)">
                     <div class="poi-item-dot"></div>
                     <div class="poi-item-body">
-                        <div class="poi-item-name">@p.Name</div>
+                        <div style="display:flex;align-items:center;gap:6px">
+                            <div class="poi-item-name">@p.Name</div>
+                            @if (p.Status == "PENDING") {
+                                <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:10px;font-weight:600">⏳ Chờ duyệt</span>
+                            } else if (p.Status == "REJECTED") {
+                                <span style="font-size:10px;background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:10px;font-weight:600" title="@p.RejectReason">❌ Từ chối</span>
+                            }
+                        </div>
                         <div class="poi-item-meta">
                             <span class="poi-item-coord">@p.Latitude.ToString("F4"), @p.Longitude.ToString("F4")</span>
                             <span class="poi-item-r">@p.Radius m</span>
@@ -125,7 +132,7 @@
             <h4 id="modalTitle">Thêm điểm thuyết minh</h4>
             <button class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
         </div>
-        <form id="poiForm" method="post">
+        <form id="poiForm" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <input type="hidden" name="Id" id="fId" value="0" />
             <div class="modal-body">
@@ -145,6 +152,29 @@
                     <div class="form-group">
                         <label class="form-label">Mô tả</label>
                         <textarea name="Description" id="fDescription" class="form-control" rows="3" placeholder="Mô tả ngắn..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Hình ảnh POI
+                            <span style="font-size:11px;color:#9ca3af;font-weight:400;margin-left:4px">tối đa 5 ảnh, mỗi ảnh 5MB</span>
+                        </label>
+                        <div id="currentImagesWrap" style="display:none;margin-bottom:10px">
+                            <div style="font-size:12px;color:#6b7280;margin-bottom:6px">Ảnh hiện tại:</div>
+                            <div id="currentImagesGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(80px, 1fr));gap:8px"></div>
+                        </div>
+                        <div id="previewGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+                        <div id="imageUploadArea"
+                             style="border:2px dashed #d1d5db;border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:border-color .2s;background:#fafafa"
+                             onclick="document.getElementById('imageFileInput').click()"
+                             ondragover="event.preventDefault();this.style.borderColor='#7c3aed'"
+                             ondragleave="this.style.borderColor='#d1d5db'"
+                             ondrop="handleDrop(event)">
+                            <i class="bi bi-cloud-upload" style="font-size:22px;color:#9ca3af;display:block;margin-bottom:4px"></i>
+                            <span style="font-size:13px;color:#6b7280">Click hoặc kéo thả ảnh vào đây</span><br/>
+                            <span style="font-size:11px;color:#9ca3af">JPG, PNG, WebP</span>
+                        </div>
+                        <input type="file" name="ImageFiles" id="imageFileInput"
+                               accept="image/jpeg,image/png,image/webp"
+                               multiple style="display:none" onchange="previewImages(this)" />
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -227,6 +257,7 @@
 
 
 <script>
+    // FIX: dùng JSON.parse để tránh HTML encode khi render string tiếng Việt
     const POIS = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pois.Select(p => new {
         id       = p.Id,
         name     = p.Name,
@@ -237,20 +268,18 @@
         owner    = p.OwnerId.HasValue ? "#" + p.OwnerId.Value : "—",
         njs      = p.Name,
         djs      = p.Description ?? "",
-        oarg     = p.OwnerId.HasValue ? p.OwnerId.Value.ToString() : "null"
+        oarg     = p.OwnerId.HasValue ? p.OwnerId.Value.ToString() : "null",
+        img      = p.ImageUrl ?? "",
+        status   = p.Status,
+        images   = p.Images.Select(i => new { i.Id, i.ImageUrl, i.IsThumbnail })
     })).Replace("'", "\\'"))');
 
     const IMGS = [
-        '/image/oc_oanh.jpg',
-        '/image/oc_thao.jpg',
-        '/image/oc_nho.jpg',
-        '/image/haisan63.jpg',
-        '/image/oc_to.jpg',
-        '/image/oc_dao_2.jpg',
-        '/image/oc_109.jpg',
-        '/image/oc_30k.jpg',
-        '/image/quannhau.jpg',
-        '/image/oc_cay.jpg',
+        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80',
+        'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80',
+        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400&q=80',
+        'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&q=80',
+        'https://images.unsplash.com/photo-1476224203421-9ac39bcb3df1?w=400&q=80',
     ];
 
     let mainMap, markers={}, circles={}, selectedId=null;
@@ -294,20 +323,27 @@
     function showDetail(poi){
         document.getElementById('detailPlaceholder').style.display='none';
         document.getElementById('detailContent').style.display='flex';
-        document.getElementById('detailImg').src=IMGS[(poi.id-1)%IMGS.length];
-        document.getElementById('detailImg').alt=poi.name;
-        document.getElementById('detailRadius').textContent=poi.radius+' m';
-        document.getElementById('detailName').textContent=poi.name;
-        document.getElementById('detailDesc').textContent=poi.desc||'Chưa có mô tả.';
-        document.getElementById('detailLat').textContent=poi.lat.toFixed(6);
-        document.getElementById('detailLng').textContent=poi.lng.toFixed(6);
-        document.getElementById('detailR').textContent=poi.radius+' m';
-        document.getElementById('detailOwner').textContent=poi.owner;
+        
+        let thumb = poi.images.find(i => i.isThumbnail) || poi.images[0];
+        let finalImgUrl = IMGS[(poi.id-1)%IMGS.length];
+        if (thumb) {
+            finalImgUrl = thumb.imageUrl.startsWith('http') ? thumb.imageUrl : thumb.imageUrl; // Đã là /image/...
+        }
+        document.getElementById('detailImg').src = finalImgUrl;
+        document.getElementById('detailImg').alt = poi.name;
+        document.getElementById('detailRadius').textContent = poi.radius + ' m';
+        document.getElementById('detailName').textContent = poi.name;
+        document.getElementById('detailDesc').textContent = poi.desc || 'Chưa có mô tả.';
+        document.getElementById('detailLat').textContent = poi.lat.toFixed(6);
+        document.getElementById('detailLng').textContent = poi.lng.toFixed(6);
+        document.getElementById('detailR').textContent = poi.radius + ' m';
+        document.getElementById('detailOwner').textContent = poi.owner;
     }
 
-    function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg); }
+    function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg,p.img); }
     function deleteCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) confirmDelete(p.id,p.name); }
 
+    // Bỏ dấu tiếng Việt để tìm kiếm không phân biệt dấu
     function removeDiacritics(str){
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     }
@@ -371,13 +407,20 @@
         document.getElementById('fRadius').value=80;
         document.getElementById('modalTitle').textContent='Thêm điểm thuyết minh';
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Lưu';
+        // Reset ảnh
+        _selectedFiles = new DataTransfer();
+        document.getElementById('imageFileInput').files = _selectedFiles.files;
+        document.getElementById('previewGrid').innerHTML = '';
+        document.getElementById('imageUploadArea').style.borderColor = '#d1d5db';
+        document.getElementById('currentImagesWrap').style.display = 'none';
+        document.getElementById('currentImagesGrid').innerHTML = '';
         showTab('tab-basic','btnTabBasic');
         document.getElementById('poiModal').style.display='flex';
         setTimeout(()=>initPickMap(10.7769,106.7009,80),150);
     }
     function closeModal(){document.getElementById('poiModal').style.display='none';}
 
-    function editPoi(id,name,desc,lat,lng,radius,ownerId){
+    function editPoi(id,name,desc,lat,lng,radius,ownerId,imageUrl){
         document.getElementById('fId').value=id;
         document.getElementById('fName').value=name;
         document.getElementById('fDescription').value=desc;
@@ -387,6 +430,38 @@
         document.getElementById('fOwnerId').value=(ownerId===null||ownerId==='null')?'':ownerId;
         document.getElementById('modalTitle').textContent='Chỉnh sửa: '+name;
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Cập nhật';
+        
+        const poi = POIS.find(p => p.id === id);
+        if (poi && poi.images.length > 0) {
+            document.getElementById('currentImagesWrap').style.display = 'block';
+            let html = '';
+            poi.images.forEach(img => {
+                html += `
+                    <div style="position:relative;width:80px;height:80px">
+                        <img src="${img.imageUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid ${img.isThumbnail ? 'var(--accent)' : '#e5e7eb'}" />
+                        <div style="position:absolute;top:-5px;right:-5px;display:flex;flex-direction:column;gap:2px">
+                            <form method="post" asp-page-handler="DeleteImage" onsubmit="return confirm('Xóa ảnh này?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="imageId" value="${img.id}" />
+                                <button type="submit" class="btn-img-action" style="background:#dc2626"><i class="bi bi-trash"></i></button>
+                            </form>
+                            @if (Model.IsAdmin) {
+                                <form method="post" asp-page-handler="SetThumbnail">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="imageId" value="${img.id}" />
+                                    <button type="submit" class="btn-img-action" style="background:${img.isThumbnail ? 'var(--accent)' : '#9ca3af'}" title="Chọn làm ảnh đại diện">
+                                        <i class="bi bi-star-fill"></i>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('currentImagesGrid').innerHTML = html;
+        } else {
+            document.getElementById('currentImagesWrap').style.display = 'none';
+        }
+
         showTab('tab-basic','btnTabBasic');
         document.getElementById('poiModal').style.display='flex';
         setTimeout(()=>initPickMap(parseFloat(lat),parseFloat(lng),parseInt(radius)),150);
@@ -403,5 +478,57 @@
     function confirmDelete(id,name){document.getElementById('fDelId').value=id;document.getElementById('delName').textContent=name;document.getElementById('deleteModal').style.display='flex';}
     function closeDelete(){document.getElementById('deleteModal').style.display='none';}
 
+
+    // ── Multi-image upload ──
+    let _selectedFiles = new DataTransfer(); // giữ danh sách file đã chọn
+
+    function previewImages(input) {
+        for (const file of input.files) {
+            if (_selectedFiles.items.length >= 5) { alert('Tối đa 5 ảnh.'); break; }
+            if (file.size > 5 * 1024 * 1024) { alert(file.name + ': ảnh tối đa 5MB'); continue; }
+            _selectedFiles.items.add(file);
+        }
+        // Sync input.files với _selectedFiles
+        document.getElementById('imageFileInput').files = _selectedFiles.files;
+        renderPreviewGrid();
+    }
+
+    function renderPreviewGrid() {
+        const grid = document.getElementById('previewGrid');
+        grid.innerHTML = '';
+        Array.from(_selectedFiles.files).forEach((file, i) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const wrap = document.createElement('div');
+                wrap.style.cssText = 'position:relative;width:80px;height:80px;flex-shrink:0';
+                wrap.innerHTML = `
+                    <img src="${e.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb" />
+                    <button type="button" onclick="removeFile(${i})"
+                        style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+                `;
+                grid.appendChild(wrap);
+            };
+            reader.readAsDataURL(file);
+        });
+        document.getElementById('imageUploadArea').style.borderColor =
+            _selectedFiles.files.length > 0 ? '#7c3aed' : '#d1d5db';
+    }
+
+    function removeFile(index) {
+        const dt = new DataTransfer();
+        Array.from(_selectedFiles.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
+        _selectedFiles = dt;
+        document.getElementById('imageFileInput').files = _selectedFiles.files;
+        renderPreviewGrid();
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const input = document.getElementById('imageFileInput');
+        // Merge dropped files vào _selectedFiles
+        const fakeInput = { files: e.dataTransfer.files };
+        previewImages(fakeInput);
+        document.getElementById('imageUploadArea').style.borderColor = '#d1d5db';
+    }
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeDelete();}});
 </script>

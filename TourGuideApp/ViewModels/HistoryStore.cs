@@ -14,7 +14,7 @@ namespace TourGuideApp.ViewModels
 
         // Forwarded properties for XAML binding
         public string Name => Poi?.Name ?? "";
-        //public string? ImageUrl => Poi?.ImageUrl;
+        public string? ImageUrl => Poi?.MainImage;
     }
 
     /// <summary>

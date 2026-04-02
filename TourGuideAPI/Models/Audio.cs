@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace TourGuideAPI.Models
 {
@@ -6,11 +6,13 @@ namespace TourGuideAPI.Models
     {
         public int Id { get; set; }
         public int PoiId { get; set; }
-        public string? AudioUrl { get; set; }
-        public string? Script { get; set; }
-        public string? Language { get; set; }
 
-        [JsonIgnore] // tránh FK conflict khi POST
+        public string? vi { get; set; }
+        public string? en { get; set; }
+        public string? ja { get; set; }
+        public string? zh { get; set; }
+
+        [JsonIgnore]
         public POI? POI { get; set; }
     }
 }

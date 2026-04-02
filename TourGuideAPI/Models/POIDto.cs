@@ -1,4 +1,4 @@
-﻿namespace TourGuideAPI.Models
+namespace TourGuideAPI.Models
 {
     public class POIDto
     {
@@ -10,6 +10,11 @@
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public int Radius { get; set; }
-        public string? Script { get; set; }   
+        public string? ScriptVi { get; set; }
+        public string? ScriptEn { get; set; }
+        public string? ScriptJa { get; set; }
+        public string? ScriptZh { get; set; }
+
+        public List<string> Images { get; set; } = new();
     }
 }

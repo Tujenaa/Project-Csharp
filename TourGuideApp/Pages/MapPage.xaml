@@ -335,6 +335,7 @@
                                 <Grid ColumnSpacing="10" Padding="14,12">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -350,15 +351,22 @@
                                                FontSize="14" FontAttributes="Bold" TextColor="White"
                                                HorizontalOptions="Center" VerticalOptions="Center"/>
                                     </Border>
+                                    
+                                    <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="#F3F4F6" WidthRequest="36" HeightRequest="36" VerticalOptions="Center">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="8"/>
+                                        </Border.StrokeShape>
+                                        <Image Source="{Binding MainImage}" Aspect="AspectFill"/>
+                                    </Border>
 
-                                    <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                    <VerticalStackLayout Grid.Column="2" Spacing="3" VerticalOptions="Center">
                                         <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold"
                                                TextColor="#1A1035" LineBreakMode="TailTruncation"/>
                                         <Label Text="{Binding DistanceText}" FontSize="12" TextColor="#64748B"/>
                                     </VerticalStackLayout>
 
                                     <!-- Icon chỉ đường (chọn làm điểm đến) -->
-                                    <Border Grid.Column="2" BackgroundColor="#DBEAFE"
+                                    <Border Grid.Column="3" BackgroundColor="#DBEAFE"
                                             Stroke="Transparent" StrokeThickness="0"
                                             WidthRequest="36" HeightRequest="36" VerticalOptions="Center">
                                         <Border.StrokeShape>
@@ -375,7 +383,7 @@
                                     </Border>
 
                                     <!-- Play and Pause audio -->
-                                    <HorizontalStackLayout Grid.Column="3" Spacing="8" VerticalOptions="Center">
+                                    <HorizontalStackLayout Grid.Column="4" Spacing="8" VerticalOptions="Center">
                                         <Border BackgroundColor="#EDE7FF"
                                                 Stroke="Transparent" StrokeThickness="0"
                                                 WidthRequest="36" HeightRequest="36">

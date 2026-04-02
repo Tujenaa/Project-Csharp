@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TourGuideAPI.Models;
 
 namespace TourGuideAPI.Data
@@ -10,7 +10,8 @@ namespace TourGuideAPI.Data
         public DbSet<POI> POI { get; set; }
         public DbSet<Audio> Audio { get; set; }
         public DbSet<History> History { get; set; }
-        public DbSet<User> Users { get; set; }  // thêm cho web admin
+        public DbSet<User> Users { get; set; }
+        public DbSet<POIImage> POIImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -18,6 +19,7 @@ namespace TourGuideAPI.Data
             modelBuilder.Entity<Audio>().ToTable("Audio");
             modelBuilder.Entity<History>().ToTable("History");
             modelBuilder.Entity<User>().ToTable("Users");
+            modelBuilder.Entity<POIImage>().ToTable("POIImages");
 
             // OwnerName không có cột trong DB — ignore
             modelBuilder.Entity<POI>().Ignore(p => p.OwnerName);

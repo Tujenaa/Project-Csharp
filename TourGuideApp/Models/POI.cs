@@ -13,7 +13,26 @@ public class POI : INotifyPropertyChanged
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public int Radius { get; set; }
-    public string? Script { get; set; }
+    public string? ScriptVi { get; set; }
+    public string? ScriptEn { get; set; }
+    public string? ScriptJa { get; set; }
+    public string? ScriptZh { get; set; }
+    public List<string> Images { get; set; } = new();
+
+    public List<string> FullImages
+    {
+        get
+        {
+            var baseUrl = Services.ApiService.ApiConfig.BaseUrl.Replace("/api/", "");
+            if (Images == null || Images.Count == 0) 
+                return new List<string> { "place_placeholder.png" };
+            
+            return Images.Select(img => img.StartsWith("http") ? img : baseUrl + img).ToList();
+        }
+    }
+
+    public string MainImage => FullImages.FirstOrDefault() ?? "place_placeholder.png";
+
 
     // =============================
     // Playback state

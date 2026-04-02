@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourGuideAPI.Data;
 using TourGuideAPI.Models;
@@ -21,9 +21,10 @@ namespace TourGuideAPI.Controllers
                     a.Id,
                     a.PoiId,
                     PoiName = a.POI != null ? a.POI.Name : null,
-                    a.Language,
-                    a.AudioUrl,
-                    a.Script
+                    a.vi,
+                    a.en,
+                    a.ja,
+                    a.zh
                 })
                 .ToListAsync();
             return Ok(list);
@@ -39,6 +40,10 @@ namespace TourGuideAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Audio audio)
         {
+            // Kiểm tra xem POI đã có audio chưa
+            var exists = await _context.Audio.AnyAsync(a => a.PoiId == audio.PoiId);
+            if (exists) return BadRequest("POI này đã có Audio rồi.");
+
             // Đảm bảo không insert navigation property
             audio.POI = null;
             _context.Audio.Add(audio);
@@ -52,9 +57,10 @@ namespace TourGuideAPI.Controllers
             var existing = await _context.Audio.FindAsync(id);
             if (existing == null) return NotFound();
             existing.PoiId = audio.PoiId;
-            existing.Language = audio.Language;
-            existing.AudioUrl = audio.AudioUrl;
-            existing.Script = audio.Script;
+            existing.vi = audio.vi;
+            existing.en = audio.en;
+            existing.ja = audio.ja;
+            existing.zh = audio.zh;
             await _context.SaveChangesAsync();
             return Ok(existing);
         }

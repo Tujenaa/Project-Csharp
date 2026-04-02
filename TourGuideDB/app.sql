@@ -170,3 +170,7 @@ VALUES
 (1, N'images/oc_oanh_2.jpg', 0),
 (2, N'images/oc_thao_1.jpg', 1),
 (3, N'images/oc_nho_1.jpg', 1);
+
+-- Thêm cột Status và ImageUrl vào bảng POI
+ALTER TABLE POI ADD Status NVARCHAR(20) NOT NULL DEFAULT 'APPROVED';
+ALTER TABLE POI ADD RejectReason NVARCHAR(500) NULL;

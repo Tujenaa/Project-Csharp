@@ -34,8 +34,6 @@ public class MapViewModel
 
     string _currentLoadedLang = "";
 
-    readonly Dictionary<string, string> translationCache = new();
-
     // ── Events ────────────────────────────────────────────────────────────────
     public event Action? POIUpdated;
 
@@ -200,12 +198,7 @@ public class MapViewModel
 
             if (langNow != _currentLoadedLang)
             {
-                string srcText =
-                    !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
-                    !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
-                    "Không có dữ liệu";
-
-                string freshText = await GetTranslatedTextAsync(poi.Id, srcText, langNow);
+                string freshText = GetScriptForLang(poi, langNow);
                 ttsService.LoadText(freshText);
                 _currentLoadedLang = langNow;
             }
@@ -236,13 +229,8 @@ public class MapViewModel
         poi.IsPlaying = true;
         POIUpdated?.Invoke();
 
-        string originalText =
-            !string.IsNullOrWhiteSpace(poi.Script) ? poi.Script :
-            !string.IsNullOrWhiteSpace(poi.Description) ? poi.Description :
-            "Không có dữ liệu";
-
         string lang = SettingService.Instance.Language;
-        string finalText = await GetTranslatedTextAsync(poi.Id, originalText, lang);
+        string finalText = GetScriptForLang(poi, lang);
 
         ttsService.LoadText(finalText);
         _currentLoadedLang = lang;
@@ -260,17 +248,20 @@ public class MapViewModel
         POIUpdated?.Invoke();
     }
 
-    async Task<string> GetTranslatedTextAsync(int poiId, string originalText, string lang)
+    private string GetScriptForLang(POI poi, string lang)
     {
-        if (lang == "vi") return originalText;
+        string? script = lang switch
+        {
+            "en" => poi.ScriptEn,
+            "ja" => poi.ScriptJa,
+            "zh" => poi.ScriptZh,
+            _ => poi.ScriptVi
+        };
 
-        string cacheKey = $"{poiId}_{lang}";
-        if (translationCache.TryGetValue(cacheKey, out var cached))
-            return cached;
-
-        string translated = await translateService.TranslateWithRetryAsync(originalText, lang);
-        translationCache[cacheKey] = translated;
-        return translated;
+        if (string.IsNullOrWhiteSpace(script)) 
+            script = poi.Description ?? "Không có dữ liệu thuyết minh";
+            
+        return script;
     }
 
     void StopAll()

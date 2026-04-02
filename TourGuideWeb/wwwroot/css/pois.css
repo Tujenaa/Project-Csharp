@@ -429,8 +429,6 @@ textarea.form-control {
     border-radius: 14px;
     width: 100%;
     max-width: 580px;
-    max-height: 90vh;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 60px rgba(0,0,0,.15);
@@ -460,8 +458,6 @@ textarea.form-control {
 
 .modal-body {
     padding: 20px;
-    overflow-y: auto;
-    flex: 1;
 }
 
 .modal-footer {
