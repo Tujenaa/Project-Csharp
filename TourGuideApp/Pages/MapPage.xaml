@@ -179,6 +179,13 @@
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Border BackgroundColor="#F8F7FD" Stroke="#E8E3F5" StrokeThickness="1">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                            <Setter Property="BackgroundColor" Value="#F0E7FF"/>
+                                            <Setter Property="Stroke" Value="#512BD4"/>
+                                            <Setter Property="StrokeThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Border.Triggers>
                                     <Border.StrokeShape>
                                         <RoundRectangle CornerRadius="10"/>
                                     </Border.StrokeShape>
@@ -323,6 +330,13 @@
                         <DataTemplate>
                             <Border BackgroundColor="#F8F7FD" Stroke="#E8E3F5"
                                     StrokeThickness="1" Padding="0">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="BackgroundColor" Value="#F0E7FF"/>
+                                        <Setter Property="Stroke" Value="#512BD4"/>
+                                        <Setter Property="StrokeThickness" Value="2"/>
+                                    </DataTrigger>
+                                </Border.Triggers>
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="16"/>
                                 </Border.StrokeShape>

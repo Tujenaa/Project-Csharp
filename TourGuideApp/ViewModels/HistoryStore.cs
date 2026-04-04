@@ -72,7 +72,8 @@ namespace TourGuideApp.ViewModels
                         Poi = new POI
                         {
                             Id = item.PoiId,
-                            Name = item.PoiName ?? ""
+                            Name = item.PoiName ?? "",
+                            Images = !string.IsNullOrEmpty(item.PoiImage) ? new List<string> { item.PoiImage } : new()
                         },
                         ListenedAt = item.PlayTime
                     });

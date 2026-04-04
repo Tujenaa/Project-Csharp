@@ -1,185 +1,109 @@
 using Microsoft.Maui.Media;
-using TourGuideApp.Services;
+using System.Diagnostics;
+
+namespace TourGuideApp.Services;
 
 /// <summary>
-/// TTS service cho MAUI — logic chọn giọng đồng bộ với web admin (pickVoice).
-///
-/// Pause/Resume:
-///   MAUI TTS không có native pause/resume → ta chia text thành CÁC CÂU,
-///   track sentenceIndex. Pause = cancel + giữ index. Resume = tiếp tục từ index đó.
-///   Nếu đã phát hết (IsFinished) → lần phát tiếp sẽ reset từ câu 0 (replay).
-///
-/// Khi phát xong toàn bộ → raise event OnFinished.
+/// TTS service hỗ trợ Native Pause/Resume thông qua Android/iOS API.
 /// </summary>
-public class TextToSpeechService
+public partial class TextToSpeechService
 {
-    // ── Sentence-level state ──────────────────────────────────────────────────
-    private List<string> _sentences = new();
-    private int _sentenceIndex = 0;
+    private string _currentText = "";
+    private int _charIndex = 0; // Vị trí ký tự đang đọc (để Resume chính xác)
     private bool _finished = false;
+    private bool _isPaused = false;
 
     public bool IsFinished => _finished;
+    public bool IsPaused => _isPaused;
 
-    /// <summary>Raised sau khi phát xong câu cuối cùng (không bị cancel).</summary>
     public event Action? OnFinished;
-    
-    /// <summary>Raised each time a new sentence starts playing (currentIndex, totalCount).</summary>
     public event Action<int, int>? OnProgress;
 
-    // ── Voice priority table ──────────────────────────────────────────────────
     private static readonly Dictionary<string, string[]> LocalePriority = new()
     {
-        ["vi"] = new[] { "vi-VN" },
-        ["en"] = new[] { "en-US", "en-GB", "en-AU" },
-        ["ja"] = new[] { "ja-JP" },
-        ["zh"] = new[] { "zh-CN", "zh-TW", "zh-HK" },
-        ["fr"] = new[] { "fr-FR", "fr-CA" },
-        ["ko"] = new[] { "ko-KR" },
-        ["de"] = new[] { "de-DE" },
-        ["es"] = new[] { "es-ES", "es-MX" },
+        ["vi"] = new[] { "Google Vietnamese", "Microsoft HoaiMy", "vi-VN" },
+        ["en"] = new[] { "Google US English", "Microsoft Aria", "en-US" },
+        ["ja"] = new[] { "Google 日本語", "Microsoft Nanami", "ja-JP" },
+        ["zh"] = new[] { "Google 普通话", "Microsoft Xiaoxiao", "zh-CN" },
     };
 
-    // ── Public API ────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Load text mới → reset toàn bộ trạng thái sentence.
-    /// Gọi khi bắt đầu play một POI mới (Play mới, không phải Resume).
-    /// </summary>
     public void LoadText(string text)
     {
-        _sentences = SplitToSentences(text);
-        _sentenceIndex = 0;
+        string finalText = string.IsNullOrWhiteSpace(text) ? "Không có dữ liệu" : text;
+        if (_currentText == finalText) return;
+        _currentText = finalText;
+        _charIndex = 0;
         _finished = false;
-        System.Diagnostics.Debug.WriteLine(
-            $"[TTS] LoadText: {_sentences.Count} sentences");
+        _isPaused = false;
+        Debug.WriteLine($"[TTS] LoadText: {_currentText.Length} chars");
     }
 
-    /// <summary>
-    /// Phát từ sentenceIndex hiện tại.
-    /// - Nếu IsFinished → reset về câu 0 trước khi phát (replay).
-    /// - Nếu cancel token bị trigger (pause) → dừng, giữ nguyên sentenceIndex.
-    /// - Khi phát xong hết → raise OnFinished.
-    /// </summary>
     public async Task SpeakAsync(CancellationToken cancelToken = default)
     {
-        if (_sentences.Count == 0) return;
+        if (string.IsNullOrWhiteSpace(_currentText)) return;
 
-        // Đã hết → replay từ đầu
         if (_finished)
         {
-            _sentenceIndex = 0;
+            _charIndex = 0;
             _finished = false;
-            System.Diagnostics.Debug.WriteLine("[TTS] Replay from beginning");
+            Debug.WriteLine("[TTS] Replay from beginning");
         }
 
+        _isPaused = false;
         var lang = SettingService.Instance.Language;
-        var locale = await ResolveLocaleAsync(lang);
 
-        System.Diagnostics.Debug.WriteLine(
-            $"[TTS] Starting at sentence {_sentenceIndex}/{_sentences.Count}, " +
-            $"lang={lang}, locale={locale?.Language}-{locale?.Country}");
-
-        while (_sentenceIndex < _sentences.Count)
-        {
-            if (cancelToken.IsCancellationRequested)
-            {
-                System.Diagnostics.Debug.WriteLine(
-                    $"[TTS] Paused at sentence {_sentenceIndex}");
-                return; // Giữ nguyên index để resume tiếp tục
-            }
-
-            OnProgress?.Invoke(_sentenceIndex, _sentences.Count);
-
-            var sentence = _sentences[_sentenceIndex];
-            if (!string.IsNullOrWhiteSpace(sentence))
-            {
-                try
-                {
-                    await TextToSpeech.SpeakAsync(sentence, new SpeechOptions
-                    {
-                        Locale = locale,
-                        Pitch = 1.0f,
-                        Volume = 1.0f
-                    }, cancelToken);
-                }
-                catch (OperationCanceledException)
-                {
-                    System.Diagnostics.Debug.WriteLine(
-                        $"[TTS] Paused mid-sentence {_sentenceIndex}");
-                    return;
-                }
-            }
-
-            if (cancelToken.IsCancellationRequested) return;
-
-            _sentenceIndex++;
-        }
-
-        // Phát xong toàn bộ
-        _finished = true;
-        System.Diagnostics.Debug.WriteLine("[TTS] Finished all sentences");
-        OnProgress?.Invoke(_sentences.Count, _sentences.Count); // 100%
-
-        // Raise event để caller ghi lịch sử
-        OnFinished?.Invoke();
+#if ANDROID
+        await SpeakNativeAndroidAsync(lang, cancelToken);
+#else
+        await SpeakMauiAsync(lang, cancelToken);
+#endif
     }
 
-    /// <summary>
-    /// Overload tiện lợi: load text mới rồi phát ngay.
-    /// Dùng khi Play mới (không phải Resume).
-    /// </summary>
     public async Task SpeakAsync(string text, CancellationToken cancelToken = default)
     {
         LoadText(text);
         await SpeakAsync(cancelToken);
     }
 
-    // ── Voice resolution ──────────────────────────────────────────────────────
+    public void Pause()
+    {
+        _isPaused = true;
+#if ANDROID
+        StopNativeAndroid();
+#else
+        // MAUI Essentials không có Pause thực sự
+#endif
+    }
 
-    private async Task<Locale?> ResolveLocaleAsync(string lang)
+    private async Task SpeakMauiAsync(string lang, CancellationToken cancelToken)
     {
         var locales = await TextToSpeech.GetLocalesAsync();
+        var locale = await ResolveLocaleAsync(lang, locales);
+        await TextToSpeech.SpeakAsync(_currentText, new SpeechOptions { Locale = locale }, cancelToken);
+    }
 
+    private async Task<Locale?> ResolveLocaleAsync(string lang, IEnumerable<Locale> locales)
+    {
         if (LocalePriority.TryGetValue(lang.ToLowerInvariant(), out var preferred))
         {
-            foreach (var code in preferred)
+            foreach (var pref in preferred)
             {
-                var parts = code.Split('-');
-                var langPart = parts[0];
-                var countryPart = parts.Length > 1 ? parts[1] : "";
+                var matchByName = locales.FirstOrDefault(l =>
+                    l.Name != null && l.Name.Contains(pref, StringComparison.OrdinalIgnoreCase));
+                if (matchByName != null) return matchByName;
 
-                var match = locales.FirstOrDefault(l =>
-                    l.Language.Equals(langPart, StringComparison.OrdinalIgnoreCase) &&
-                    (string.IsNullOrEmpty(countryPart) ||
-                     l.Country?.Equals(countryPart, StringComparison.OrdinalIgnoreCase) == true));
-
-                if (match != null) return match;
+                var parts = pref.Split('-');
+                var matchByCode = locales.FirstOrDefault(l =>
+                    l.Language.Equals(parts[0], StringComparison.OrdinalIgnoreCase) &&
+                    (parts.Length <= 1 || l.Country?.Equals(parts[1], StringComparison.OrdinalIgnoreCase) == true));
+                if (matchByCode != null) return matchByCode;
             }
         }
-
-        var fallback = locales.FirstOrDefault(l =>
-            l.Language.StartsWith(lang, StringComparison.OrdinalIgnoreCase));
-        if (fallback != null) return fallback;
-
-        return locales.FirstOrDefault(l =>
-            l.Language.StartsWith("vi", StringComparison.OrdinalIgnoreCase));
+        return locales.FirstOrDefault(l => l.Language.StartsWith(lang, StringComparison.OrdinalIgnoreCase));
     }
 
-    // ── Text splitting ────────────────────────────────────────────────────────
-
-    private static List<string> SplitToSentences(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return new List<string>();
-
-        var raw = System.Text.RegularExpressions.Regex.Split(
-            text.Trim(),
-            @"(?<=[.!?\n])\s+"
-        );
-
-        return raw
-            .Select(s => s.Trim())
-            .Where(s => !string.IsNullOrWhiteSpace(s))
-            .ToList();
-    }
+#if ANDROID
+    private partial Task SpeakNativeAndroidAsync(string lang, CancellationToken cancelToken);
+    private partial void StopNativeAndroid();
+#endif
 }

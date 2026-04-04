@@ -39,25 +39,16 @@ namespace TourGuideAPI.Controllers
                     Longitude = p.Longitude,
                     Radius = p.Radius,
                     ScriptVi = a != null ? a.vi : p.Description,
-                    ScriptEn = a != null ? a.en : null,
-                    ScriptJa = a != null ? a.ja : null,
-                    ScriptZh = a != null ? a.zh : null,
-                    Images = _context.POIImages.Where(img => img.PoiId == p.Id).Select(img => img.ImageUrl).ToList()
+                    ScriptEn = a != null ? a.en : p.Description,
+                    ScriptJa = a != null ? a.ja : p.Description,
+                    ScriptZh = a != null ? a.zh : p.Description,
+                    Images = _context.POIImages
+                                 .Where(img => img.PoiId == p.Id)
+                                 .Select(img => img.ImageUrl)
+                                 .ToList()
                 }
             ).ToListAsync();
             return Ok(data);
-        }
-
-        // ── APP: POST /api/poi/history ──
-        [HttpPost("history")]
-        public async Task<IActionResult> SaveHistory([FromBody] HistoryRequest request)
-        {
-            if (request.PoiId <= 0) return BadRequest("poiId không hợp lệ");
-            var exists = await _context.POI.AnyAsync(p => p.Id == request.PoiId);
-            if (!exists) return BadRequest("POI không tồn tại");
-            _context.History.Add(new History { PoiId = request.PoiId, PlayTime = DateTime.Now });
-            await _context.SaveChangesAsync();
-            return Ok("Lưu thành công");
         }
 
         // ── APP: GET /api/poi/top ──
@@ -72,10 +63,9 @@ namespace TourGuideAPI.Controllers
 
             var data = await (
                 from p in _context.POI
-                where p.Status == "APPROVED"
+                where p.Status == "APPROVED" && topPoiIds.Contains(p.Id)
                 join a in _context.Audio on p.Id equals a.PoiId into pa
                 from a in pa.DefaultIfEmpty()
-                where topPoiIds.Contains(p.Id)
                 select new POIDto
                 {
                     Id = p.Id,
@@ -86,10 +76,13 @@ namespace TourGuideAPI.Controllers
                     Longitude = p.Longitude,
                     Radius = p.Radius,
                     ScriptVi = a != null ? a.vi : p.Description,
-                    ScriptEn = a != null ? a.en : null,
-                    ScriptJa = a != null ? a.ja : null,
-                    ScriptZh = a != null ? a.zh : null,
-                    Images = _context.POIImages.Where(img => img.PoiId == p.Id).Select(img => img.ImageUrl).ToList()
+                    ScriptEn = a != null ? a.en : p.Description,
+                    ScriptJa = a != null ? a.ja : p.Description,
+                    ScriptZh = a != null ? a.zh : p.Description,
+                    Images = _context.POIImages
+                                 .Where(img => img.PoiId == p.Id)
+                                 .Select(img => img.ImageUrl)
+                                 .ToList()
                 }
             ).ToListAsync();
             return Ok(data);
@@ -127,6 +120,16 @@ namespace TourGuideAPI.Controllers
             return poi == null ? NotFound() : Ok(poi);
         }
 
+        // ── WEB: GET /api/poi/{id}/images ──
+        [HttpGet("{id}/images")]
+        public async Task<IActionResult> GetImages(int id)
+        {
+            var images = await _context.POIImages
+                .Where(img => img.PoiId == id)
+                .ToListAsync();
+            return Ok(images);
+        }
+
         // ── WEB: POST /api/poi ──
         [HttpPost]
         public async Task<IActionResult> Create()
@@ -146,7 +149,6 @@ namespace TourGuideAPI.Controllers
             if (string.IsNullOrWhiteSpace(poi.Name)) return BadRequest("Name rỗng");
             poi.Id = 0;
             poi.OwnerName = null;
-            // Status đã được set từ Web (PENDING hoặc APPROVED)
             if (string.IsNullOrEmpty(poi.Status)) poi.Status = "PENDING";
             _context.POI.Add(poi);
             await _context.SaveChangesAsync();
@@ -154,11 +156,15 @@ namespace TourGuideAPI.Controllers
         }
 
         // ── WEB: PUT /api/poi/{id} ──
+        // Admin sửa thẳng; Owner sửa → về PENDING chờ duyệt lại
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] POI poi)
         {
             var existing = await _context.POI.FindAsync(id);
             if (existing == null) return NotFound();
+
+            var isAdmin = Request.Headers.TryGetValue("X-Role", out var role) && role == "ADMIN";
+
             existing.Name = poi.Name;
             existing.Description = poi.Description;
             existing.Address = poi.Address;
@@ -168,9 +174,19 @@ namespace TourGuideAPI.Controllers
             existing.Radius = poi.Radius;
             existing.OwnerId = poi.OwnerId;
             existing.ImageUrl = poi.ImageUrl ?? existing.ImageUrl;
-            if (!string.IsNullOrEmpty(poi.Status))
-                existing.Status = poi.Status;
             existing.RejectReason = poi.RejectReason;
+
+            if (isAdmin)
+            {
+                if (!string.IsNullOrEmpty(poi.Status))
+                    existing.Status = poi.Status;
+            }
+            else
+            {
+                // Owner sửa → chờ duyệt lại
+                existing.Status = "PENDING";
+            }
+
             await _context.SaveChangesAsync();
             return Ok(existing);
         }
@@ -205,129 +221,96 @@ namespace TourGuideAPI.Controllers
         {
             var poi = await _context.POI.FindAsync(id);
             if (poi == null) return NotFound();
+
+            var audios = _context.Audio.Where(a => a.PoiId == id);
+            _context.Audio.RemoveRange(audios);
+            var histories = _context.History.Where(h => h.PoiId == id);
+            _context.History.RemoveRange(histories);
+            var images = _context.POIImages.Where(img => img.PoiId == id);
+            _context.POIImages.RemoveRange(images);
+
             _context.POI.Remove(poi);
             await _context.SaveChangesAsync();
             return Ok();
         }
 
-        // ── WEB: GET /api/poi/{id}/images ──
-        [HttpGet("{id}/images")]
-        public async Task<IActionResult> GetImages(int id)
+        // ── ADMIN: DELETE /api/poi/rejected ──
+        [HttpDelete("rejected")]
+        public async Task<IActionResult> DeleteRejected()
         {
-            var images = await _context.POIImages.Where(img => img.PoiId == id).ToListAsync();
-            return Ok(images);
-        }
-
-        // ── WEB: POST /api/poi/{id}/image — upload ảnh vào thư mục Web ──
-        [HttpPost("{id}/image")]
-        public async Task<IActionResult> UploadImage(int id, IFormFile file)
-        {
-            var p = await _context.POI.FindAsync(id);
-            if (p == null) return NotFound("POI không tồn tại");
-            if (file == null || file.Length == 0) return BadRequest("Không có file");
-
-            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-            if (!allowed.Contains(ext)) return BadRequest("Chỉ hỗ trợ jpg/png/webp");
-
-            try
-            {
-                // Đường dẫn tương đối sang project Web
-                var webImageDir = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "TourGuideWeb", "wwwroot", "image"));
-                if (!Directory.Exists(webImageDir)) Directory.CreateDirectory(webImageDir);
-
-                var fileName = $"poi_{id}_{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}{ext}";
-                var filePath = Path.Combine(webImageDir, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                    await file.CopyToAsync(stream);
-
-                // Lưu vào bảng POIImages
-                var poiImage = new POIImage
-                {
-                    PoiId = id,
-                    ImageUrl = $"/image/{fileName}", // App/Web sẽ dùng đường dẫn tuyệt đối sau
-                    IsThumbnail = !await _context.POIImages.AnyAsync(img => img.PoiId == id) // Nếu là ảnh đầu tiên thì auto Thumbnail
-                };
-
-                _context.POIImages.Add(poiImage);
-                await _context.SaveChangesAsync();
-
-                return Ok(poiImage);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi server: {ex.Message}");
-            }
-        }
-
-        // ── WEB: DELETE /api/poi/image/{imageId} ──
-        [HttpDelete("image/{imageId}")]
-        public async Task<IActionResult> DeletePOIImage(int imageId)
-        {
-            var img = await _context.POIImages.FindAsync(imageId);
-            if (img == null) return NotFound();
-
-            // Xóa file (tùy chọn, thường nên xóa)
-            try
-            {
-                var webImageDir = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "TourGuideWeb", "wwwroot"));
-                var fullPath = Path.Combine(webImageDir, img.ImageUrl.TrimStart('/'));
-                if (System.IO.File.Exists(fullPath)) System.IO.File.Delete(fullPath);
-            } catch { }
-
-            _context.POIImages.Remove(img);
+            var list = await _context.POI.Where(p => p.Status == "REJECTED").ToListAsync();
+            _context.POI.RemoveRange(list);
             await _context.SaveChangesAsync();
-            return Ok();
+            return Ok($"Đã xóa {list.Count} POI bị từ chối.");
         }
 
         // ── WEB: PUT /api/poi/image/{imageId}/thumbnail ──
         [HttpPut("image/{imageId}/thumbnail")]
         public async Task<IActionResult> SetThumbnail(int imageId)
         {
-            var img = await _context.POIImages.FindAsync(imageId);
-            if (img == null) return NotFound();
+            var image = await _context.POIImages.FindAsync(imageId);
+            if (image == null) return NotFound();
+            var others = await _context.POIImages
+                .Where(img => img.PoiId == image.PoiId)
+                .ToListAsync();
+            foreach (var img in others) img.IsThumbnail = false;
+            image.IsThumbnail = true;
+            await _context.SaveChangesAsync();
+            return Ok(image);
+        }
 
-            // Tắt các thumbnail khác của cùng POI
-            var others = await _context.POIImages.Where(i => i.PoiId == img.PoiId && i.IsThumbnail).ToListAsync();
-            foreach (var o in others) o.IsThumbnail = false;
-
-            img.IsThumbnail = true;
+        // ── WEB: DELETE /api/poi/image/{imageId} ──
+        [HttpDelete("image/{imageId}")]
+        public async Task<IActionResult> DeleteImage(int imageId)
+        {
+            var image = await _context.POIImages.FindAsync(imageId);
+            if (image == null) return NotFound();
+            if (!string.IsNullOrEmpty(image.ImageUrl))
+            {
+                var filePath = Path.Combine(_env.WebRootPath ?? "wwwroot", image.ImageUrl.TrimStart('/'));
+                if (System.IO.File.Exists(filePath))
+                    System.IO.File.Delete(filePath);
+            }
+            _context.POIImages.Remove(image);
             await _context.SaveChangesAsync();
             return Ok();
         }
 
-        // ── WEB: DELETE /api/poi/rejected ──
-        [HttpDelete("rejected")]
-        public async Task<IActionResult> DeleteRejected()
+        // ── WEB: POST /api/poi/{id}/image ──
+        [HttpPost("{id}/image")]
+        public async Task<IActionResult> UploadImage(int id, IFormFile file)
         {
-            var rejected = await _context.POI
-                .Where(p => p.Status == "REJECTED" || p.Status == null)
-                .ToListAsync();
+            var p = await _context.POI.FindAsync(id);
+            if (p == null) return NotFound();
+            if (file == null || file.Length == 0) return BadRequest("No file");
 
-            if (rejected.Count == 0) return Ok("Không có POI nào bị từ chối");
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            if (!allowed.Contains(ext)) return BadRequest("Chỉ hỗ trợ jpg/png/webp");
+            if (file.Length > 5_242_880) return BadRequest("Ảnh tối đa 5MB");
 
-            foreach (var p in rejected)
+            var dir = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads", "poi");
+            Directory.CreateDirectory(dir);
+            var fileName = $"poi_{id}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{ext}";
+            var path = Path.Combine(dir, fileName);
+
+            using (var stream = new FileStream(path, FileMode.Create))
+                await file.CopyToAsync(stream);
+
+            var imageUrl = $"/uploads/poi/{fileName}";
+            var isFirst = !await _context.POIImages.AnyAsync(img => img.PoiId == id);
+            _context.POIImages.Add(new POIImage
             {
-                // Xóa ảnh liên quan
-                var images = await _context.POIImages.Where(i => i.PoiId == p.Id).ToListAsync();
-                foreach (var img in images)
-                {
-                    try {
-                        var webImageDir = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "..", "TourGuideWeb", "wwwroot"));
-                        var fullPath = Path.Combine(webImageDir, img.ImageUrl.TrimStart('/'));
-                        if (System.IO.File.Exists(fullPath)) System.IO.File.Delete(fullPath);
-                    } catch { }
-                }
-                _context.POIImages.RemoveRange(images);
-                _context.POI.Remove(p);
-            }
+                PoiId = id,
+                ImageUrl = imageUrl,
+                IsThumbnail = isFirst
+            });
+            if (isFirst) p.ImageUrl = imageUrl;
 
             await _context.SaveChangesAsync();
-            return Ok($"Đã xóa {rejected.Count} POI bị từ chối");
+            return Ok(new { imageUrl });
         }
     }
 
     public record RejectRequest(string Reason);
-    public record HistoryRequest(int UserId, int PoiId);
 }

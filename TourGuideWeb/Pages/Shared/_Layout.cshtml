@@ -88,6 +88,22 @@
                 border-color: #dc2626;
                 color: #dc2626;
             }
+        /* Badge số pending */
+        .nav-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: #dc2626;
+            color: #fff;
+            border-radius: 20px;
+            font-size: 10px;
+            font-family: 'Space Mono', monospace;
+            margin-left: auto;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -118,7 +134,15 @@
                         <i class="bi bi-people"></i><span>Người dùng</span>
                     </a>
                     <a href="/Approval" class="nav-item @(ViewData["Active"]?.ToString() == "approval" ? "active" : "")">
-                        <i class="bi bi-clipboard-check"></i><span>Phê duyệt POI</span>
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Phê duyệt POI</span>
+                        @{
+                            var pendingCount = ViewData["PendingCount"] as int? ?? 0;
+                        }
+                        @if (pendingCount > 0)
+                        {
+                            <span class="nav-badge">@pendingCount</span>
+                        }
                     </a>
                 }
                 <a href="/Profile" class="nav-item @(ViewData["Active"]?.ToString() == "profile" ? "active" : "")">

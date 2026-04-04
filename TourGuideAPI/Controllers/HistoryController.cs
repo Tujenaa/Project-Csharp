@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourGuideAPI.Data;
 using TourGuideAPI.Models;
@@ -21,6 +21,7 @@ namespace TourGuideAPI.Controllers
                     h.Id,
                     h.PoiId,
                     PoiName = h.POI != null ? h.POI.Name : null,
+                    PoiImage = h.POI != null ? h.POI.ImageUrl : null,
                     h.PlayTime
                 })
                 .ToListAsync();
@@ -84,6 +85,7 @@ namespace TourGuideAPI.Controllers
                     h.Id,
                     h.PoiId,
                     PoiName = h.POI != null ? h.POI.Name : null,
+                    PoiImage = h.POI != null ? h.POI.ImageUrl : null,
                     h.PlayTime
                 })
                 .ToListAsync();

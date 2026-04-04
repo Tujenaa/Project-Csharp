@@ -30,95 +30,117 @@
         <div id="mainMap"></div>
     </div>
 
-    <!-- ── RIGHT TOP: DANH SÁCH ── -->
-    <div class="poi-list-wrap">
-        <div class="poi-list-header">
-            <div style="display:flex;gap:6px;align-items:center">
-                <input class="poi-search" id="poiSearch" placeholder="🔍  Tìm địa điểm..."
-                       oninput="filterList(this.value)" style="flex:1" />
-                <button class="btn btn-ghost btn-icon btn-sm" title="Xem tất cả trên map"
-                        onclick="resetMap()" style="flex-shrink:0;padding:6px 8px">
-                    <i class="bi bi-fullscreen"></i>
-                </button>
+    <!-- ── RIGHT PANEL: WRAPS LIST & DETAIL ── -->
+    <div class="poi-right-panel" id="poiRightPanel">
+        
+        <!-- ── DANH SÁCH ── -->
+        <div class="poi-list-wrap">
+            <div class="poi-list-header">
+                <div style="display:flex;gap:6px;align-items:center">
+                    <input class="poi-search" id="poiSearch" placeholder="🔍  Tìm địa điểm..."
+                           oninput="filterList(this.value)" style="flex:1" />
+                    <button class="btn btn-ghost btn-icon btn-sm" title="Xem tất cả trên map"
+                            onclick="resetMap()" style="flex-shrink:0;padding:6px 8px">
+                        <i class="bi bi-fullscreen"></i>
+                    </button>
+                </div>
             </div>
-        </div>
-        <div class="poi-list" id="poiList">
-            @foreach (var p in Model.Pois)
-            {
-                <div class="poi-item" id="item-@p.Id"
-                     data-id="@p.Id"
-                     data-name-lower="@p.Name.ToLower()"
-                     onclick="selectPoiById(@p.Id)">
-                    <div class="poi-item-dot"></div>
-                    <div class="poi-item-body">
-                        <div style="display:flex;align-items:center;gap:6px">
-                            <div class="poi-item-name">@p.Name</div>
-                            @if (p.Status == "PENDING") {
-                                <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:10px;font-weight:600">⏳ Chờ duyệt</span>
-                            } else if (p.Status == "REJECTED") {
-                                <span style="font-size:10px;background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:10px;font-weight:600" title="@p.RejectReason">❌ Từ chối</span>
-                            }
-                        </div>
-                        <div class="poi-item-meta">
-                            <span class="poi-item-coord">@p.Latitude.ToString("F4"), @p.Longitude.ToString("F4")</span>
-                            <span class="poi-item-r">@p.Radius m</span>
-                        </div>
-                    </div>
-                    <i class="bi bi-chevron-right poi-item-arrow"></i>
-                </div>
-            }
-            @if (!Model.Pois.Any())
-            {
-                <div class="poi-empty">
-                    <i class="bi bi-geo-alt" style="font-size:36px;opacity:.25;display:block;margin-bottom:10px"></i>
-                    Chưa có điểm nào.<br />
-                    <a href="#" onclick="openModal();return false;" style="color:var(--accent)">Thêm POI đầu tiên</a>
-                </div>
-            }
-        </div>
-    </div>
+            <div class="poi-list" id="poiList">
+                @foreach (var p in Model.Pois)
+                {
+                    <div class="poi-item" id="item-@p.Id"
+                         data-id="@p.Id"
+                         data-name-lower="@p.Name.ToLower()"
+                         onclick="selectPoiById(@p.Id)">
+                        
+                        @{
+                            var thumb = p.ImageUrl ?? (p.Images.FirstOrDefault(i => i.IsThumbnail)?.ImageUrl ?? p.Images.FirstOrDefault()?.ImageUrl);
+                            var fullThumb = string.IsNullOrEmpty(thumb) 
+                                ? "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=80&q=60" 
+                                : "/img-proxy?url=" + System.Net.WebUtility.UrlEncode(thumb);
+                        }
+                        <img class="poi-item-thumb" src="@fullThumb" 
+                             onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=80&q=60'" />
 
-    <!-- ── RIGHT BOTTOM: CHI TIẾT ── -->
-    <div class="poi-detail" id="poiDetail">
-        <div class="detail-placeholder" id="detailPlaceholder">
-            <i class="bi bi-cursor" style="font-size:32px;opacity:.2"></i>
-            <p>Chọn một địa điểm<br />để xem chi tiết</p>
-        </div>
-        <div class="detail-content" id="detailContent" style="display:none">
-            <div class="detail-img-wrap">
-                <img id="detailImg" src="" alt="" />
-                <div class="detail-img-overlay">
-                    <span class="detail-badge" id="detailRadius"></span>
-                </div>
+                        <div class="poi-item-body">
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <div class="poi-item-name">@p.Name</div>
+                                @if (p.Status == "PENDING") {
+                                    <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:10px;font-weight:600">⏳ Chờ duyệt</span>
+                                } else if (p.Status == "REJECTED") {
+                                    <span style="font-size:10px;background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:10px;font-weight:600" title="@p.RejectReason">❌ Từ chối</span>
+                                }
+                            </div>
+                            <div class="poi-item-meta">
+                                <span class="poi-item-coord">@p.Latitude.ToString("F4"), @p.Longitude.ToString("F4")</span>
+                                <span class="poi-item-r">@p.Radius m</span>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-right poi-item-arrow"></i>
+                    </div>
+                }
+                @if (!Model.Pois.Any())
+                {
+                    <div class="poi-empty">
+                        <i class="bi bi-geo-alt" style="font-size:36px;opacity:.25;display:block;margin-bottom:10px"></i>
+                        Chưa có điểm nào.<br />
+                        <a href="#" onclick="openModal();return false;" style="color:var(--accent)">Thêm POI đầu tiên</a>
+                    </div>
+                }
             </div>
-            <div class="detail-body">
-                <h3 id="detailName"></h3>
-                <p class="detail-desc" id="detailDesc"></p>
-                <div class="detail-info-grid">
-                    <div class="detail-info-item">
-                        <span class="dii-label">Vĩ độ</span>
-                        <span class="dii-val mono" id="detailLat"></span>
-                    </div>
-                    <div class="detail-info-item">
-                        <span class="dii-label">Kinh độ</span>
-                        <span class="dii-val mono" id="detailLng"></span>
-                    </div>
-                    <div class="detail-info-item">
-                        <span class="dii-label">Bán kính</span>
-                        <span class="dii-val" id="detailR"></span>
-                    </div>
-                    <div class="detail-info-item">
-                        <span class="dii-label">Chủ sở hữu</span>
-                        <span class="dii-val" id="detailOwner"></span>
+        </div>
+
+        <!-- ── CHI TIẾT (Overlay) ── -->
+        <div class="poi-detail" id="poiDetail">
+            <!-- Nút back (Mobile-style) -->
+            <div class="detail-nav">
+                <button class="btn-back" onclick="closeDetail()" title="Quay lại danh sách">
+                    <i class="bi bi-arrow-left"></i>
+                </button>
+                <h4 id="detailNavTitle">Chi tiết địa điểm</h4>
+            </div>
+
+            <div class="detail-placeholder" id="detailPlaceholder">
+                <i class="bi bi-cursor" style="font-size:32px;opacity:.2"></i>
+                <p>Chọn một địa điểm<br />để xem chi tiết</p>
+            </div>
+            <div class="detail-content" id="detailContent" style="display:none">
+                <div class="detail-img-wrap">
+                    <img id="detailImg" src="" alt="" />
+                    <div class="detail-img-overlay">
+                        <span class="detail-badge" id="detailRadius"></span>
                     </div>
                 </div>
-                <div class="detail-actions">
-                    <button class="btn btn-outline btn-sm" onclick="editCurrentPoi()">
-                        <i class="bi bi-pencil"></i> Sửa
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteCurrentPoi()">
-                        <i class="bi bi-trash"></i> Xoá
-                    </button>
+                <div id="detailThumbs" style="display:none;padding:6px 8px;background:#f3f4f6;gap:6px;overflow-x:auto;flex-shrink:0"></div>
+                <div class="detail-body">
+                    <h3 id="detailName"></h3>
+                    <p class="detail-desc" id="detailDesc"></p>
+                    <div class="detail-info-grid">
+                        <div class="detail-info-item">
+                            <span class="dii-label">Vĩ độ</span>
+                            <span class="dii-val mono" id="detailLat"></span>
+                        </div>
+                        <div class="detail-info-item">
+                            <span class="dii-label">Kinh độ</span>
+                            <span class="dii-val mono" id="detailLng"></span>
+                        </div>
+                        <div class="detail-info-item">
+                            <span class="dii-label">Bán kính</span>
+                            <span class="dii-val" id="detailR"></span>
+                        </div>
+                        <div class="detail-info-item">
+                            <span class="dii-label">Chủ sở hữu</span>
+                            <span class="dii-val" id="detailOwner"></span>
+                        </div>
+                    </div>
+                    <div class="detail-actions">
+                        <button class="btn btn-outline btn-sm" onclick="editCurrentPoi()">
+                            <i class="bi bi-pencil"></i> Sửa
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteCurrentPoi()">
+                            <i class="bi bi-trash"></i> Xoá
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -230,7 +252,7 @@
     </div>
 </div>
 
-<!-- ===== MODAL XOÁ ===== -->
+<!-- ===== MODAL XOÁ POI ===== -->
 <div id="deleteModal" class="modal-backdrop" style="display:none" onclick="closeDelete()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -252,35 +274,41 @@
     </div>
 </div>
 
+<!-- ===== FORM XOÁ ẢNH (hidden, dùng submit thay fetch để tránh SameSite cookie) ===== -->
+<form id="deleteImageForm" method="post" asp-page-handler="DeleteImage" style="display:none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="ImageIdToDelete" id="deleteImageId" />
+</form>
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-
 <script>
-    // FIX: dùng JSON.parse để tránh HTML encode khi render string tiếng Việt
+    const API_BASE = '@Model.ApiBaseUrl';
+
+    function toAbsUrl(url) {
+        if (!url) return '';
+        // Proxy qua Web để tránh mixed content HTTPS/HTTP
+        return '/img-proxy?url=' + encodeURIComponent(url);
+    }
+
     const POIS = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pois.Select(p => new {
-        id       = p.Id,
-        name     = p.Name,
-        desc     = p.Description ?? "",
-        lat      = p.Latitude,
-        lng      = p.Longitude,
-        radius   = p.Radius,
-        owner    = p.OwnerId.HasValue ? "#" + p.OwnerId.Value : "—",
-        njs      = p.Name,
-        djs      = p.Description ?? "",
-        oarg     = p.OwnerId.HasValue ? p.OwnerId.Value.ToString() : "null",
-        img      = p.ImageUrl ?? "",
-        status   = p.Status,
-        images   = p.Images.Select(i => new { i.Id, i.ImageUrl, i.IsThumbnail })
+        id     = p.Id,
+        name   = p.Name,
+        desc   = p.Description ?? "",
+        lat    = p.Latitude,
+        lng    = p.Longitude,
+        radius = p.Radius,
+        owner  = p.OwnerId.HasValue ? "#" + p.OwnerId.Value : "—",
+        njs    = p.Name,
+        djs    = p.Description ?? "",
+        oarg   = p.OwnerId.HasValue ? p.OwnerId.Value.ToString() : "null",
+        img    = p.ImageUrl ?? "",
+        status = p.Status,
+        images = p.Images.Select(i => new { id = i.Id, imageUrl = i.ImageUrl, isThumbnail = i.IsThumbnail })
     })).Replace("'", "\\'"))');
 
-    const IMGS = [
-        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80',
-        'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80',
-        'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=400&q=80',
-        'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&q=80',
-        'https://images.unsplash.com/photo-1476224203421-9ac39bcb3df1?w=400&q=80',
-    ];
+    const PLH_IMG = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80';
 
     let mainMap, markers={}, circles={}, selectedId=null;
 
@@ -317,22 +345,56 @@
         const el=document.getElementById('item-'+id);
         if(el){ el.classList.add('selected'); el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
         if(markers[id]){ markers[id].setIcon(mkIcon(true)); mainMap.flyTo([poi.lat,poi.lng],16,{duration:.8}); }
+        document.getElementById('poiRightPanel').classList.add('detail-active');
         showDetail(poi);
+    }
+
+    function closeDetail() {
+        document.getElementById('poiRightPanel').classList.remove('detail-active');
+        if(selectedId!==null){
+            const el=document.getElementById('item-'+selectedId);
+            if(el) el.classList.remove('selected');
+            if(markers[selectedId]) markers[selectedId].setIcon(mkIcon(false));
+            selectedId = null;
+        }
     }
 
     function showDetail(poi){
         document.getElementById('detailPlaceholder').style.display='none';
         document.getElementById('detailContent').style.display='flex';
-        
-        let thumb = poi.images.find(i => i.isThumbnail) || poi.images[0];
-        let finalImgUrl = IMGS[(poi.id-1)%IMGS.length];
-        if (thumb) {
-            finalImgUrl = thumb.imageUrl.startsWith('http') ? thumb.imageUrl : thumb.imageUrl; // Đã là /image/...
+
+        let thumb = poi.images && poi.images.length > 0
+            ? (poi.images.find(i => i.isThumbnail) || poi.images[0])
+            : null;
+
+        let finalImgUrl = PLH_IMG;
+        if (thumb && thumb.imageUrl) {
+            finalImgUrl = toAbsUrl(thumb.imageUrl);
+        } else if (poi.img) {
+            finalImgUrl = toAbsUrl(poi.img);
         }
+
         document.getElementById('detailImg').src = finalImgUrl;
+        document.getElementById('detailImg').onerror = function() { this.src = PLH_IMG; };
         document.getElementById('detailImg').alt = poi.name;
+
+        // Thumbnail strip
+        const thumbsWrap = document.getElementById('detailThumbs');
+        if (poi.images && poi.images.length > 1) {
+            thumbsWrap.style.display = 'flex';
+            thumbsWrap.innerHTML = poi.images.map(img => {
+                const url = toAbsUrl(img.imageUrl);
+                return `<img src="${url}" onclick="switchDetailImg('${url}', this)"
+                    style="width:52px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:2px solid ${img.isThumbnail ? '#7c3aed' : '#e5e7eb'};flex-shrink:0"
+                    onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=80&q=60'" />`;
+            }).join('');
+        } else {
+            thumbsWrap.style.display = 'none';
+            thumbsWrap.innerHTML = '';
+        }
         document.getElementById('detailRadius').textContent = poi.radius + ' m';
         document.getElementById('detailName').textContent = poi.name;
+        document.getElementById('detailNavTitle').textContent = poi.name;
         document.getElementById('detailDesc').textContent = poi.desc || 'Chưa có mô tả.';
         document.getElementById('detailLat').textContent = poi.lat.toFixed(6);
         document.getElementById('detailLng').textContent = poi.lng.toFixed(6);
@@ -343,7 +405,6 @@
     function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg,p.img); }
     function deleteCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) confirmDelete(p.id,p.name); }
 
-    // Bỏ dấu tiếng Việt để tìm kiếm không phân biệt dấu
     function removeDiacritics(str){
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     }
@@ -356,16 +417,10 @@
         });
     }
 
-    // Reset map về hiện tất cả POI
     function resetMap(){
         document.getElementById('poiSearch').value = '';
         filterList('');
-        if(selectedId !== null){
-            const oldEl = document.getElementById('item-'+selectedId);
-            if(oldEl) oldEl.classList.remove('selected');
-            if(markers[selectedId]) markers[selectedId].setIcon(mkIcon(false));
-            selectedId = null;
-        }
+        document.getElementById('poiRightPanel').classList.remove('detail-active');
         document.getElementById('detailPlaceholder').style.display = '';
         document.getElementById('detailContent').style.display = 'none';
         if(mainMap && POIS.length){
@@ -407,7 +462,6 @@
         document.getElementById('fRadius').value=80;
         document.getElementById('modalTitle').textContent='Thêm điểm thuyết minh';
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Lưu';
-        // Reset ảnh
         _selectedFiles = new DataTransfer();
         document.getElementById('imageFileInput').files = _selectedFiles.files;
         document.getElementById('previewGrid').innerHTML = '';
@@ -430,31 +484,22 @@
         document.getElementById('fOwnerId').value=(ownerId===null||ownerId==='null')?'':ownerId;
         document.getElementById('modalTitle').textContent='Chỉnh sửa: '+name;
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Cập nhật';
-        
+
         const poi = POIS.find(p => p.id === id);
-        if (poi && poi.images.length > 0) {
+        if (poi && poi.images && poi.images.length > 0) {
             document.getElementById('currentImagesWrap').style.display = 'block';
             let html = '';
             poi.images.forEach(img => {
+                const absUrl = toAbsUrl(img.imageUrl);
                 html += `
-                    <div style="position:relative;width:80px;height:80px">
-                        <img src="${img.imageUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid ${img.isThumbnail ? 'var(--accent)' : '#e5e7eb'}" />
-                        <div style="position:absolute;top:-5px;right:-5px;display:flex;flex-direction:column;gap:2px">
-                            <form method="post" asp-page-handler="DeleteImage" onsubmit="return confirm('Xóa ảnh này?')">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="imageId" value="${img.id}" />
-                                <button type="submit" class="btn-img-action" style="background:#dc2626"><i class="bi bi-trash"></i></button>
-                            </form>
-                            @if (Model.IsAdmin) {
-                                <form method="post" asp-page-handler="SetThumbnail">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="imageId" value="${img.id}" />
-                                    <button type="submit" class="btn-img-action" style="background:${img.isThumbnail ? 'var(--accent)' : '#9ca3af'}" title="Chọn làm ảnh đại diện">
-                                        <i class="bi bi-star-fill"></i>
-                                    </button>
-                                </form>
-                            }
-                        </div>
+                    <div style="position:relative;width:80px;height:80px" id="imgwrap-${img.id}">
+                        <img src="${absUrl}"
+                             style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid ${img.isThumbnail ? 'var(--accent)' : '#e5e7eb'}"
+                             onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=80&q=60'" />
+                        <button type="button" onclick="event.preventDefault();event.stopPropagation();deleteImage(${img.id})"
+                            style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center">
+                            ✕
+                        </button>
                     </div>`;
             });
             document.getElementById('currentImagesGrid').innerHTML = html;
@@ -462,9 +507,21 @@
             document.getElementById('currentImagesWrap').style.display = 'none';
         }
 
+        _selectedFiles = new DataTransfer();
+        document.getElementById('imageFileInput').files = _selectedFiles.files;
+        document.getElementById('previewGrid').innerHTML = '';
+
         showTab('tab-basic','btnTabBasic');
         document.getElementById('poiModal').style.display='flex';
         setTimeout(()=>initPickMap(parseFloat(lat),parseFloat(lng),parseInt(radius)),150);
+    }
+
+    // Xóa ảnh dùng form submit (tránh SameSite cookie issue với fetch)
+    function deleteImage(imageId) {
+        if (!confirm('Xóa ảnh này?')) return;
+        closeModal();
+        document.getElementById('deleteImageId').value = imageId;
+        document.getElementById('deleteImageForm').submit();
     }
 
     function showTab(tabId,btnId){
@@ -478,9 +535,8 @@
     function confirmDelete(id,name){document.getElementById('fDelId').value=id;document.getElementById('delName').textContent=name;document.getElementById('deleteModal').style.display='flex';}
     function closeDelete(){document.getElementById('deleteModal').style.display='none';}
 
-
     // ── Multi-image upload ──
-    let _selectedFiles = new DataTransfer(); // giữ danh sách file đã chọn
+    let _selectedFiles = new DataTransfer();
 
     function previewImages(input) {
         for (const file of input.files) {
@@ -488,7 +544,6 @@
             if (file.size > 5 * 1024 * 1024) { alert(file.name + ': ảnh tối đa 5MB'); continue; }
             _selectedFiles.items.add(file);
         }
-        // Sync input.files với _selectedFiles
         document.getElementById('imageFileInput').files = _selectedFiles.files;
         renderPreviewGrid();
     }
@@ -524,11 +579,17 @@
 
     function handleDrop(e) {
         e.preventDefault();
-        const input = document.getElementById('imageFileInput');
-        // Merge dropped files vào _selectedFiles
-        const fakeInput = { files: e.dataTransfer.files };
-        previewImages(fakeInput);
+        previewImages({ files: e.dataTransfer.files });
         document.getElementById('imageUploadArea').style.borderColor = '#d1d5db';
     }
+
+    function switchDetailImg(url, el) {
+        document.getElementById('detailImg').src = url;
+        document.querySelectorAll('#detailThumbs img').forEach(img => {
+            img.style.borderColor = '#e5e7eb';
+        });
+        el.style.borderColor = '#7c3aed';
+    }
+
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeDelete();}});
 </script>

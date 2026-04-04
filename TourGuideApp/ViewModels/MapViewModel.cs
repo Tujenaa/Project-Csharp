@@ -117,14 +117,10 @@ public class MapViewModel
 
         if (pois == null || pois.Count == 0) return;
 
+        allPOIs.Clear();
         allPOIs.AddRange(pois);
 
-        double startLat = userLat ?? pois[0].Latitude;
-        double startLon = userLon ?? pois[0].Longitude;
-
-        var sorted = SortByNearestNeighbor(allPOIs, startLat, startLon);
-        UpdateIndexAndDistance(sorted);
-        RebuildNearbyPOI(sorted);
+        RefreshNearbyOrder();
 
         await PushMapDataAsync();
         _ = TrackUserLocationAsync();
@@ -147,6 +143,54 @@ public class MapViewModel
             await EvalJs($"setPOIs({BuildPOIJson(NearbyPOI)})");
     }
 
+    private void RefreshNearbyOrder()
+    {
+        if (allPOIs.Count == 0) return;
+
+        List<POI> sorted;
+        if (userLat.HasValue && userLon.HasValue)
+        {
+            sorted = allPOIs
+                .OrderBy(p => DistanceHelper.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude))
+                .ToList();
+        }
+        else
+        {
+            sorted = allPOIs.ToList();
+        }
+
+        // Cập nhật khoảng cách & IndexLabel
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            var p = sorted[i];
+            p.IndexLabel = (i + 1).ToString();
+            if (userLat.HasValue && userLon.HasValue)
+            {
+                double d = DistanceHelper.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude);
+                p.DistanceText = FormatDistance(d);
+            }
+        }
+
+        // Kiểm tra xem thứ tự Id có thay đổi không để tránh refresh UI quá nhiều
+        var currentIds = NearbyPOI.Select(x => x.Id).ToList();
+        var newIds = sorted.Select(x => x.Id).ToList();
+
+        if (!currentIds.SequenceEqual(newIds))
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                NearbyPOI.Clear();
+                foreach (var p in sorted) NearbyPOI.Add(p);
+                POIUpdated?.Invoke();
+            });
+        }
+        else
+        {
+            // Chỉ cần báo cập nhật text (khoảng cách)
+            MainThread.BeginInvokeOnMainThread(() => POIUpdated?.Invoke());
+        }
+    }
+
     // ── Tìm kiếm POI ─────────────────────────────────────────────────────────
     public List<POI> SearchPOI(string query)
     {
@@ -154,7 +198,7 @@ public class MapViewModel
 
         var q = query.Trim().ToLowerInvariant();
         return allPOIs
-            .Where(p => p.Name.ToLowerInvariant().Contains(q))
+            .Where(p => p.Name != null && p.Name.ToLowerInvariant().Contains(q))
             .OrderBy(p => userLat.HasValue && userLon.HasValue
                 ? DistanceHelper.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude)
                 : 0)
@@ -162,14 +206,7 @@ public class MapViewModel
     }
 
     // ── Cập nhật khoảng cách ─────────────────────────────────────────────────
-    public void RefreshDistances()
-    {
-        if (!userLat.HasValue || !userLon.HasValue) return;
-        foreach (var poi in NearbyPOI)
-            poi.DistanceText = FormatDistance(
-                DistanceHelper.GetDistance(userLat.Value, userLon.Value, poi.Latitude, poi.Longitude));
-        POIUpdated?.Invoke();
-    }
+    public void RefreshDistances() => RefreshNearbyOrder();
 
     // ── Tạm Dừng (Pause) ──────────────────────────────────────────────────────
     void HandlePause(POI poi)
@@ -340,13 +377,7 @@ public class MapViewModel
                     catch { /* Bỏ qua lỗi nếu WebView không active / disposed */ }
                 }
 
-                foreach (var poi in NearbyPOI)
-                {
-                    poi.DistanceText = FormatDistance(
-                        DistanceHelper.GetDistance(loc.Latitude, loc.Longitude, poi.Latitude, poi.Longitude));
-                }
-
-                POIUpdated?.Invoke();
+                RefreshNearbyOrder();
                 CheckNearbyPOI(loc.Latitude, loc.Longitude);
             }
 
@@ -354,26 +385,6 @@ public class MapViewModel
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-    void RebuildNearbyPOI(IEnumerable<POI> sorted)
-    {
-        NearbyPOI.Clear();
-        foreach (var p in sorted) NearbyPOI.Add(p);
-        POIUpdated?.Invoke();
-    }
-
-    void UpdateIndexAndDistance(IList<POI> sorted)
-    {
-        for (int i = 0; i < sorted.Count; i++)
-        {
-            sorted[i].IndexLabel = (i + 1).ToString();
-            if (userLat.HasValue && userLon.HasValue)
-                sorted[i].DistanceText = FormatDistance(
-                    DistanceHelper.GetDistance(
-                        userLat.Value, userLon.Value,
-                        sorted[i].Latitude, sorted[i].Longitude));
-        }
-    }
 
     static string FormatDistance(double meters)
     {

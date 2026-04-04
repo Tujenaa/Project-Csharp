@@ -11,8 +11,9 @@ public class ApiService
 
     public static class ApiConfig
     {
-        public const string BaseUrl = "http://192.168.1.53:5266/api/";
-        //public const string BaseUrl = "http://10.0.2.2:5266/api/";
+        public static string BaseUrl => DeviceInfo.DeviceType == DeviceType.Virtual 
+            ? "http://10.0.2.2:5266/api/" 
+            : "http://192.168.1.83:5266/api/";
     }
 
     // ── POI ──────────────────────────────────────────────────────────────────

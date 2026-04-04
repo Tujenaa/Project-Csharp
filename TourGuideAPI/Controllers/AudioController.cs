@@ -40,11 +40,16 @@ namespace TourGuideAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] Audio audio)
         {
-            // Kiểm tra xem POI đã có audio chưa
+            // Kiểm tra POI đã được APPROVED chưa
+            var poi = await _context.POI.FindAsync(audio.PoiId);
+            if (poi == null) return BadRequest("POI không tồn tại.");
+            if (poi.Status != "APPROVED" && poi.Status != "PENDING_EDIT" && poi.Status != "PENDING_DELETE")
+                return BadRequest("POI chưa được duyệt, không thể thêm audio.");
+
+            // Kiểm tra đã có audio chưa
             var exists = await _context.Audio.AnyAsync(a => a.PoiId == audio.PoiId);
             if (exists) return BadRequest("POI này đã có Audio rồi.");
 
-            // Đảm bảo không insert navigation property
             audio.POI = null;
             _context.Audio.Add(audio);
             await _context.SaveChangesAsync();

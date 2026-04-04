@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using GPSGuide.Web.Models;
+using System.Net.Http.Json;
 
 namespace GPSGuide.Web.Pages;
 
@@ -11,38 +12,35 @@ public class AudioManagerModel : PageModel
 
     public List<Audio> Audios { get; set; } = [];
     public List<POI> Pois { get; set; } = [];
-
     [TempData] public string Msg { get; set; } = "";
 
     [BindProperty] public int Id { get; set; }
     [BindProperty] public int PoiId { get; set; }
-    
     [BindProperty] public string? vi { get; set; }
     [BindProperty] public string? en { get; set; }
     [BindProperty] public string? ja { get; set; }
     [BindProperty] public string? zh { get; set; }
-
     [BindProperty] public int DeleteId { get; set; }
 
     private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
-    private bool IsAdmin => Role == "ADMIN";
+    public bool IsAdmin => Role == "ADMIN";
     private int? MyId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
+
+    private HttpClient Api => _http.CreateClient("API");
 
     public async Task OnGetAsync()
     {
-        var client = _http.CreateClient("API");
         try
         {
-            var allAudios = await client.GetFromJsonAsync<List<Audio>>("audio") ?? [];
-
+            var allAudios = await Api.GetFromJsonAsync<List<Audio>>("audio") ?? [];
             if (IsAdmin)
             {
                 Audios = allAudios;
-                Pois = await client.GetFromJsonAsync<List<POI>>("poi/all") ?? [];
+                Pois = await Api.GetFromJsonAsync<List<POI>>("poi/all") ?? [];
             }
             else
             {
-                Pois = await client.GetFromJsonAsync<List<POI>>($"poi/owner/{MyId}") ?? [];
+                Pois = await Api.GetFromJsonAsync<List<POI>>($"poi/owner/{MyId}") ?? [];
                 var myPoiIds = Pois.Select(p => p.Id).ToHashSet();
                 Audios = allAudios.Where(a => myPoiIds.Contains(a.PoiId)).ToList();
             }
@@ -52,35 +50,30 @@ public class AudioManagerModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var client = _http.CreateClient("API");
         var payload = new { PoiId, vi, en, ja, zh };
-
         HttpResponseMessage res;
+
         if (Id == 0)
         {
-            res = await client.PostAsJsonAsync("audio", payload);
-            if (res.IsSuccessStatusCode) Msg = "Đã thêm audio thành công.";
-            else {
-                var err = await res.Content.ReadAsStringAsync();
-                Msg = "Thêm thất bại: " + err;
-            }
+            res = await Api.PostAsJsonAsync("audio", payload);
+            Msg = res.IsSuccessStatusCode
+                ? "Đã thêm audio thành công."
+                : "Thêm thất bại: " + await res.Content.ReadAsStringAsync();
         }
         else
         {
-            res = await client.PutAsJsonAsync($"audio/{Id}", payload);
-            if (res.IsSuccessStatusCode) Msg = "Đã cập nhật audio.";
-            else {
-                var err = await res.Content.ReadAsStringAsync();
-                Msg = "Cập nhật thất bại: " + err;
-            }
+            res = await Api.PutAsJsonAsync($"audio/{Id}", payload);
+            Msg = res.IsSuccessStatusCode
+                ? "Đã cập nhật audio."
+                : "Cập nhật thất bại: " + await res.Content.ReadAsStringAsync();
         }
+
         return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostDeleteAsync()
     {
-        var client = _http.CreateClient("API");
-        await client.DeleteAsync($"audio/{DeleteId}");
+        await Api.DeleteAsync($"audio/{DeleteId}");
         Msg = "Đã xoá audio.";
         return RedirectToPage();
     }

@@ -118,16 +118,16 @@ VALUES
 
 INSERT INTO POI (Name, Description, Address, Phone, Latitude, Longitude, Radius, OwnerId)
 VALUES
-(N'Ốc Oanh Vĩnh Khánh', N'Quán ốc nổi tiếng đông khách mỗi tối', N'534 Vĩnh Khánh, Quận 4', N'0901000001', 10.761009, 106.702436, 10, 6),
-(N'Ốc Thảo Vĩnh Khánh', N'Ốc tươi ngon, giá bình dân', N'555 Vĩnh Khánh, Quận 4', N'0901000002', 10.761103, 106.703445, 10, 4),
-(N'Ốc Nho Vĩnh Khánh', N'Quán ốc lâu đời, hương vị đậm đà', N'307 Vĩnh Khánh, Quận 4', N'0901000003', 10.760472, 106.703425, 10, 3),
-(N'Hải sản 63 Vĩnh Khánh', N'Hải sản tươi sống, chế biến tại chỗ', N'63 Vĩnh Khánh, Quận 4', N'0901000004', 10.760408, 106.703725, 10, 2),
-(N'Ốc Tô Vĩnh Khánh', N'Ốc tô siêu to, ăn đã miệng', N'200 Vĩnh Khánh, Quận 4', N'0901000005', 10.761199, 106.704948, 10, 4),
-(N'Ốc Đào Vĩnh Khánh', N'Quán ốc nổi tiếng giới trẻ', N'212B Vĩnh Khánh, Quận 4', N'0901000006', 10.760522, 106.707003, 10, 5),
-(N'Ốc Xào Me 109', N'Ốc xào me chua ngọt đặc trưng', N'109 Vĩnh Khánh, Quận 4', N'0901000007', 10.760588, 106.705034, 10, 3),
-(N'Ốc 30K Vĩnh Khánh', N'Ốc giá rẻ, đa dạng món', N'150 Vĩnh Khánh, Quận 4', N'0901000008', 10.760872, 106.704454, 10, 3),
-(N'Quán Nhậu Vĩnh Khánh', N'Quán nhậu bình dân, đông vui', N'320 Vĩnh Khánh, Quận 4', N'0901000009', 10.761009, 106.705764, 10, 6),
-(N'Ốc Cay Vĩnh Khánh', N'Ốc cay đặc trưng, vị đậm đà', N'400 Vĩnh Khánh, Quận 4', N'0901000010', 10.760798, 106.706954, 10, 4);
+(N'Ốc Oanh Vĩnh Khánh', N'Quán ốc nổi tiếng đông khách mỗi tối', N'534 Vĩnh Khánh, Quận 4', N'0901000001', 10.761009, 106.702436, 50, 6),
+(N'Ốc Thảo Vĩnh Khánh', N'Ốc tươi ngon, giá bình dân', N'555 Vĩnh Khánh, Quận 4', N'0901000002', 10.761103, 106.703445, 50, 4),
+(N'Ốc Nho Vĩnh Khánh', N'Quán ốc lâu đời, hương vị đậm đà', N'307 Vĩnh Khánh, Quận 4', N'0901000003', 10.760472, 106.703425, 50, 3),
+(N'Hải sản 63 Vĩnh Khánh', N'Hải sản tươi sống, chế biến tại chỗ', N'63 Vĩnh Khánh, Quận 4', N'0901000004', 10.760408, 106.703725, 50, 2),
+(N'Ốc Tô Vĩnh Khánh', N'Ốc tô siêu to, ăn đã miệng', N'200 Vĩnh Khánh, Quận 4', N'0901000005', 10.761199, 106.704948, 50, 4),
+(N'Ốc Đào Vĩnh Khánh', N'Quán ốc nổi tiếng giới trẻ', N'212B Vĩnh Khánh, Quận 4', N'0901000006', 10.760522, 106.707003, 50, 5),
+(N'Ốc Xào Me 109', N'Ốc xào me chua ngọt đặc trưng', N'109 Vĩnh Khánh, Quận 4', N'0901000007', 10.760588, 106.705034, 50, 3),
+(N'Ốc 30K Vĩnh Khánh', N'Ốc giá rẻ, đa dạng món', N'150 Vĩnh Khánh, Quận 4', N'0901000008', 10.760872, 106.704454, 50, 3),
+(N'Quán Nhậu Vĩnh Khánh', N'Quán nhậu bình dân, đông vui', N'320 Vĩnh Khánh, Quận 4', N'0901000009', 10.761009, 106.705764, 50, 6),
+(N'Ốc Cay Vĩnh Khánh', N'Ốc cay đặc trưng, vị đậm đà', N'400 Vĩnh Khánh, Quận 4', N'0901000010', 10.760798, 106.706954, 50, 4);
 
 INSERT INTO Audio (PoiId, vi, en, ja, zh)
 VALUES
@@ -200,7 +200,7 @@ N'这家餐厅是晚上聚会的好地方，充满音乐和欢笑。适合放松
 N'Ốc cay nổi bật với vị cay nồng đặc trưng. Các món ăn được nêm nếm kỹ lưỡng, mang lại trải nghiệm mạnh mẽ cho người thưởng thức. Đây là địa điểm không thể bỏ qua nếu bạn yêu thích đồ ăn cay.',
 N'Spicy snail dishes here are known for their strong and bold flavors. The seasoning is carefully prepared to deliver a powerful taste experience. A must-visit for spicy food lovers.',
 N'スパイシーな巻貝料理が特徴です。味付けはしっかりしていて、刺激的な体験ができます。辛いものが好きな人におすすめです。',
-N'这里的辣味螺非常有特色，味道浓烈。适合喜欢吃辣的人。'); ăn cay.');
+N'这里的辣味螺非常有特色，味道浓烈。适合喜欢吃辣的人。'); 
 
 -- TEST HISTORY
 INSERT INTO History (PoiId, UserId)

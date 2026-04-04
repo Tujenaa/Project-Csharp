@@ -1,29 +1,25 @@
 ﻿using Microsoft.AspNetCore.Mvc.RazorPages;
 using GPSGuide.Web.Models;
+using System.Net.Http.Json;
 
 namespace GPSGuide.Web.Pages;
-
 public class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _http;
     private readonly IConfiguration _config;
-
     public IndexModel(IHttpClientFactory http, IConfiguration config)
     {
         _http = http;
         _config = config;
     }
-
     public int TotalPoi { get; set; }
     public int TotalAudio { get; set; }
     public int TotalHistory { get; set; }
     public int TotalUsers { get; set; }
     public bool ApiError { get; set; }
     public string ApiUrl { get; set; } = "";
-
     public List<HistoryItem> RecentHistory { get; set; } = [];
     public List<KeyValuePair<string, int>> TopPoi { get; set; } = [];
-
     private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
     public bool IsAdmin => Role == "ADMIN";
     private int? MyId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
@@ -32,7 +28,6 @@ public class IndexModel : PageModel
     {
         ApiUrl = _config["ApiUrl"] ?? "";
         var client = _http.CreateClient("API");
-
         List<POI>? pois = null;
         List<AudioItem>? audios = null;
         List<HistoryItem>? history = null;
@@ -47,12 +42,9 @@ public class IndexModel : PageModel
         }
         else
         {
-            // Owner chỉ thấy dữ liệu của mình
             pois = await Fetch<List<POI>>(client, $"poi/owner/{MyId}");
             audios = await Fetch<List<AudioItem>>(client, "audio");
             history = await Fetch<List<HistoryItem>>(client, "history");
-
-            // Lọc audio và history theo POI của owner
             var myPoiIds = (pois ?? []).Select(p => p.Id).ToHashSet();
             audios = audios?.Where(a => myPoiIds.Contains(a.PoiId)).ToList();
             history = history?.Where(h => myPoiIds.Contains(h.PoiId)).ToList();
@@ -60,7 +52,17 @@ public class IndexModel : PageModel
 
         ApiError = pois is null && audios is null && history is null;
 
-        TotalPoi = pois?.Count ?? 0;
+        if (IsAdmin)
+        {
+            // Admin: chỉ đếm POI đang active (không tính REJECTED)
+            TotalPoi = pois?.Count(p => p.Status != "REJECTED") ?? 0;
+        }
+        else
+        {
+            // Owner: đếm tất cả POI của mình (trừ REJECTED)
+            TotalPoi = pois?.Count(p => p.Status != "REJECTED") ?? 0;
+        }
+
         TotalAudio = audios?.Count ?? 0;
         TotalHistory = history?.Count ?? 0;
         TotalUsers = users?.Count ?? 0;

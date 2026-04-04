@@ -13,21 +13,20 @@
     <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
 }
 
-    <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
-        <div>
-            <h2>Phê duyệt POI</h2>
-            <div class="sub">Các điểm thuyết minh đang chờ Admin xét duyệt</div>
-        </div>
-        @if (Model.AllPois.Any(p => p.Status == "REJECTED" || p.Status == null))
-        {
-            <form method="post" asp-page-handler="DeleteRejected" onsubmit="return confirm('Bạn có chắc muốn xóa vĩnh viễn tất cả POI đã bị từ chối?')">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-danger btn-sm">
-                    <i class="bi bi-trash"></i> Xóa tất cả POI bị từ chối
-                </button>
-            </form>
-        }
+<div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+    <div>
+        <h2>Phê duyệt POI</h2>
+        <div class="sub">Các điểm thuyết minh đang chờ Admin xét duyệt</div>
     </div>
+    @if (Model.AllPois.Any(p => p.Status == "REJECTED"))
+    {
+        <form method="post" asp-page-handler="DeleteRejected" onsubmit="return confirm('Bạn có chắc muốn xóa vĩnh viễn tất cả POI đã bị từ chối?')">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-danger btn-sm">
+                <i class="bi bi-trash"></i> Xóa tất cả POI bị từ chối
+            </button>
+        </form>
+    }
 </div>
 
 <!-- Tabs -->
@@ -68,7 +67,9 @@
                         <strong style="color:#111827">@p.Name</strong>
                         @if (!string.IsNullOrEmpty(p.Description))
                         {
-                            <div style="font-size:12px;color:#6b7280;margin-top:2px">@(p.Description.Length > 60 ? p.Description[..60] + "…" : p.Description)</div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:2px">
+                                @(p.Description.Length > 60 ? p.Description[..60] + "…" : p.Description)
+                            </div>
                         }
                     </td>
                     <td style="color:#374151">@(p.OwnerName ?? $"#{p.OwnerId}")</td>
@@ -101,8 +102,7 @@
                                         <i class="bi bi-check-lg"></i> Duyệt
                                     </button>
                                 </form>
-                                <button type="button" class="btn btn-danger btn-sm"
-                                        onclick="openReject(@p.Id, '@p.Name')">
+                                <button type="button" class="btn btn-danger btn-sm" onclick="openReject(@p.Id, '@p.Name')">
                                     <i class="bi bi-x-lg"></i> Từ chối
                                 </button>
                             }
@@ -139,8 +139,7 @@
 </div>
 
 <!-- Modal từ chối -->
-<div id="rejectModal" class="modal-backdrop" style="display:none"
-     onclick="if(event.target===this)closeReject()">
+<div id="rejectModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeReject()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h4>Từ chối POI</h4>
@@ -156,9 +155,9 @@
                 </p>
                 <input type="hidden" name="PoiId" id="rejectPoiId" />
                 <div class="form-group">
-                    <label class="form-label">Lý do từ chối <span style="color:red">*</span></label>
-                    <textarea name="Reason" class="form-control" rows="3"
-                              placeholder="VD: Toạ độ không chính xác, thiếu mô tả..." required></textarea>
+                    <label class="form-label">Lý do từ chối</label>
+                    <textarea name="Reason" id="rejectReason" class="form-control" rows="3"
+                              placeholder="VD: Toạ độ không chính xác, thiếu mô tả..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -175,11 +174,10 @@
     function openReject(id, name) {
         document.getElementById('rejectPoiId').value = id;
         document.getElementById('rejectPoiName').textContent = name;
+        document.getElementById('rejectReason').value = '';
         document.getElementById('rejectModal').style.display = 'flex';
     }
-    function closeReject() {
-        document.getElementById('rejectModal').style.display = 'none';
-    }
+    function closeReject() { document.getElementById('rejectModal').style.display = 'none'; }
 
     function filterStatus(status, btn) {
         document.querySelectorAll('.utab').forEach(b => b.classList.remove('active'));
@@ -189,7 +187,6 @@
         });
     }
 
-    // Mặc định hiện PENDING
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('#approvalTable tbody tr[data-status]').forEach(row => {
             if (row.dataset.status !== 'PENDING') row.style.display = 'none';
