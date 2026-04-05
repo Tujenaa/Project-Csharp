@@ -12,6 +12,7 @@ public class AudioManagerModel : PageModel
 
     public List<Audio> Audios { get; set; } = [];
     public List<POI> Pois { get; set; } = [];
+    public List<POI> PoisWithoutAudio { get; set; } = [];
     [TempData] public string Msg { get; set; } = "";
 
     [BindProperty] public int Id { get; set; }
@@ -44,8 +45,11 @@ public class AudioManagerModel : PageModel
                 var myPoiIds = Pois.Select(p => p.Id).ToHashSet();
                 Audios = allAudios.Where(a => myPoiIds.Contains(a.PoiId)).ToList();
             }
+
+            var existingAudioPoiIds = Audios.Select(a => a.PoiId).ToHashSet();
+            PoisWithoutAudio = Pois.Where(p => !existingAudioPoiIds.Contains(p.Id)).ToList();
         }
-        catch { Audios = []; Pois = []; }
+        catch { Audios = []; Pois = []; PoisWithoutAudio = []; }
     }
 
     public async Task<IActionResult> OnPostAsync()

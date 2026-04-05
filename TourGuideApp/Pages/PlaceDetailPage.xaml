@@ -86,6 +86,30 @@
 
                         <!-- Play and Pause buttons -->
                         <HorizontalStackLayout Grid.Column="0" Spacing="8" VerticalOptions="Center">
+                            <!-- Stop button -->
+                            <Border BackgroundColor="#E8E3F5"
+                                    WidthRequest="46" HeightRequest="46"
+                                    StrokeThickness="0"
+                                    IsVisible="False">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="IsVisible" Value="True"/>
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12"/>
+                                </Border.StrokeShape>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnStopTapped"/>
+                                </Border.GestureRecognizers>
+                                <Image Source="ic_white_stop.svg"
+                                   WidthRequest="18"
+                                   HeightRequest="18"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center">
+                                </Image>
+                            </Border>
+
                             <!-- Play button -->
                             <Border BackgroundColor="#512BD4"
                                     WidthRequest="46" HeightRequest="46"
@@ -124,8 +148,11 @@
                                     <TapGestureRecognizer Tapped="OnPauseTapped"/>
                                 </Border.GestureRecognizers>
                                 <Image Source="ic_white_pause.svg"
-                                       WidthRequest="18" HeightRequest="18"
-                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                                    WidthRequest="18"
+                                    HeightRequest="18"
+                                    HorizontalOptions="Center"
+                                    VerticalOptions="Center">
+                                </Image>
                             </Border>
                         </HorizontalStackLayout>
 

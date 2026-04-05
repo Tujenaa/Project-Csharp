@@ -38,10 +38,10 @@ namespace TourGuideAPI.Controllers
                     Latitude = p.Latitude,
                     Longitude = p.Longitude,
                     Radius = p.Radius,
-                    ScriptVi = a != null ? a.vi : p.Description,
-                    ScriptEn = a != null ? a.en : p.Description,
-                    ScriptJa = a != null ? a.ja : p.Description,
-                    ScriptZh = a != null ? a.zh : p.Description,
+                    ScriptVi = a != null ? a.vi : null,
+                    ScriptEn = a != null ? a.en : null,
+                    ScriptJa = a != null ? a.ja : null,
+                    ScriptZh = a != null ? a.zh : null,
                     Images = _context.POIImages
                                  .Where(img => img.PoiId == p.Id)
                                  .Select(img => img.ImageUrl)
@@ -75,10 +75,10 @@ namespace TourGuideAPI.Controllers
                     Latitude = p.Latitude,
                     Longitude = p.Longitude,
                     Radius = p.Radius,
-                    ScriptVi = a != null ? a.vi : p.Description,
-                    ScriptEn = a != null ? a.en : p.Description,
-                    ScriptJa = a != null ? a.ja : p.Description,
-                    ScriptZh = a != null ? a.zh : p.Description,
+                    ScriptVi = a != null ? a.vi : null,
+                    ScriptEn = a != null ? a.en : null,
+                    ScriptJa = a != null ? a.ja : null,
+                    ScriptZh = a != null ? a.zh : null,
                     Images = _context.POIImages
                                  .Where(img => img.PoiId == p.Id)
                                  .Select(img => img.ImageUrl)
@@ -116,8 +116,33 @@ namespace TourGuideAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var poi = await _context.POI.FindAsync(id);
-            return poi == null ? NotFound() : Ok(poi);
+            var data = await (
+                from p in _context.POI
+                where p.Id == id
+                join a in _context.Audio on p.Id equals a.PoiId into pa
+                from a in pa.DefaultIfEmpty()
+                select new POIDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Address = p.Address,
+                    Phone = p.Phone,
+                    Latitude = p.Latitude,
+                    Longitude = p.Longitude,
+                    Radius = p.Radius,
+                    ScriptVi = a != null ? a.vi : null,
+                    ScriptEn = a != null ? a.en : null,
+                    ScriptJa = a != null ? a.ja : null,
+                    ScriptZh = a != null ? a.zh : null,
+                    Images = _context.POIImages
+                                 .Where(img => img.PoiId == p.Id)
+                                 .Select(img => img.ImageUrl)
+                                 .ToList()
+                }
+            ).FirstOrDefaultAsync();
+
+            return data == null ? NotFound() : Ok(data);
         }
 
         // ── WEB: GET /api/poi/{id}/images ──

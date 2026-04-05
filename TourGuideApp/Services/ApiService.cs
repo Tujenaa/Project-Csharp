@@ -13,7 +13,7 @@ public class ApiService
     {
         public static string BaseUrl => DeviceInfo.DeviceType == DeviceType.Virtual 
             ? "http://10.0.2.2:5266/api/" 
-            : "http://192.168.1.83:5266/api/";
+            : "http://192.168.1.107:5266/api/";
     }
 
     // ── POI ──────────────────────────────────────────────────────────────────
@@ -46,6 +46,28 @@ public class ApiService
 
         System.Diagnostics.Debug.WriteLine("[API] GetPOI → using offline cache");
         return await LocalDbService.Instance.GetCachedPOIsAsync();
+    }
+
+    /// <summary>Lấy thông tin một POI từ API và cập nhật cache lẻ.</summary>
+    public async Task<POI?> GetPOIById(int id)
+    {
+        if (ConnectivityService.IsConnected)
+        {
+            try
+            {
+                var poi = await client.GetFromJsonAsync<POI>($"{ApiConfig.BaseUrl}POI/{id}");
+                if (poi != null)
+                {
+                    await LocalDbService.Instance.UpdateSinglePOIAsync(poi);
+                    return poi;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetPOIById failed: {ex.Message}");
+            }
+        }
+        return null;
     }
 
     /// <summary>Top POI — offline fallback lấy 5 POI đầu trong cache.</summary>

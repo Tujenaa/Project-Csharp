@@ -109,6 +109,31 @@ public class LocalDbService
         System.Diagnostics.Debug.WriteLine($"[LocalDB] Saved {cached.Count} POIs");
     }
 
+    /// <summary>Cập nhật hoặc chèn mới một POI đơn lẻ vào cache.</summary>
+    public async Task UpdateSinglePOIAsync(POI p)
+    {
+        await InitAsync();
+        var c = new CachedPOI
+        {
+            Id          = p.Id,
+            Name        = p.Name ?? "",
+            Description = p.Description ?? "",
+            Address     = p.Address ?? "",
+            Phone       = p.Phone ?? "",
+            Latitude    = p.Latitude,
+            Longitude   = p.Longitude,
+            Radius      = p.Radius,
+            ScriptVi    = p.ScriptVi ?? "",
+            ScriptEn    = p.ScriptEn ?? "",
+            ScriptJa    = p.ScriptJa ?? "",
+            ScriptZh    = p.ScriptZh ?? "",
+            ImagesJson  = JsonSerializer.Serialize(p.Images),
+            CachedAt    = DateTime.UtcNow
+        };
+        await _db!.InsertOrReplaceAsync(c);
+        System.Diagnostics.Debug.WriteLine($"[LocalDB] Updated single POI cache: {p.Id}");
+    }
+
     /// <summary>Đọc POI từ local DB (dùng khi offline).</summary>
     public async Task<List<POI>> GetCachedPOIsAsync()
     {

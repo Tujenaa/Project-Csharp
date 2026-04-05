@@ -267,8 +267,24 @@ public class MapViewModel
         POIUpdated?.Invoke();
 
         string lang = SettingService.Instance.Language;
-        string finalText = GetScriptForLang(poi, lang);
+        
+        // --- LUÔN SYNC KHI ONLINE: Ưu tiên lấy kịch bản từ API nếu có mạng ---
+        if (ConnectivityService.IsConnected)
+        {
+            var freshPoi = await apiService.GetPOIById(poi.Id);
+            if (freshPoi != null)
+            {
+                // Cập nhật dữ liệu mới nhất vào object hiện tại
+                poi.ScriptVi = freshPoi.ScriptVi;
+                poi.ScriptEn = freshPoi.ScriptEn;
+                poi.ScriptJa = freshPoi.ScriptJa;
+                poi.ScriptZh = freshPoi.ScriptZh;
+                // Lưu ý: apiService.GetPOIById đã tự động lưu xuống SQLite Cache
+                System.Diagnostics.Debug.WriteLine($"[Sync] Đã tải kịch bản mới nhất từ API cho POI {poi.Id}");
+            }
+        }
 
+        string finalText = GetScriptForLang(poi, lang);
         ttsService.LoadText(finalText);
         _currentLoadedLang = lang;
 
@@ -296,7 +312,7 @@ public class MapViewModel
         };
 
         if (string.IsNullOrWhiteSpace(script)) 
-            script = poi.Description ?? "Không có dữ liệu thuyết minh";
+            return "Không có dữ liệu thuyết minh";
             
         return script;
     }

@@ -58,7 +58,7 @@ public partial class PlaceDetailPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             _currentPoi.AudioProgress = (double)current / total;
-            _currentPoi.AudioDuration = $"{current}/{total} câu";
+            _currentPoi.AudioDuration = $"{current}/{total} chữ";
         });
     }
 
@@ -90,13 +90,34 @@ public partial class PlaceDetailPage : ContentPage
         }
     }
 
+    private void OnStopTapped(object sender, EventArgs e)
+    {
+        StopPlayback();
+    }
+
     // ── Play button handler (Chỉ Play/Resume) ─────────────────────────────────
 
     private async void OnPlayTapped(object sender, EventArgs e)
     {
         if (BindingContext is not POI poi) return;
 
-        // Nếu đang phát thì không làm gì (hoặc có thể pause tuỳ thiết kế, nhưng ta đã có nút pause riêng)
+        // --- LUÔN SYNC KHI ONLINE: Ưu tiên lấy kịch bản từ API nếu có mạng ---
+        if (ConnectivityService.IsConnected)
+        {
+            var apiService = new ApiService();
+            var freshPoi = await apiService.GetPOIById(poi.Id);
+            if (freshPoi != null)
+            {
+                // Cập nhật dữ liệu mới nhất vào object hiện tại
+                poi.ScriptVi = freshPoi.ScriptVi;
+                poi.ScriptEn = freshPoi.ScriptEn;
+                poi.ScriptJa = freshPoi.ScriptJa;
+                poi.ScriptZh = freshPoi.ScriptZh;
+                System.Diagnostics.Debug.WriteLine($"[PlaceDetail] Đã tải kịch bản mới nhất từ API cho POI {poi.Id}");
+            }
+        }
+
+        // Nếu đang phát thì không làm gì
         if (isPlaying) return;
 
         string langNow = SettingService.Instance.Language;
@@ -218,7 +239,7 @@ public partial class PlaceDetailPage : ContentPage
         };
 
         if (string.IsNullOrWhiteSpace(script)) 
-            script = poi.Description ?? "Không có dữ liệu thuyết minh";
+            return "Không có dữ liệu thuyết minh";
             
         return script;
     }
