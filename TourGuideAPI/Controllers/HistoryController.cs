@@ -15,51 +15,43 @@ namespace TourGuideAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var list = await _context.History
-                .Include(h => h.POI)
-                .Select(h => new {
+            var list = await (
+                from h in _context.History
+                join p in _context.POI on h.PoiId equals p.Id into hp
+                from p in hp.DefaultIfEmpty()
+                join u in _context.Users on h.UserId equals u.Id into hu
+                from u in hu.DefaultIfEmpty()
+                orderby h.PlayTime descending
+                select new
+                {
                     h.Id,
                     h.PoiId,
-                    PoiName = h.POI != null ? h.POI.Name : null,
-                    PoiImage = h.POI != null ? h.POI.ImageUrl : null,
+                    PoiName = p != null ? p.Name : null,
+                    h.UserId,
+                    UserLogin = u != null ? u.Username : "unknown",
+                    UserFullName = u != null ? u.Name : "Unknown",
+                    UserRole = u != null ? u.Role : null,
                     h.PlayTime
-                })
-                .ToListAsync();
+                }
+            ).ToListAsync();
             return Ok(list);
         }
-        // // ── APP: POST api/history ──
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] History history)
         {
             Console.WriteLine($"API RECEIVED: PoiId={history.PoiId}, UserId={history.UserId}");
-
             if (history.UserId == 0)
-            {
                 return BadRequest("UserId bị null / không gửi lên");
-            }
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == history.UserId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == history.UserId);
+            if (user == null) return BadRequest("User không tồn tại");
+            if (user.Role != "CUSTOMER") return BadRequest("Chỉ CUSTOMER mới được ghi lịch sử");
 
-            if (user == null)
-            {
-                return BadRequest("User không tồn tại");
-            }
-
-            if (user.Role != "CUSTOMER")
-            {
-                return BadRequest("Chỉ CUSTOMER mới được ghi lịch sử");
-            }
-
-            // Reset navigation tránh loop
             history.POI = null;
-
-            if (history.PlayTime == default)
-                history.PlayTime = DateTime.Now;
-
+            if (history.PlayTime == default) history.PlayTime = DateTime.Now;
             _context.History.Add(history);
             await _context.SaveChangesAsync();
-
             return Ok(history);
         }
 
@@ -73,7 +65,6 @@ namespace TourGuideAPI.Controllers
             return Ok();
         }
 
-        //APP: Lấy lịch sử nghe của một user, kèm tên POI 
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetByUser(int userId)
         {
@@ -89,7 +80,6 @@ namespace TourGuideAPI.Controllers
                     h.PlayTime
                 })
                 .ToListAsync();
-
             return Ok(list);
         }
     }
