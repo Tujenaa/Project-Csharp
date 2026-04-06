@@ -1,0 +1,160 @@
+﻿@page
+@model GPSGuide.Web.Pages.ActivityLogModel
+@section Styles {
+    <link rel="stylesheet" href="~/css/history.css" asp-append-version="true" />
+}
+
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
+}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem">
+    <div>
+        <h2 style="margin:0 0 4px">Nhật ký hoạt động</h2>
+    </div>
+</div>
+
+<!-- Stats -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:1.5rem">
+    <div class="stat-mini">
+        <div class="stat-mini-val">@Model.History.Count</div>
+        <div class="stat-mini-label">Tổng lượt nghe</div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-mini-val">@Model.History.Select(h => h.UserId).Distinct().Count()</div>
+        <div class="stat-mini-label">Người dùng</div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-mini-val">@Model.History.Select(h => h.PoiId).Distinct().Count()</div>
+        <div class="stat-mini-label">POI đã nghe</div>
+    </div>
+    <div class="stat-mini">
+        <div class="stat-mini-val">@(Model.History.Any() ? Model.History.First().PlayTime.ToString("dd/MM") : "—")</div>
+        <div class="stat-mini-label">Hoạt động gần nhất</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="padding:14px 16px;margin-bottom:1rem">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div style="flex:1;min-width:180px">
+            <input type="text" id="searchInput" class="form-control" placeholder="🔍 Tìm tên POI hoặc user..." oninput="applyFilters()" />
+        </div>
+        <div>
+            <select id="filterUser" class="form-control" style="width:auto" onchange="applyFilters()">
+                <option value="">Tất cả người dùng</option>
+                @foreach (var u in Model.History.GroupBy(h => new { h.UserId, h.UserLogin, h.UserFullName }).Select(g => g.Key).OrderBy(u => u.UserLogin))
+                {
+                    <option value="@u.UserId">@u.UserLogin (@u.UserFullName)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <select id="filterPoi" class="form-control" style="width:auto" onchange="applyFilters()">
+                <option value="">Tất cả POI</option>
+                @foreach (var p in Model.History.GroupBy(h => new { h.PoiId, h.PoiName }).Select(g => g.Key).OrderBy(p => p.PoiName))
+                {
+                    <option value="@p.PoiId">@(p.PoiName ?? $"POI #{p.PoiId}")</option>
+                }
+            </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="clearFilters()">
+            <i class="bi bi-x-circle"></i> Xóa bộ lọc
+        </button>
+        <span id="resultCount" style="font-size:12px;color:#6b7280;margin-left:4px"></span>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <table class="tg-table" id="actTable">
+        <thead>
+            <tr>
+                <th style="width:50px">#</th>
+                <th>Người dùng</th>
+                <th>Điểm POI</th>
+                <th>Thời gian</th>
+                <th style="width:80px">Xóa</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                int stt = 1;
+            }
+            @foreach (var h in Model.History)
+            {
+                <tr data-id="@h.Id"
+                    data-user-id="@h.UserId"
+                    data-poi-id="@h.PoiId"
+                    data-search="@((h.PoiName + " " + h.UserLogin + " " + h.UserFullName).ToLower())">
+                    <td class="text-muted">#@(stt++)</td>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0">
+                                @((h.UserFullName ?? h.UserLogin ?? "?")[0].ToString().ToUpper())
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:13px;color:#111827">@(h.UserFullName ?? h.UserLogin)</div>
+                                <div style="font-size:11px;color:#9ca3af">@h.UserLogin · #@h.UserId</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight:500;color:#1e1b4b">@(h.PoiName ?? $"POI #{h.PoiId}")</div>
+                        <div style="font-size:11px;color:#9ca3af">ID: #@h.PoiId</div>
+                    </td>
+                    <td>
+                        <div style="font-size:13px;color:#374151">@h.PlayTime.ToString("dd/MM/yyyy")</div>
+                        <div style="font-size:11px;color:#9ca3af;font-family:var(--mono)">@h.PlayTime.ToString("HH:mm:ss")</div>
+                    </td>
+                    <td>
+                        <form method="post" asp-page-handler="Delete" style="display:inline"
+                              onsubmit="return confirm('Xóa lịch sử này?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="deleteId" value="@h.Id" />
+                            <button type="submit" class="btn btn-ghost btn-sm btn-icon text-danger" title="Xóa">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            @if (!Model.History.Any())
+            {
+                <tr><td colspan="5" class="empty-state">Chưa có lịch sử nào.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function applyFilters() {
+        const q       = document.getElementById('searchInput').value.toLowerCase();
+        const userId  = document.getElementById('filterUser').value;
+        const poiId   = document.getElementById('filterPoi').value;
+        let count = 0;
+
+        document.querySelectorAll('#actTable tbody tr[data-id]').forEach(r => {
+            const matchSearch = !q || r.dataset.search.includes(q);
+            const matchUser   = !userId || r.dataset.userId === userId;
+            const matchPoi    = !poiId  || r.dataset.poiId  === poiId;
+            const show = matchSearch && matchUser && matchPoi;
+            r.style.display = show ? '' : 'none';
+            if (show) count++;
+        });
+
+        document.getElementById('resultCount').textContent =
+            (q || userId || poiId) ? `${count} kết quả` : '';
+    }
+
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterUser').value  = '';
+        document.getElementById('filterPoi').value   = '';
+        applyFilters();
+    }
+
+    // Hiện số kết quả ban đầu
+    document.addEventListener('DOMContentLoaded', applyFilters);
+</script>
