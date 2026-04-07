@@ -26,7 +26,6 @@ public class AudioManagerModel : PageModel
     private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
     public bool IsAdmin => Role == "ADMIN";
     private int? MyId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
-
     private HttpClient Api => _http.CreateClient("API");
 
     public async Task OnGetAsync()
@@ -47,7 +46,11 @@ public class AudioManagerModel : PageModel
             }
 
             var existingAudioPoiIds = Audios.Select(a => a.PoiId).ToHashSet();
-            PoisWithoutAudio = Pois.Where(p => !existingAudioPoiIds.Contains(p.Id)).ToList();
+
+            // Chỉ hiện POI đã APPROVED và chưa có audio
+            PoisWithoutAudio = Pois
+                .Where(p => p.Status == "APPROVED" && !existingAudioPoiIds.Contains(p.Id))
+                .ToList();
         }
         catch { Audios = []; Pois = []; PoisWithoutAudio = []; }
     }
@@ -56,7 +59,6 @@ public class AudioManagerModel : PageModel
     {
         var payload = new { PoiId, vi, en, ja, zh };
         HttpResponseMessage res;
-
         if (Id == 0)
         {
             res = await Api.PostAsJsonAsync("audio", payload);
@@ -71,7 +73,6 @@ public class AudioManagerModel : PageModel
                 ? "Đã cập nhật audio."
                 : "Cập nhật thất bại: " + await res.Content.ReadAsStringAsync();
         }
-
         return RedirectToPage();
     }
 

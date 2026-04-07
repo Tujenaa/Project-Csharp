@@ -3,6 +3,7 @@ using GPSGuide.Web.Models;
 using System.Net.Http.Json;
 
 namespace GPSGuide.Web.Pages;
+
 public class IndexModel : PageModel
 {
     private readonly IHttpClientFactory _http;
@@ -12,6 +13,7 @@ public class IndexModel : PageModel
         _http = http;
         _config = config;
     }
+
     public int TotalPoi { get; set; }
     public int TotalAudio { get; set; }
     public int TotalHistory { get; set; }
@@ -20,6 +22,7 @@ public class IndexModel : PageModel
     public string ApiUrl { get; set; } = "";
     public List<HistoryItem> RecentHistory { get; set; } = [];
     public List<KeyValuePair<string, int>> TopPoi { get; set; } = [];
+
     private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
     public bool IsAdmin => Role == "ADMIN";
     private int? MyId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
@@ -54,8 +57,8 @@ public class IndexModel : PageModel
 
         if (IsAdmin)
         {
-            // Admin: chỉ đếm POI đang active (không tính REJECTED)
-            TotalPoi = pois?.Count(p => p.Status != "REJECTED") ?? 0;
+            // Admin: chỉ đếm POI đã APPROVED
+            TotalPoi = pois?.Count(p => p.Status == "APPROVED") ?? 0;
         }
         else
         {
