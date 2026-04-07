@@ -47,7 +47,7 @@ public class AudioManagerModel : PageModel
 
             var existingAudioPoiIds = Audios.Select(a => a.PoiId).ToHashSet();
 
-            // Chỉ hiện POI đã APPROVED và chưa có audio
+            // FIX: chỉ hiện POI đã APPROVED và chưa có audio
             PoisWithoutAudio = Pois
                 .Where(p => p.Status == "APPROVED" && !existingAudioPoiIds.Contains(p.Id))
                 .ToList();

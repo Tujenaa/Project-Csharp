@@ -57,7 +57,7 @@ public class IndexModel : PageModel
 
         if (IsAdmin)
         {
-            // Admin: chỉ đếm POI đã APPROVED
+            // FIX: Admin chỉ đếm POI đã APPROVED
             TotalPoi = pois?.Count(p => p.Status == "APPROVED") ?? 0;
         }
         else

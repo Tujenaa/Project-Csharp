@@ -22,8 +22,8 @@
             <tr>
                 <th>ID</th>
                 <th>Điểm</th>
-                <th>Script</th>
                 <th>Nghe thử</th>
+                <th>Ngôn ngữ</th>
                 <th>Hành động</th>
             </tr>
         </thead>
@@ -36,16 +36,7 @@
                 <tr>
                     <td class="text-muted">#@(stt++)</td>
                     <td style="font-weight:600">@(a.PoiName ?? $"#{a.PoiId}")</td>
-                    <td class="text-muted" style="max-width:350px">
-                        <div style="white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical">@a.vi</div>
-                    </td>
                     <td style="white-space:nowrap">
-                        <select id="lang-@a.Id" class="form-control" style="width:auto;font-size:11px;padding:2px 6px;display:inline-block">
-                            <option value="vi">🇻🇳 VI</option>
-                            <option value="en">🇺🇸 EN</option>
-                            <option value="ja">🇯🇵 JA</option>
-                            <option value="zh">🇨🇳 ZH</option>
-                        </select>
                         <button type="button" id="btn-play-@a.Id" class="btn btn-ghost btn-sm btn-icon" title="Phát" onclick="rowPlay(@a.Id)">
                             <i class="bi bi-play-fill"></i>
                         </button>
@@ -58,6 +49,14 @@
                         <button type="button" id="btn-stop-@a.Id" class="btn btn-ghost btn-sm btn-icon text-danger" title="Dừng" onclick="rowStop(@a.Id)" style="display:none">
                             <i class="bi bi-stop-fill"></i>
                         </button>
+                    </td>
+                    <td>
+                        <select id="lang-@a.Id" class="form-control" style="width:auto;font-size:11px;padding:2px 6px">
+                            <option value="vi">🇻🇳 VI</option>
+                            <option value="en">🇺🇸 EN</option>
+                            <option value="ja">🇯🇵 JA</option>
+                            <option value="zh">🇨🇳 ZH</option>
+                        </select>
                     </td>
                     <td>
                         <div class="action-group">
@@ -85,6 +84,28 @@
     </table>
 </div>
 
+<style>
+    .modal-body .form-group {
+        margin-bottom: 22px;
+    }
+
+    .required {
+        color: #dc3545;
+        margin-left: 2px;
+    }
+
+    .modal-lang-selector {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+</style>
+
 <!-- MODAL THÊM -->
 <div id="addModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeAddModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
@@ -92,73 +113,85 @@
             <h4>Thêm Audio</h4>
             <button type="button" class="btn btn-ghost btn-icon" onclick="closeAddModal()"><i class="bi bi-x-lg"></i></button>
         </div>
-        <form method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="Id" value="0" />
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Điểm <span class="required">*</span></label>
-                    <select name="PoiId" id="aPoiId" class="form-control" required>
-                        <option value="">-- Chọn điểm --</option>
-                        @foreach (var p in Model.Pois)
-                        {
-                            <option value="@p.Id">@p.Name</option>
-                        }
-                    </select>
-                </div>
-                <div class="form-group">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        @if (Model.PoisWithoutAudio.Any())
+        {
+            <form method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" value="0" />
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Điểm <span class="required">*</span></label>
+                        <select name="PoiId" id="aPoiId" class="form-control" required>
+                            <option value="">-- Chọn điểm --</option>
+                            @foreach (var p in Model.PoisWithoutAudio)
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="modal-lang-selector">
+                        <span style="font-size:12px;font-weight:600;color:#475569">Nghe thử:</span>
+                        <select id="aTtsLang" class="form-control" style="width:auto;font-size:12px;padding:3px 8px">
+                            <option value="vi">🇻🇳 VI</option>
+                            <option value="en">🇺🇸 EN</option>
+                            <option value="ja">🇯🇵 JA</option>
+                            <option value="zh">🇨🇳 ZH</option>
+                        </select>
+                        <div style="flex-grow:1"></div>
+                        <button type="button" id="aBtnPlay" class="btn btn-sm btn-outline" onclick="addTtsPlay()"><i class="bi bi-play-fill"></i> Phát</button>
+                        <button type="button" id="aBtnPause" class="btn btn-sm btn-outline" onclick="addTtsPause()" style="display:none"><i class="bi bi-pause-fill"></i> Tạm dừng</button>
+                        <button type="button" id="aBtnResume" class="btn btn-sm btn-outline" onclick="addTtsResume()" style="display:none"><i class="bi bi-play-circle-fill"></i> Tiếp tục</button>
+                        <button type="button" id="aBtnStop" class="btn btn-sm btn-danger" onclick="addTtsStop()" style="display:none"><i class="bi bi-stop-fill"></i> Dừng</button>
+                    </div>
+
+                    <div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-bottom:20px">
+                        <span style="font-size:11px;color:#6b7280">Dịch từ:</span>
+                        <select id="aSourceLang" class="form-control" style="width:auto;font-size:11px;padding:2px 6px">
+                            <option value="vi">🇻🇳 VI</option>
+                            <option value="en">🇺🇸 EN</option>
+                            <option value="ja">🇯🇵 JA</option>
+                            <option value="zh">🇨🇳 ZH</option>
+                        </select>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="autoTranslateAll()" id="btnAutoTrans">
+                            <i class="bi bi-translate"></i> Dịch tự động
+                        </button>
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label">Script Tiếng Việt <span class="required">*</span></label>
-                        <div style="display:flex;gap:6px;align-items:center">
-                            <span style="font-size:11px;color:#6b7280">Dịch từ:</span>
-                            <select id="aSourceLang" class="form-control" style="width:auto;font-size:11px;padding:2px 6px">
-                                <option value="vi">🇻🇳 VI</option>
-                                <option value="en">🇺🇸 EN</option>
-                                <option value="ja">🇯🇵 JA</option>
-                                <option value="zh">🇨🇳 ZH</option>
-                            </select>
-                            <button type="button" class="btn btn-xs btn-outline" onclick="autoTranslateAll()" id="btnAutoTrans">
-                                <i class="bi bi-translate"></i> Dịch tự động
-                            </button>
-                        </div>
-                    </div>
-                    <div style="position:relative">
                         <textarea name="vi" id="aVi" class="form-control" rows="3" placeholder="Nội dung tiếng Việt..." required></textarea>
-                        <button type="button" class="btn-listen-mini" onclick="addTtsPreview('vi')" title="Nghe thử"><i class="bi bi-volume-up"></i></button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Script Tiếng Anh (EN) <span class="required">*</span></label>
+                        <textarea name="en" id="aEn" class="form-control" rows="2" placeholder="English script..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Script Tiếng Nhật (JA) <span class="required">*</span></label>
+                        <textarea name="ja" id="aJa" class="form-control" rows="2" placeholder="日本語の台本..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Script Tiếng Trung (ZH) <span class="required">*</span></label>
+                        <textarea name="zh" id="aZh" class="form-control" rows="2" placeholder="中文脚本..." required></textarea>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Script Tiếng Anh (EN)</label>
-                    <div style="position:relative">
-                        <textarea name="en" id="aEn" class="form-control" rows="2" placeholder="English script..."></textarea>
-                        <button type="button" class="btn-listen-mini" onclick="addTtsPreview('en')" title="Nghe thử"><i class="bi bi-volume-up"></i></button>
-                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-ghost" onclick="closeAddModal()">Huỷ</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Lưu</button>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Script Tiếng Nhật (JA)</label>
-                    <div style="position:relative">
-                        <textarea name="ja" id="aJa" class="form-control" rows="2" placeholder="日本語の台本..."></textarea>
-                        <button type="button" class="btn-listen-mini" onclick="addTtsPreview('ja')" title="Nghe thử"><i class="bi bi-volume-up"></i></button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Script Tiếng Trung (ZH)</label>
-                    <div style="position:relative">
-                        <textarea name="zh" id="aZh" class="form-control" rows="2" placeholder="中文脚本..."></textarea>
-                        <button type="button" class="btn-listen-mini" onclick="addTtsPreview('zh')" title="Nghe thử"><i class="bi bi-volume-up"></i></button>
-                    </div>
-                </div>
-                <div id="addStopWrap" style="display:none;text-align:center;margin-top:8px">
-                    <button type="button" class="btn btn-sm btn-danger" onclick="addTtsStop()">
-                        <i class="bi bi-stop-fill"></i> Dừng nghe thử
-                    </button>
+            </form>
+        }
+        else
+        {
+            <div class="modal-body" style="padding:40px 20px;text-align:center">
+                <div style="font-size:48px;color:#cbd5e1;margin-bottom:16px"><i class="bi bi-check-circle"></i></div>
+                <h3 style="margin-bottom:8px">Đã có đủ kịch bản!</h3>
+                <p style="color:#64748b">Tất cả các điểm trên bản đồ hiện đều đã được gán kịch bản âm thanh.</p>
+                <div style="margin-top:24px">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Đóng</button>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-ghost" onclick="closeAddModal()">Huỷ</button>
-                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Lưu</button>
-            </div>
-        </form>
+        }
     </div>
 </div>
 
@@ -174,45 +207,46 @@
             <input type="hidden" name="Id" id="eId" value="0" />
             <input type="hidden" name="PoiId" id="ePoiId" value="0" />
             <div class="modal-body">
-                <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;padding:10px;background:#f9f8ff;border-radius:8px;border:1px solid #ede9fe">
-                    <span style="font-size:12px;color:#6b7280;font-weight:600">Dịch từ:</span>
-                    <select id="eSourceLang" class="form-control" style="width:auto;font-size:12px;padding:3px 8px">
+                <div class="modal-lang-selector">
+                    <span style="font-size:12px;font-weight:600;color:#475569">Dịch từ:</span>
+                    <select id="aSourceLang" class="form-control" style="width:auto;font-size:12px;padding:3px 8px">
                         <option value="vi">🇻🇳 VI</option>
                         <option value="en">🇺🇸 EN</option>
                         <option value="ja">🇯🇵 JA</option>
                         <option value="zh">🇨🇳 ZH</option>
                     </select>
-                    <button type="button" class="btn btn-xs btn-outline" onclick="autoTranslateEdit()" id="btnAutoTransEdit">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="autoTranslateAll()" id="btnAutoTrans">
                         <i class="bi bi-translate"></i> Dịch tự động
                     </button>
-                    <div style="width:1px;height:20px;background:#e5e7eb;margin:0 2px"></div>
-                    <span style="font-size:12px;color:#6b7280">Nghe:</span>
-                    <select id="eTtsLang" class="form-control" style="width:auto;font-size:12px;padding:3px 8px">
+                    <div style="flex-grow:1"></div>
+                    <span style="font-size:12px;font-weight:600;color:#475569">Nghe thử:</span>
+                    <select id="aTtsLang" class="form-control" style="width:auto;font-size:12px;padding:3px 8px">
                         <option value="vi">🇻🇳 VI</option>
                         <option value="en">🇺🇸 EN</option>
                         <option value="ja">🇯🇵 JA</option>
                         <option value="zh">🇨🇳 ZH</option>
                     </select>
-                    <button type="button" id="eBtnPlay" class="btn btn-sm btn-outline" onclick="editTtsPlay()"><i class="bi bi-play-fill"></i> Phát</button>
-                    <button type="button" id="eBtnPause" class="btn btn-sm btn-outline" onclick="editTtsPause()" style="display:none"><i class="bi bi-pause-fill"></i> Tạm dừng</button>
-                    <button type="button" id="eBtnResume" class="btn btn-sm btn-outline" onclick="editTtsResume()" style="display:none"><i class="bi bi-play-circle-fill"></i> Tiếp tục</button>
-                    <button type="button" id="eBtnStop" class="btn btn-sm btn-danger" onclick="editTtsStop()" style="display:none"><i class="bi bi-stop-fill"></i> Dừng</button>
+                    <button type="button" id="aBtnPlay" class="btn btn-sm btn-outline" onclick="addTtsPlay()"><i class="bi bi-play-fill"></i> Phát</button>
+                    <button type="button" id="aBtnPause" class="btn btn-sm btn-outline" onclick="addTtsPause()" style="display:none"><i class="bi bi-pause-fill"></i> Tạm dừng</button>
+                    <button type="button" id="aBtnResume" class="btn btn-sm btn-outline" onclick="addTtsResume()" style="display:none"><i class="bi bi-play-circle-fill"></i> Tiếp tục</button>
+                    <button type="button" id="aBtnStop" class="btn btn-sm btn-danger" onclick="addTtsStop()" style="display:none"><i class="bi bi-stop-fill"></i> Dừng</button>
                 </div>
+
                 <div class="form-group">
                     <label class="form-label">Script Tiếng Việt <span class="required">*</span></label>
                     <textarea name="vi" id="eVi" class="form-control" rows="3" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Script Tiếng Anh (EN)</label>
-                    <textarea name="en" id="eEn" class="form-control" rows="2"></textarea>
+                    <label class="form-label">Script Tiếng Anh (EN) <span class="required">*</span></label>
+                    <textarea name="en" id="eEn" class="form-control" rows="2" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Script Tiếng Nhật (JA)</label>
-                    <textarea name="ja" id="eJa" class="form-control" rows="2"></textarea>
+                    <label class="form-label">Script Tiếng Nhật (JA) <span class="required">*</span></label>
+                    <textarea name="ja" id="eJa" class="form-control" rows="2" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Script Tiếng Trung (ZH)</label>
-                    <textarea name="zh" id="eZh" class="form-control" rows="2"></textarea>
+                    <label class="form-label">Script Tiếng Trung (ZH) <span class="required">*</span></label>
+                    <textarea name="zh" id="eZh" class="form-control" rows="2" required></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -245,13 +279,16 @@
 <script id="audioData" type="application/json">
     @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Audios.Select(a => new {
         id = a.Id, poiId = a.PoiId,
-                poiName = a.PoiName ?? $"#{a.PoiId}",
-                vi = a.vi ?? "", en = a.en ?? "", ja = a.ja ?? "", zh = a.zh ?? ""
-        })))
+                                poiName = a.PoiName ?? $"#{a.PoiId}",
+                                vi = a.vi ?? "", en = a.en ?? "", ja = a.ja ?? "", zh = a.zh ?? ""
+                })))
 </script>
 
 <script>
     const AUDIOS = JSON.parse(document.getElementById('audioData').textContent);
+    let _currentUtterance = null;
+    let _speakQueue = [];
+    let _queueIndex = 0;
 
     document.addEventListener('DOMContentLoaded', () => {
         if ('speechSynthesis' in window) {
@@ -261,27 +298,38 @@
     });
 
     function openAddModal() {
-        ['aPoiId','aVi','aEn','aJa','aZh'].forEach(id => document.getElementById(id).value = '');
+        ['aPoiId','aVi','aEn','aJa','aZh'].forEach(id => {
+             const el = document.getElementById(id);
+             if(el) el.value = '';
+        });
         addTtsStop();
         document.getElementById('addModal').style.display = 'flex';
     }
     function closeAddModal() { addTtsStop(); document.getElementById('addModal').style.display = 'none'; }
 
-    let _addTts = null;
-    async function addTtsPreview(lang) {
-        const map = { vi:'aVi', en:'aEn', ja:'aJa', zh:'aZh' };
-        const text = document.getElementById(map[lang]).value.trim();
-        if (!text) { alert('Chưa có script.'); return; }
-        addTtsStop();
-        _addTts = await makeUtterance(text, lang);
-        _addTts.onstart = () => document.getElementById('addStopWrap').style.display = 'block';
-        _addTts.onend = _addTts.onerror = () => { document.getElementById('addStopWrap').style.display = 'none'; _addTts = null; };
-        window.speechSynthesis.speak(_addTts);
+    function getAddText() {
+        const lang = document.getElementById('aTtsLang').value;
+        const map  = { vi:'aVi', en:'aEn', ja:'aJa', zh:'aZh' };
+        const el = document.getElementById(map[lang]);
+        return { text: el ? el.value.trim() : "", lang };
     }
+    async function addTtsPlay() {
+        const { text, lang } = getAddText();
+        if (!text) { alert('Chưa có kịch bản cho ngôn ngữ này.'); return; }
+        addTtsStop();
+        startSpeak(text, lang, () => {
+            show('aBtnPause'); show('aBtnStop'); hide('aBtnPlay'); hide('aBtnResume');
+            document.getElementById('aTtsLang').disabled = true;
+        }, () => { addTtsStop(); });
+    }
+    function addTtsPause() { window.speechSynthesis.pause(); hide('aBtnPause'); show('aBtnResume'); }
+    function addTtsResume() { window.speechSynthesis.resume(); show('aBtnPause'); hide('aBtnResume'); }
     function addTtsStop() {
         window.speechSynthesis.cancel();
-        document.getElementById('addStopWrap').style.display = 'none';
-        _addTts = null;
+        show('aBtnPlay'); hide('aBtnPause'); hide('aBtnResume'); hide('aBtnStop');
+        const langSel = document.getElementById('aTtsLang');
+        if (langSel) langSel.disabled = false;
+        _currentUtterance = null;
     }
 
     async function autoTranslateAll() {
@@ -293,7 +341,7 @@
         const btn = document.getElementById('btnAutoTrans');
         btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang dịch...';
         try {
-            const results = await Promise.all(targets.map(t => translateText(sourceText, sourceLang, t)));
+            const results = await Promise.all(targets.map(t => translateText(sourceText, t)));
             targets.forEach((t, i) => { document.getElementById(langMap[t]).value = results[i]; });
         } catch (err) { alert('Lỗi khi dịch: ' + err.message); }
         finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-translate"></i> Dịch tự động'; }
@@ -323,16 +371,19 @@
         const { text, lang } = getEditText();
         if (!text) { alert('Chưa có script cho ngôn ngữ này.'); return; }
         editTtsStop(); _editPaused = false;
-        const u = await makeUtterance(text, lang);
-        u.onstart = () => { show('eBtnPause'); show('eBtnStop'); hide('eBtnPlay'); hide('eBtnResume'); };
-        u.onend = u.onerror = () => editTtsStop();
-        window.speechSynthesis.speak(u);
+        startSpeak(text, lang, () => {
+            show('eBtnPause'); show('eBtnStop'); hide('eBtnPlay'); hide('eBtnResume');
+            document.getElementById('eTtsLang').disabled = true;
+        }, () => { editTtsStop(); });
     }
     function editTtsPause() { window.speechSynthesis.pause(); _editPaused = true; hide('eBtnPause'); show('eBtnResume'); }
     function editTtsResume() { window.speechSynthesis.resume(); _editPaused = false; show('eBtnPause'); hide('eBtnResume'); }
     function editTtsStop() {
         window.speechSynthesis.cancel(); _editPaused = false;
         show('eBtnPlay'); hide('eBtnPause'); hide('eBtnResume'); hide('eBtnStop');
+        const langSel = document.getElementById('eTtsLang');
+        if (langSel) langSel.disabled = false;
+        _currentUtterance = null;
     }
 
     let _rowPlaying = null, _rowPaused = false;
@@ -342,26 +393,40 @@
         window.speechSynthesis.cancel(); _rowPaused = false;
         const langEl = document.getElementById('lang-' + id);
         const lang = langEl ? langEl.value : 'vi';
-        const textMap = { vi: a.vi, en: a.en, ja: a.ja, zh: a.zh };
-        const text = textMap[lang] || a.vi;
+        const text = a[lang] || a.vi;
         if (!text) { alert('Chưa có script cho ngôn ngữ này.'); return; }
-        makeUtterance(text, lang).then(u => {
-            u.onstart = () => { _rowPlaying = id; setRow(id, 'playing'); };
-            u.onend = u.onerror = () => { _rowPlaying = null; setRow(id, 'idle'); };
-            window.speechSynthesis.speak(u);
-        });
+        startSpeak(text, lang, () => { _rowPlaying = id; setRow(id, 'playing'); }, () => { _rowPlaying = null; setRow(id, 'idle'); });
     }
     function rowPause(id) { window.speechSynthesis.pause(); _rowPaused = true; setRow(id, 'paused'); }
     function rowResume(id) { window.speechSynthesis.resume(); _rowPaused = false; setRow(id, 'playing'); }
-    function rowStop(id) { window.speechSynthesis.cancel(); _rowPlaying = null; _rowPaused = false; setRow(id, 'idle'); }
+    function rowStop(id) { window.speechSynthesis.cancel(); _rowPlaying = null; _rowPaused = false; setRow(id, 'idle'); _currentUtterance = null; }
     function setRow(id, state) {
         const el = (btnId) => document.getElementById('btn-' + btnId + '-' + id);
-        el('play').style.display   = state === 'idle'    ? '' : 'none';
-        el('pause').style.display  = state === 'playing' ? '' : 'none';
-        el('resume').style.display = state === 'paused'  ? '' : 'none';
-        el('stop').style.display   = state !== 'idle'    ? '' : 'none';
+        const sel = document.getElementById('lang-' + id);
+        const playBtn = el('play'); const pauseBtn = el('pause'); const resumeBtn = el('resume'); const stopBtn = el('stop');
+        if(playBtn) playBtn.style.display = state === 'idle' ? '' : 'none';
+        if(pauseBtn) pauseBtn.style.display = state === 'playing' ? '' : 'none';
+        if(resumeBtn) resumeBtn.style.display = state === 'paused' ? '' : 'none';
+        if(stopBtn) stopBtn.style.display = state !== 'idle' ? '' : 'none';
+        if (sel) sel.disabled = (state !== 'idle');
     }
 
+    function startSpeak(text, lang, onStart, onEnd) {
+        _speakQueue = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+        _queueIndex = 0;
+        if (_speakQueue.length === 0) { onEnd(); return; }
+        onStart();
+        processQueue(lang, onEnd);
+    }
+    async function processQueue(lang, onEnd) {
+        if (_queueIndex >= _speakQueue.length) { onEnd(); return; }
+        const text = _speakQueue[_queueIndex];
+        const u = await makeUtterance(text, lang);
+        _currentUtterance = u;
+        u.onend = () => { _queueIndex++; processQueue(lang, onEnd); };
+        u.onerror = (e) => { console.error('TTS Error:', e); onEnd(); };
+        window.speechSynthesis.speak(u);
+    }
     async function makeUtterance(text, langCode) {
         const u = new SpeechSynthesisUtterance(text);
         const voices = window.speechSynthesis.getVoices();
@@ -375,14 +440,17 @@
         const voice = voices.find(v => list.some(p => v.name.includes(p) || v.lang.startsWith(p)));
         if (voice) u.voice = voice;
         u.lang = list[list.length - 1];
+        u.rate = 0.95;
         return u;
     }
 
-    async function translateText(text, sourceLang, targetLang) {
+    async function translateText(text, targetLang) {
         const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
-        const res  = await fetch(url);
-        const data = await res.json();
-        return data[0].map(x => x[0]).join('');
+        try {
+            const res  = await fetch(url);
+            const data = await res.json();
+            return data[0].map(x => x[0]).join('');
+        } catch(e) { return ""; }
     }
 
     function show(id) { const el = document.getElementById(id); if (el) el.style.display = ''; }
@@ -397,7 +465,7 @@
         const btn = document.getElementById('btnAutoTransEdit');
         btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang dịch...';
         try {
-            const results = await Promise.all(targets.map(t => translateText(sourceText, sourceLang, t)));
+            const results = await Promise.all(targets.map(t => translateText(sourceText, t)));
             targets.forEach((t, i) => { document.getElementById(langMap[t]).value = results[i]; });
         } catch (err) { alert('Lỗi khi dịch: ' + err.message); }
         finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-translate"></i> Dịch tự động'; }
