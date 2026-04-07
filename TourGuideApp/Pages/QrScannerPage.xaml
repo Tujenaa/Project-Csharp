@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:BarcodeScanner.Mobile;assembly=BarcodeScanner.Mobile.Maui"
              x:Class="TourGuideApp.Pages.QrScannerPage"
              Title="Quét mã QR"
              BackgroundColor="Black"
@@ -8,8 +9,11 @@
 
     <Grid RowDefinitions="Auto, *, Auto">
         
-        <!-- Camera Placeholder -->
-        <BoxView Grid.RowSpan="3" Color="#121212" />
+        <!-- Camera View (Google ML Kit) -->
+        <m:CameraView x:Name="BarcodeReader"
+                      Grid.RowSpan="3"
+                      OnDetected="OnBarcodesDetected"
+                      ScanInterval="500" />
 
         <!-- Top Bar -->
         <Grid Grid.Row="0" Padding="15,40,15,10" ColumnDefinitions="Auto, *">
@@ -38,7 +42,11 @@
                   VerticalOptions="Fill"/>
 
             <!-- Scanner Frame Corners -->
-            <Grid WidthRequest="260" HeightRequest="260" HorizontalOptions="Center" VerticalOptions="Center">
+            <Grid x:Name="ScannerFrame" 
+                  WidthRequest="260" 
+                  HeightRequest="260" 
+                  HorizontalOptions="Center" 
+                  VerticalOptions="Center">
                 <!-- Top-Left -->
                 <BoxView WidthRequest="30" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="Start" CornerRadius="2"/>
                 <BoxView WidthRequest="4" HeightRequest="30" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="Start" CornerRadius="2"/>
@@ -75,17 +83,6 @@
                    HorizontalOptions="Center"
                    VerticalOptions="End"
                    Margin="0,0,0,40"/>
-
-            <!-- Mock Trigger (For Demo) -->
-            <Button Text="Simulate Success" 
-                    Clicked="OnSimulateScanResult" 
-                    VerticalOptions="Start" 
-                    HorizontalOptions="End" 
-                    Margin="20"
-                    BackgroundColor="#333333"
-                    TextColor="White"
-                    FontSize="10"
-                    Padding="10,5"/>
         </Grid>
 
         <!-- Result Tab (Bottom Sheet) -->

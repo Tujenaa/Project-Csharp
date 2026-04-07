@@ -10,17 +10,6 @@
     <ScrollView>
         <VerticalStackLayout Spacing="0">
 
-            <!-- Thanh truy cập nhanh trên cùng -->
-            <Grid Padding="20,12" BackgroundColor="#1A1035">
-                <HorizontalStackLayout HorizontalOptions="End" Spacing="20">
-                    <ImageButton
-                        Source="ic_search.svg"
-                        WidthRequest="24"
-                        HeightRequest="24"
-                        Clicked="OnScanQrClicked"
-                        ToolTipProperties.Text="Quét mã QR"/>
-                </HorizontalStackLayout>
-            </Grid>
 
             <!-- Header banner -->
             <Grid HeightRequest="220" BackgroundColor="#1A1035">
@@ -74,23 +63,21 @@
                             </Button.Shadow>
                         </Button>
 
-                        <Button
-                            Text="Quét QR"
+                        <ImageButton
+                            Source="ic_qr.svg"
                             BackgroundColor="#9B7FEA"
-                            TextColor="White"
                             CornerRadius="12"
                             HeightRequest="44"
-                            WidthRequest="140"
-                            FontSize="14"
-                            FontAttributes="Bold"
+                            WidthRequest="44"
+                            Padding="10"
                             Clicked="OnScanQrClicked">
-                            <Button.Shadow>
+                            <ImageButton.Shadow>
                                 <Shadow
                                     Brush="#409B7FEA"
                                     Offset="0,4"
                                     Radius="12"/>
-                            </Button.Shadow>
-                        </Button>
+                            </ImageButton.Shadow>
+                        </ImageButton>
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Grid>

@@ -9,7 +9,6 @@ public partial class PlaceDetailPage : ContentPage
 {
     // ── Services ──────────────────────────────────────────────────────────────
     readonly TextToSpeechService ttsService = new();
-    readonly TranslateService translateService = new();
 
     // ── TTS state ─────────────────────────────────────────────────────────────
     CancellationTokenSource? ttsToken;

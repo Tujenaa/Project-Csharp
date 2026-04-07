@@ -14,7 +14,6 @@ public class MapViewModel
     readonly LocationService locationService = new();
     readonly ApiService apiService = new();
     readonly TextToSpeechService ttsService = new();
-    readonly TranslateService translateService = new();
 
     // ── State ─────────────────────────────────────────────────────────────────
     readonly List<POI> allPOIs = new();

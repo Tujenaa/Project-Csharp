@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using TourGuideApp.Services;
 using TourGuideApp.ViewModels;
 using TourGuideApp.Pages;
+using BarcodeScanner.Mobile;
 
 namespace TourGuideApp;
 
@@ -17,6 +18,10 @@ public static class MauiProgram
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+            })
+            .ConfigureMauiHandlers(handlers =>
+            {
+                handlers.AddBarcodeScannerHandler();
             });
 
 #if DEBUG
