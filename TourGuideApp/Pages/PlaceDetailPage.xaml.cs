@@ -217,6 +217,8 @@ public partial class PlaceDetailPage : ContentPage
 
     void UpdateUI(bool playing)
     {
+        if (_currentPoi != null) _currentPoi.IsPlaying = playing;
+
         // Nếu TTS vừa kết thúc tự nhiên (IsFinished) → icon play, label "Nghe lại"
         if (!playing && ttsService.IsFinished)
         {

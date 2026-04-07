@@ -35,6 +35,11 @@ public partial class HomePage : ContentPage
         await Shell.Current.GoToAsync("//map");
     }
 
+    private async void OnScanQrClicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new QrScannerPage());
+    }
+
     public Command<POI> GoToDetailCommand { get; }
 
 
@@ -78,8 +83,13 @@ public partial class HomePage : ContentPage
                 if (place != null)
                 {
                     string street = place.Thoroughfare ?? "";
-                    string city = place.Locality ?? "";
-                    LocationLabel.Text = $"{street}, {city}".TrimStart(',', ' ');
+                    string ward = place.SubLocality ?? ""; // Phường/Xã
+                    string city = place.Locality ?? "";     // Quận/Huyện/Thành phố
+                    
+                    var parts = new List<string> { street, ward, city }
+                        .Where(s => !string.IsNullOrWhiteSpace(s));
+
+                    LocationLabel.Text = string.Join(", ", parts);
                 }
             }
         }

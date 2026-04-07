@@ -10,6 +10,18 @@
     <ScrollView>
         <VerticalStackLayout Spacing="0">
 
+            <!-- Thanh truy cập nhanh trên cùng -->
+            <Grid Padding="20,12" BackgroundColor="#1A1035">
+                <HorizontalStackLayout HorizontalOptions="End" Spacing="20">
+                    <ImageButton
+                        Source="ic_search.svg"
+                        WidthRequest="24"
+                        HeightRequest="24"
+                        Clicked="OnScanQrClicked"
+                        ToolTipProperties.Text="Quét mã QR"/>
+                </HorizontalStackLayout>
+            </Grid>
+
             <!-- Header banner -->
             <Grid HeightRequest="220" BackgroundColor="#1A1035">
                 <Image
@@ -29,8 +41,8 @@
 
                 <VerticalStackLayout
                     VerticalOptions="End"
-                    Padding="24,0,24,28"
-                    Spacing="10">
+                    Padding="24,0,24,40"
+                    Spacing="8">
                     <Label
                         Text="Vị trí hiện tại"
                         TextColor="#9B7FEA"
@@ -43,24 +55,43 @@
                         TextColor="White"
                         FontSize="22"
                         FontAttributes="Bold"/>
-                    <Button
-                        Text="Mở bản đồ"
-                        BackgroundColor="#512BD4"
-                        TextColor="White"
-                        CornerRadius="12"
-                        HeightRequest="44"
-                        WidthRequest="160"
-                        FontSize="14"
-                        FontAttributes="Bold"
-                        Clicked="OnMapButtonClicked"
-                        HorizontalOptions="Start">
-                        <Button.Shadow>
-                            <Shadow
-                                Brush="#40512BD4"
-                                Offset="0,4"
-                                Radius="12"/>
-                        </Button.Shadow>
-                    </Button>
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Start">
+                        <Button
+                            Text="Mở bản đồ"
+                            BackgroundColor="#512BD4"
+                            TextColor="White"
+                            CornerRadius="12"
+                            HeightRequest="44"
+                            WidthRequest="140"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            Clicked="OnMapButtonClicked">
+                            <Button.Shadow>
+                                <Shadow
+                                    Brush="#40512BD4"
+                                    Offset="0,4"
+                                    Radius="12"/>
+                            </Button.Shadow>
+                        </Button>
+
+                        <Button
+                            Text="Quét QR"
+                            BackgroundColor="#9B7FEA"
+                            TextColor="White"
+                            CornerRadius="12"
+                            HeightRequest="44"
+                            WidthRequest="140"
+                            FontSize="14"
+                            FontAttributes="Bold"
+                            Clicked="OnScanQrClicked">
+                            <Button.Shadow>
+                                <Shadow
+                                    Brush="#409B7FEA"
+                                    Offset="0,4"
+                                    Radius="12"/>
+                            </Button.Shadow>
+                        </Button>
+                    </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Grid>
 

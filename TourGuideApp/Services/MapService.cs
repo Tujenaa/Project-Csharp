@@ -55,9 +55,19 @@ const userIcon = L.divIcon({
   iconSize: [18, 18], iconAnchor: [9, 9]
 });
 
-function makePOIIcon(isHighlighted = false) {
-  const bgColor = isHighlighted ? '#F59E0B' : '#EF4444'; // Orange or Red
-  const scale = isHighlighted ? 'scale(1.2)' : 'scale(1)';
+// type: 'selected' = Cam (bấm thủ công), 'nearest' = Tím (tự động gần nhất), false = Đỏ (bình thường)
+function makePOIIcon(type = false) {
+  let bgColor, scale;
+  if (type === 'selected') {
+    bgColor = '#F59E0B'; // Cam – người dùng bấm vào
+    scale = 'scale(1.25)';
+  } else if (type === 'nearest') {
+    bgColor = '#512BD4'; // Tím – điểm gần nhất tự động
+    scale = 'scale(1.2)';
+  } else {
+    bgColor = '#EF4444'; // Đỏ – bình thường
+    scale = 'scale(1)';
+  }
   return L.divIcon({
     className: '',
     html: `<div style="
@@ -138,11 +148,21 @@ function setPOIs(jsonArray) {
   }
 }
 
+// Highlight khi người dùng bấm chọn thủ công → màu Cam
 function highlightPOI(id) {
   poiMarkers.forEach(m => {
-    const isHigh = (m.poiId === id);
-    m.setIcon(makePOIIcon(isHigh));
-    m.setZIndexOffset(isHigh ? 1000 : 100);
+    const isSelected = (m.poiId === id);
+    m.setIcon(makePOIIcon(isSelected ? 'selected' : false));
+    m.setZIndexOffset(isSelected ? 1000 : 100);
+  });
+}
+
+// Highlight điểm gần nhất tự động → màu Tím
+function highlightNearest(id) {
+  poiMarkers.forEach(m => {
+    const isNearest = (m.poiId === id);
+    m.setIcon(makePOIIcon(isNearest ? 'nearest' : false));
+    m.setZIndexOffset(isNearest ? 500 : 100);
   });
 }
 // Vẽ đường nối giữa 2 điểm (ví dụ: user → POI)

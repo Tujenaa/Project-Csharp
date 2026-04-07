@@ -75,8 +75,7 @@ public partial class MapPage : ContentPage
         {
             poiDetailCard.IsVisible = false;
             currentDetailPoi = null;
-            if (viewModel.EvalJs != null)
-                _ = viewModel.EvalJs("highlightPOI(-1)");
+            HighlightNearestIfNoSelection();
         }
         // Đóng bottom sheet nếu mở
         if (poiListVisible)
@@ -187,11 +186,11 @@ public partial class MapPage : ContentPage
         if (viewModel.EvalJs != null)
         {
             await viewModel.EvalJs("if(typeof routeLine !== 'undefined' && routeLine) { map.removeLayer(routeLine); routeLine = null; }");
-            await viewModel.EvalJs("highlightPOI(-1)");
         }
 
         poiDetailCard.IsVisible = false;
         currentDetailPoi = null;
+        HighlightNearestIfNoSelection();
     }
 
     // ── Toggle danh sách POI ──────────────────────────────────────────────────
@@ -208,8 +207,7 @@ public partial class MapPage : ContentPage
         {
             poiDetailCard.IsVisible = false;
             currentDetailPoi = null;
-            if (viewModel.EvalJs != null)
-                _ = viewModel.EvalJs("highlightPOI(-1)");
+            HighlightNearestIfNoSelection();
         }
     }
 
@@ -266,8 +264,7 @@ public partial class MapPage : ContentPage
     {
         poiDetailCard.IsVisible = false;
         currentDetailPoi = null;
-        if (viewModel.EvalJs != null)
-            _ = viewModel.EvalJs("highlightPOI(-1)");
+        HighlightNearestIfNoSelection();
     }
 
     private void OnCardPlayAudioTapped(object sender, EventArgs e)
@@ -325,6 +322,19 @@ public partial class MapPage : ContentPage
                     UpdateCardPlayButton(updated.IsPlaying);
                 }
             }
+            else
+            {
+                HighlightNearestIfNoSelection();
+            }
         });
+    }
+
+    void HighlightNearestIfNoSelection()
+    {
+        if (currentDetailPoi == null && viewModel.NearbyPOI.Count > 0 && viewModel.EvalJs != null)
+        {
+            var closest = viewModel.NearbyPOI.First();
+            _ = viewModel.EvalJs($"highlightNearest({closest.Id})");
+        }
     }
 }
