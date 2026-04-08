@@ -1,917 +1,506 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TourGuide System — PRD</title>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <style>
-  :root {
-    --primary: #7c3aed;
-    --primary-light: #a855f7;
-    --primary-dark: #5b21b6;
-    --accent: #06b6d4;
-    --bg: #f5f3ff;
-    --surface: #ffffff;
-    --text: #1e1b4b;
-    --text-secondary: #6b7280;
-    --border: #e5e7eb;
-    --code-bg: #1e1b4b;
-    --code-text: #e2e8f0;
-    --success: #059669;
-    --warning: #d97706;
-    --info: #2563eb;
-    --danger: #dc2626;
-    --pink: #ec4899;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-  }
-
-  /* SIDEBAR */
-  #sidebar {
-    position: fixed; left: 0; top: 0; bottom: 0; width: 220px;
-    background: linear-gradient(180deg, var(--primary-dark), var(--primary));
-    color: white; overflow-y: auto; z-index: 100;
-    box-shadow: 2px 0 12px rgba(124,58,237,.35);
-  }
-  #sidebar .logo {
-    font-weight: 700; font-size: 1rem; padding: 1.2rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,.15);
-  }
-  #sidebar a {
-    display: block; padding: .6rem 1rem;
-    color: rgba(255,255,255,.85); text-decoration: none;
-    font-size: .8rem; transition: background .2s;
-    border-left: 3px solid transparent;
-  }
-  #sidebar a:hover { background: rgba(255,255,255,.14); color: #fff; border-left-color: rgba(255,255,255,.4); }
-  #sidebar a.sub { padding-left: 2rem; font-size: .75rem; color: rgba(255,255,255,.7); padding-top: .3rem; padding-bottom: .3rem; }
-  #sidebar a.active { background: rgba(255,255,255,.2); color: #fff; border-left-color: #fff; font-weight: 600; }
-  #sidebar .nav-group-title {
-    padding: .7rem 1rem .25rem; font-size: .68rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .1em; color: rgba(255,255,255,.45);
-  }
-
-  /* MAIN */
-  #main { margin-left: 220px; }
-
-  /* SECTIONS */
-  section { max-width: 1100px; margin: 0 auto; padding: 3rem 2rem; scroll-margin-top: 24px; }
-  section:nth-child(even) { background: var(--surface); }
-  h1 { font-size: 1.6rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
-  h2 { font-size: 1.15rem; font-weight: 700; color: var(--text); margin: 1.8rem 0 .7rem; }
-  h3 { font-size: 1.05rem; margin: 1.2rem 0 .5rem; color: var(--text); }
-  p { color: var(--text-secondary); font-size: .93rem; margin-bottom: .8rem; }
-  ul, ol { margin: 8px 0 12px 20px; }
-  li { margin-bottom: 3px; font-size: .88rem; color: var(--text-secondary); }
-
-  .chapter-header { display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem; }
-  .chapter-header .icon {
-    width: 44px; height: 44px; border-radius: 12px;
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem; flex-shrink: 0;
-  }
-  .chapter-header .meta { font-size: .75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); font-weight: 600; }
-  .chapter-header h1 { margin: 0; }
-
-  /* CARDS */
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; margin: 1.5rem 0; }
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; padding: 1.5rem;
-    transition: box-shadow .2s, transform .2s;
-  }
-  .card:hover { box-shadow: 0 4px 20px rgba(124,58,237,.12); transform: translateY(-2px); }
-  .card h3 { margin-top: 0; color: var(--primary-dark); font-size: 1rem; }
-  .card p, .card li { font-size: .88rem; color: var(--text-secondary); }
-
-  /* ROLE CARDS */
-  .roles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-  .role-card {
-    background: var(--surface); border: 2px solid var(--border);
-    border-radius: 12px; padding: 1.5rem; position: relative; overflow: hidden;
-  }
-  .role-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
-  .role-card.admin::before { background: linear-gradient(90deg,#dc2626,#ec4899); }
-  .role-card.owner::before { background: linear-gradient(90deg,#7c3aed,#a855f7); }
-  .role-card.customer::before { background: linear-gradient(90deg,#06b6d4,#059669); }
-  .role-icon { font-size: 1.5rem; margin-bottom: .5rem; }
-  .role-name { font-size: 1rem; font-weight: 700; margin-bottom: .8rem; }
-  .role-card.admin .role-name { color: #dc2626; }
-  .role-card.owner .role-name { color: var(--primary); }
-  .role-card.customer .role-name { color: #0891b2; }
-  .role-perms { list-style: none; padding: 0; margin: 0; }
-  .role-perms li { font-size: .82rem; color: var(--text-secondary); padding: .2rem 0 .2rem 1rem; position: relative; }
-  .role-perms li::before { content: '→'; position: absolute; left: 0; opacity: .5; }
-
-  /* TABLES */
-  .table-wrap { overflow-x: auto; margin: 1rem 0; }
-  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-  th { background: var(--primary); color: white; padding: .6rem .8rem; text-align: left; font-weight: 600; }
-  td { padding: .55rem .8rem; border-bottom: 1px solid var(--border); color: var(--text-secondary); vertical-align: top; }
-  tr:hover td { background: #f5f3ff; }
-
-  /* BADGE */
-  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: .7rem; font-weight: 700; }
-  .badge-get { background: #dcfce7; color: #166534; }
-  .badge-post { background: #dbeafe; color: #1e40af; }
-  .badge-put { background: #fef3c7; color: #92400e; }
-  .badge-delete { background: #fee2e2; color: #991b1b; }
-  .badge-app { background: #ede9fe; color: var(--primary-dark); }
-  .badge-web { background: #dbeafe; color: #1e40af; }
-  .badge-admin { background: #fee2e2; color: #991b1b; }
-
-  /* CODE */
-  p code, li code, td code {
-    background: #ede9fe; padding: .15rem .4rem; border-radius: 3px;
-    color: var(--primary-dark); font-size: .85em;
-    font-family: 'Cascadia Code','Fira Code',monospace;
-  }
-
-  /* CALLOUT */
-  .callout {
-    display: flex; gap: 12px; padding: 1rem 1.2rem;
-    border-radius: 0 8px 8px 0; margin: 1rem 0;
-    border-left: 4px solid; font-size: .88rem; color: var(--text-secondary);
-  }
-  .callout strong { color: var(--text); }
-  .callout-info { background: #eff6ff; border-color: var(--info); }
-  .callout-warn { background: #fffbeb; border-color: var(--warning); }
-  .callout-success { background: #ecfdf5; border-color: var(--success); }
-  .callout-danger { background: #fef2f2; border-color: var(--danger); }
-  .callout-purple { background: #ede9fe; border-color: var(--primary); }
-  .callout-icon { font-size: 18px; line-height: 1.5; flex-shrink: 0; }
-
-  /* ENTITY */
-  .entity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-  .entity-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .entity-box .entity-header { background: var(--primary); color: white; padding: .6rem 1rem; font-weight: 700; font-size: .9rem; font-family: monospace; }
-  .entity-box table { width: 100%; }
-  .entity-box td { padding: .3rem .8rem; border-bottom: 1px solid var(--border); font-size: .82rem; }
-  .entity-box td:first-child { color: var(--text); font-family: monospace; font-weight: 500; min-width: 130px; }
-  .entity-box td:nth-child(2) { color: var(--primary-dark); font-size: .78rem; font-family: monospace; }
-  .entity-box td:last-child { color: var(--text-secondary); font-size: .78rem; }
-  .entity-pk { color: var(--warning) !important; font-weight: 700 !important; }
-  .entity-fk { color: var(--pink) !important; }
-
-  /* STEPS */
-  .steps { counter-reset: step; display: flex; flex-direction: column; gap: .8rem; margin: 1rem 0; }
-  .step { display: flex; gap: 14px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.2rem; }
-  .step-num {
-    counter-increment: step; flex-shrink: 0; width: 28px; height: 28px;
-    background: var(--primary); color: white; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
-  }
-  .step-num::before { content: counter(step); }
-  .step h3 { margin-top: 0; color: var(--primary-dark); }
-
-  /* PIPE */
-  .pipe { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 1rem 0; padding: 1rem; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); }
-  .pipe-item { background: var(--primary); color: white; border-radius: 6px; padding: .35rem .9rem; font-size: .82rem; font-weight: 600; }
-  .pipe-arrow { color: var(--text-secondary); font-size: 1.2rem; }
-
-  /* DIAGRAM */
-  .diagram-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin: 1.5rem 0; overflow-x: auto; }
-  .diagram-title { font-size: 1.1rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 1rem; padding-left: .5rem; border-left: 4px solid var(--primary); }
-  .mermaid { text-align: center; }
-
-  /* HERO */
-  .hero { background: linear-gradient(135deg, var(--primary-dark), var(--primary), #ec4899); color: white; padding: 4rem 2rem 3rem; text-align: center; }
-  .hero h1 { font-size: 2.6rem; font-weight: 800; color: white; margin-bottom: .5rem; letter-spacing: -1px; }
-  .hero .subtitle { font-size: 1.1rem; color: rgba(255,255,255,.9); max-width: 750px; margin: 0 auto 1.5rem; }
-  .tag-row { display: flex; justify-content: center; flex-wrap: wrap; gap: .6rem; }
-  .tag { background: rgba(255,255,255,.2); padding: .3rem .8rem; border-radius: 20px; font-size: .8rem; backdrop-filter: blur(4px); color: white; }
-
-  /* ARCH MODULES */
-  .arch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .8rem; margin: 1.5rem 0; }
-  .arch-module { border: 2px solid var(--border); border-radius: 10px; padding: 1rem; text-align: center; transition: all .2s; }
-  .arch-module:hover { border-color: var(--primary); box-shadow: 0 2px 12px rgba(124,58,237,.15); }
-  .arch-module .mod-icon { font-size: 1.8rem; margin-bottom: .3rem; }
-  .arch-module .mod-name { font-weight: 700; font-size: .9rem; color: var(--primary-dark); }
-  .arch-module .mod-tech { font-size: .75rem; color: var(--text-secondary); margin-top: .2rem; }
-
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 3px; }
-
-  @media (max-width: 768px) {
-    #sidebar { display: none; }
-    #main { margin-left: 0; }
-    section { padding: 2rem 1rem; }
-    .card-grid, .roles-grid, .entity-grid, .arch-grid { grid-template-columns: 1fr; }
-    .hero h1 { font-size: 1.6rem; }
-  }
+:root{--primary:#7c3aed;--primary-dark:#5b21b6;--accent:#06b6d4;--bg:#f5f3ff;--surface:#fff;--text:#1e1b4b;--text2:#6b7280;--border:#e5e7eb;--code-bg:#1e1b4b;--success:#059669;--warning:#d97706;--danger:#dc2626;--info:#2563eb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;margin-left:220px}
+nav{position:fixed;top:0;left:0;bottom:0;width:220px;z-index:100;background:linear-gradient(180deg,var(--primary-dark),var(--primary));color:#fff;display:flex;flex-direction:column;box-shadow:2px 0 12px rgba(124,58,237,.35);overflow-y:auto}
+nav .logo{font-weight:700;font-size:1rem;padding:1.2rem 1rem;border-bottom:1px solid rgba(255,255,255,.15)}
+nav ul{list-style:none;padding:.4rem 0;flex:1}
+nav a{color:rgba(255,255,255,.85);text-decoration:none;font-size:.8rem;padding:.55rem 1rem;display:block;border-left:3px solid transparent;transition:all .2s}
+nav a:hover{background:rgba(255,255,255,.14);color:#fff;border-left-color:rgba(255,255,255,.4)}
+nav a.active{background:rgba(255,255,255,.2);color:#fff;border-left-color:#fff;font-weight:600}
+.hero{background:linear-gradient(135deg,var(--primary-dark),var(--primary),#ec4899);color:#fff;padding:4rem 2rem 3rem;text-align:center}
+.hero h1{font-size:2.4rem;font-weight:800;margin-bottom:.5rem}
+.hero p{font-size:1.05rem;max-width:750px;margin:0 auto 1.5rem;opacity:.9}
+.badges{display:flex;justify-content:center;gap:.5rem;flex-wrap:wrap}
+.badge{background:rgba(255,255,255,.2);padding:.25rem .75rem;border-radius:20px;font-size:.78rem}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1rem;margin:1.5rem 0}
+.stat-card{text-align:center;padding:1.1rem .8rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.stat-card .value{font-size:1.7rem;font-weight:800;color:var(--primary)}
+.stat-card .label{font-size:.75rem;color:var(--text2);margin-top:.2rem}
+section{max-width:1100px;margin:0 auto;padding:2.5rem 2rem}
+section.alt{background:var(--surface);max-width:none}
+section.alt>.inner{max-width:1100px;margin:0 auto;padding:2.5rem 2rem}
+.section-header{display:flex;align-items:center;gap:.8rem;margin-bottom:1.2rem}
+.section-header .icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.section-header h2{font-size:1.5rem;font-weight:700}
+.section-num{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--primary);font-weight:600}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.1rem;margin:1.2rem 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.3rem;transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:0 4px 20px rgba(124,58,237,.12);transform:translateY(-2px)}
+.card h3{font-size:1rem;margin-bottom:.4rem;color:var(--primary-dark)}
+.card p,.card li{font-size:.88rem;color:var(--text2)}
+.card ul{padding-left:1.1rem;margin-top:.35rem}
+.card li{margin-bottom:.2rem}
+.table-wrap{overflow-x:auto;margin:1rem 0}
+table{width:100%;border-collapse:collapse;font-size:.86rem}
+th{background:var(--primary);color:#fff;padding:.55rem .8rem;text-align:left;font-weight:600}
+td{padding:.5rem .8rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+tr:hover td{background:#f5f3ff}
+code{background:#ede9fe;padding:.12rem .38rem;border-radius:3px;font-family:'Consolas',monospace;font-size:.83em;color:var(--primary-dark)}
+.highlight{border-left:4px solid var(--primary);background:#ede9fe;padding:.9rem 1.1rem;border-radius:0 8px 8px 0;margin:.9rem 0;font-size:.87rem;color:var(--text2)}
+.highlight.info{border-color:var(--info);background:#eff6ff}
+.highlight.success{border-color:var(--success);background:#ecfdf5}
+.highlight.warning{border-color:var(--warning);background:#fffbeb}
+.highlight.danger{border-color:var(--danger);background:#fef2f2}
+.highlight strong{color:var(--text)}
+.arch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin:1.3rem 0}
+.arch-module{border:2px solid var(--border);border-radius:10px;padding:.9rem;text-align:center;transition:all .2s}
+.arch-module:hover{border-color:var(--primary);box-shadow:0 2px 12px rgba(124,58,237,.15)}
+.arch-module .mod-icon{font-size:1.7rem;margin-bottom:.25rem}
+.arch-module .mod-name{font-weight:700;font-size:.88rem;color:var(--primary-dark)}
+.arch-module .mod-desc{font-size:.73rem;color:var(--text2);margin-top:.2rem}
+.roles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.3rem 0}
+.role-card{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:1.3rem;position:relative;overflow:hidden}
+.role-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.role-card.admin::before{background:linear-gradient(90deg,#dc2626,#ec4899)}
+.role-card.owner::before{background:linear-gradient(90deg,#7c3aed,#a855f7)}
+.role-card.customer::before{background:linear-gradient(90deg,#06b6d4,#059669)}
+.role-icon{font-size:1.4rem;margin-bottom:.4rem}
+.role-name{font-size:.95rem;font-weight:700;margin-bottom:.7rem}
+.role-card.admin .role-name{color:#dc2626}
+.role-card.owner .role-name{color:var(--primary)}
+.role-card.customer .role-name{color:#0891b2}
+.role-perms{list-style:none}
+.role-perms li{font-size:.8rem;color:var(--text2);padding:.18rem 0 .18rem 1rem;position:relative}
+.role-perms li::before{content:'→';position:absolute;left:0;opacity:.5}
+.db-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin:1.3rem 0}
+.db-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.1rem}
+.db-name{font-family:monospace;font-size:.95rem;color:var(--accent);font-weight:700;margin-bottom:.5rem;padding-bottom:.35rem;border-bottom:1px solid var(--border)}
+.db-field{display:flex;gap:.5rem;font-size:.8rem;padding:.18rem 0}
+.db-field .fname{color:var(--text);min-width:140px;font-weight:500}
+.db-field .ftype{font-family:monospace;font-size:.76rem;color:var(--primary)}
+.db-field .fdesc{font-size:.76rem;color:var(--text2)}
+.endpoints{display:flex;flex-direction:column;gap:.45rem;margin:.9rem 0}
+.ep{display:flex;align-items:center;gap:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.65rem .9rem}
+.ep-method{font-family:monospace;font-size:.75rem;font-weight:700;width:52px;text-align:center;padding:.18rem 0;border-radius:4px}
+.ep-method.get{background:#dcfce7;color:#166534}
+.ep-method.post{background:#dbeafe;color:#1e40af}
+.ep-method.put{background:#fef3c7;color:#92400e}
+.ep-method.delete{background:#fee2e2;color:#991b1b}
+.ep-path{font-family:monospace;font-size:.83rem;color:var(--primary-dark);flex:1}
+.ep-desc{font-size:.78rem;color:var(--text2)}
+.ep-badge{font-size:.68rem;background:#ede9fe;color:var(--primary-dark);padding:.12rem .45rem;border-radius:10px;white-space:nowrap}
+.timeline{position:relative;padding-left:1.8rem;margin:1.2rem 0}
+.timeline::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:var(--primary)}
+.timeline-item{position:relative;margin-bottom:1.3rem}
+.timeline-item::before{content:'';position:absolute;left:-1.8rem;top:5px;width:13px;height:13px;border-radius:50%;background:var(--primary);border:2px solid #fff;box-shadow:0 0 0 2px var(--primary)}
+.timeline-item h4{font-size:.92rem;color:var(--primary-dark);margin-bottom:.25rem}
+.timeline-item p{font-size:.83rem;color:var(--text2)}
+.flow{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin:.9rem 0}
+.flow-step{background:var(--primary);color:#fff;padding:.35rem .8rem;border-radius:8px;font-size:.8rem;font-weight:600;white-space:nowrap}
+.flow-step.alt{background:var(--accent)}
+.flow-step.success{background:var(--success)}
+.flow-step.warning{background:var(--warning)}
+.flow-step.danger{background:var(--danger)}
+.flow-arrow{font-size:1.1rem;color:var(--text2)}
+.mermaid-container{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.3rem;margin:1.2rem 0;overflow-x:auto}
+.diagram-group{margin-bottom:2.5rem;border-bottom:2px solid var(--border);padding-bottom:1.5rem}
+.diagram-group:last-child{border-bottom:none}
+.diagram-title{font-size:1.15rem;font-weight:700;color:var(--primary-dark);margin-bottom:.9rem;padding-left:.5rem;border-left:4px solid var(--primary)}
+h3{font-size:1rem;margin:1.3rem 0 .65rem;color:var(--text)}
+p{color:var(--text2);font-size:.91rem;margin-bottom:.75rem}
+footer{text-align:center;padding:2rem;background:var(--code-bg);color:rgba(255,255,255,.6);font-size:.78rem}
+footer strong{color:rgba(255,255,255,.9)}
+@media(max-width:768px){body{margin-left:0}nav{position:relative;width:100%}.arch-grid,.roles-grid,.db-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<nav id="sidebar">
+<nav>
   <div class="logo">🗺️ TourGuide PRD</div>
-  <div class="nav-group-title">Tổng quan</div>
-  <a href="#overview">Kiến trúc tổng quan</a>
-  <div class="nav-group-title">Nghiệp vụ</div>
-  <a href="#rbac">01 · Phân quyền RBAC</a>
-  <a href="#database">02 · Database Schema</a>
-  <a href="#api">03 · API Endpoints</a>
-  <a href="#tts">04 · TTS Pipeline</a>
-  <a href="#auth">05 · Authentication</a>
-  <a href="#geofencing">06 · GPS Geofencing</a>
-  <a href="#mobile">07 · Mobile App</a>
-  <a href="#web">08 · Web CMS</a>
-  <a href="#patterns">09 · Design Patterns</a>
-  <div class="nav-group-title">Sơ đồ UML</div>
-  <a href="#class-diagram" class="sub">↳ Class Diagram</a>
-  <a href="#seq-approval" class="sub">↳ POI Approval</a>
-  <a href="#seq-geofence" class="sub">↳ Geofence + TTS</a>
-  <a href="#state-poi" class="sub">↳ State — POI Status</a>
-  <a href="#arch" class="sub">↳ Architecture</a>
+  <ul>
+    <li><a href="#overview">Tổng quan</a></li>
+    <li><a href="#roles">Phân quyền</a></li>
+    <li><a href="#database">Database</a></li>
+    <li><a href="#api">API Endpoints</a></li>
+    <li><a href="#tts">TTS Pipeline</a></li>
+    <li><a href="#auth">Auth</a></li>
+    <li><a href="#geofence">Geofencing</a></li>
+    <li><a href="#mobile">Mobile App</a></li>
+    <li><a href="#web">Web CMS</a></li>
+    <li><a href="#diagrams">Sơ đồ UML</a></li>
+    <li><a href="#patterns">Patterns</a></li>
+  </ul>
 </nav>
 
-<!-- MAIN -->
-<div id="main">
-
-<!-- HERO -->
 <div class="hero">
   <h1>🗺️ TourGuide System</h1>
-  <p class="subtitle">Hệ thống thuyết minh du lịch tự động — Web CMS (ASP.NET Core 8 Razor Pages) kết hợp Mobile App (.NET MAUI Android), GPS Geofencing + Haversine tự động phát TTS khi khách vào vùng POI, hỗ trợ offline mode với SQLite cache.</p>
-  <div class="tag-row">
-    <span class="tag">ASP.NET Core 8</span>
-    <span class="tag">Razor Pages CMS</span>
-    <span class="tag">Web API REST</span>
-    <span class="tag">.NET MAUI Android</span>
-    <span class="tag">SQL Server Express</span>
-    <span class="tag">Entity Framework Core</span>
-    <span class="tag">SQLite Offline Cache</span>
-    <span class="tag">Leaflet.js + OpenStreetMap</span>
-    <span class="tag">Web Speech API</span>
-    <span class="tag">Google Translate Free</span>
-    <span class="tag">OSRM Route API</span>
+  <p>Hệ thống thuyết minh du lịch tự động — Web CMS (ASP.NET Core 8 Razor Pages) kết hợp Mobile App (.NET MAUI Android), GPS Geofencing + Haversine tự động phát TTS khi khách vào vùng POI, offline SQLite cache.</p>
+  <div class="badges">
+    <span class="badge">ASP.NET Core 8</span><span class="badge">Razor Pages CMS</span><span class="badge">Web API REST</span>
+    <span class="badge">.NET MAUI Android</span><span class="badge">SQL Server Express</span><span class="badge">Entity Framework Core</span>
+    <span class="badge">SQLite Offline</span><span class="badge">Leaflet.js + OSM</span><span class="badge">Web Speech API</span>
+    <span class="badge">Google Translate Free</span><span class="badge">OSRM Routing</span>
   </div>
 </div>
 
-<!-- ═══ OVERVIEW ═══ -->
+<section class="alt">
+<div class="inner">
+  <div class="stats-row">
+    <div class="stat-card"><div class="value">3</div><div class="label">Project .NET</div></div>
+    <div class="stat-card"><div class="value">3</div><div class="label">Vai trò RBAC</div></div>
+    <div class="stat-card"><div class="value">4</div><div class="label">Ngôn ngữ TTS</div></div>
+    <div class="stat-card"><div class="value">5</div><div class="label">Bảng SQL Server</div></div>
+    <div class="stat-card"><div class="value">22+</div><div class="label">API Endpoints</div></div>
+    <div class="stat-card"><div class="value">1</div><div class="label">DB Trigger</div></div>
+    <div class="stat-card"><div class="value">$0</div><div class="label">Chi phí API</div></div>
+    <div class="stat-card"><div class="value">7</div><div class="label">Sơ đồ UML</div></div>
+  </div>
+</div>
+</section>
+
+<!-- OVERVIEW -->
 <section id="overview">
-  <div class="chapter-header">
-    <span class="icon">🏗️</span>
-    <div>
-      <div class="meta">Chapter 00</div>
-      <h1>Kiến Trúc Tổng Quan</h1>
-    </div>
+  <div class="section-header">
+    <div class="icon" style="background:#ede9fe;color:var(--primary)">🏗️</div>
+    <div><div class="section-num">Chapter 00</div><h2>Kiến Trúc Tổng Quan</h2></div>
   </div>
-
-  <p>TourGuide gồm <strong>3 project .NET</strong> chạy song song, giao tiếp qua REST API và dùng chung SQL Server Express. Web CMS (port 5248/7070) dành cho Admin/Owner quản lý nội dung. Mobile App (.NET MAUI Android) dành cho khách du lịch với GPS geofencing tự động phát TTS. API (port 5266/7134) là trung gian duy nhất.</p>
-
+  <p>TourGuide gồm 3 project .NET chạy song song, giao tiếp qua REST API, dùng chung SQL Server Express. Web CMS dành cho Admin/Owner quản lý nội dung và phê duyệt. Mobile App dành cho khách du lịch nghe thuyết minh tự động qua GPS.</p>
   <div class="arch-grid">
-    <div class="arch-module">
-      <div class="mod-icon">🌐</div>
-      <div class="mod-name">GPSGuide.Web</div>
-      <div class="mod-tech">ASP.NET Core 8 Razor Pages<br>Web CMS — Admin &amp; Owner<br><code>http:5248 / https:7070</code></div>
-    </div>
-    <div class="arch-module">
-      <div class="mod-icon">⚙️</div>
-      <div class="mod-name">TourGuideAPI</div>
-      <div class="mod-tech">ASP.NET Core Web API<br>REST + CORS AllowAll<br><code>http:5266 / https:7134</code></div>
-    </div>
-    <div class="arch-module">
-      <div class="mod-icon">📱</div>
-      <div class="mod-name">TourGuideApp</div>
-      <div class="mod-tech">.NET MAUI Android<br>GPS Geofencing + TTS<br>Offline SQLite cache</div>
-    </div>
-    <div class="arch-module">
-      <div class="mod-icon">🗄️</div>
-      <div class="mod-name">TourGuideDB</div>
-      <div class="mod-tech">SQL Server Express<br>5 bảng + 1 Trigger<br></div>
-    </div>
-    <div class="arch-module">
-      <div class="mod-icon">🔊</div>
-      <div class="mod-name">Web Speech API</div>
-      <div class="mod-tech">TTS miễn phí native<br>4 ngôn ngữ vi/en/ja/zh<br>Browser + MAUI TextToSpeech</div>
-    </div>
-    <div class="arch-module">
-      <div class="mod-icon">📦</div>
-      <div class="mod-name">SQLite Local DB</div>
-      <div class="mod-tech"><code>tourguide_local.db3</code><br>Cache POI offline<br>Pending history queue</div>
-    </div>
+    <div class="arch-module"><div class="mod-icon">🌐</div><div class="mod-name">GPSGuide.Web</div><div class="mod-desc">ASP.NET Core 8 Razor Pages<br/>Web CMS Admin & Owner<br/>http:5248 / https:7070</div></div>
+    <div class="arch-module"><div class="mod-icon">⚙️</div><div class="mod-name">TourGuideAPI</div><div class="mod-desc">ASP.NET Core Web API<br/>REST + CORS AllowAll<br/>http:5266 / https:7134</div></div>
+    <div class="arch-module"><div class="mod-icon">📱</div><div class="mod-name">TourGuideApp</div><div class="mod-desc">.NET MAUI Android<br/>GPS Geofencing + TTS<br/>SQLite offline cache</div></div>
+    <div class="arch-module"><div class="mod-icon">🗄️</div><div class="mod-name">TourGuideDB</div><div class="mod-desc">SQL Server Express<br/>5 bảng + 1 Trigger<br/>NONAME\SQLEXPRESS</div></div>
+    <div class="arch-module"><div class="mod-icon">🔊</div><div class="mod-name">Web Speech API</div><div class="mod-desc">TTS native browser<br/>4 ngôn ngữ vi/en/ja/zh<br/>MAUI TextToSpeech</div></div>
+    <div class="arch-module"><div class="mod-icon">📦</div><div class="mod-name">SQLite Local DB</div><div class="mod-desc">tourguide_local.db3<br/>Cache POI offline<br/>Pending history queue</div></div>
   </div>
-
-  <div class="callout callout-info">
-    <span class="callout-icon">ℹ️</span>
-    <div><strong>API URL thực tế:</strong> App tự động chọn URL theo môi trường — <code>http://10.0.2.2:5266/api/</code> khi chạy trên Android Emulator, <code>http://192.168.1.83:5266/api/</code> khi chạy trên thiết bị thật (LAN). Web CMS dùng <code>http://localhost:5266/api/</code>.</div>
+  <div class="highlight info">
+    <strong>URL thực tế:</strong> Emulator → <code>http://10.0.2.2:5266/api/</code>. Thiết bị thật (LAN) → <code>http://192.168.1.127:5266/api/</code>. Web CMS → <code>http://localhost:5266/api/</code>.
   </div>
 </section>
 
-<!-- ═══ RBAC ═══ -->
-<section id="rbac">
-  <div class="chapter-header">
-    <span class="icon">👥</span>
-    <div>
-      <div class="meta">Chapter 01</div>
-      <h1>Phân Quyền &amp; Vai Trò (RBAC)</h1>
-    </div>
+<!-- ROLES -->
+<section id="roles" class="alt">
+<div class="inner">
+  <div class="section-header">
+    <div class="icon" style="background:#fce7f3;color:#9d174d">👥</div>
+    <div><div class="section-num">Chapter 01</div><h2>Phân Quyền & Vai Trò (RBAC)</h2></div>
   </div>
-
-  <p>3 role với quyền hạn rõ ràng. Role CUSTOMER bị chặn hoàn toàn tại Web CMS — chỉ dùng Mobile App. Owner chỉ thấy dữ liệu của mình (filter OwnerId từ Session). Admin thấy tất cả.</p>
-
+  <p>3 role với quyền hạn rõ ràng. CUSTOMER bị chặn tại Web CMS — chỉ dùng Mobile App. Owner chỉ thấy POI của mình (filter OwnerId từ Session). Admin thấy tất cả.</p>
   <div class="roles-grid">
     <div class="role-card admin">
-      <div class="role-icon">🔴</div>
-      <div class="role-name">ADMIN</div>
+      <div class="role-icon">🔴</div><div class="role-name">ADMIN</div>
       <ul class="role-perms">
-        <li>Xem &amp; quản lý TẤT CẢ POI</li>
-        <li>Xem &amp; quản lý TẤT CẢ Audio</li>
-        <li>Quản lý Users (CRUD + đổi role)</li>
-        <li>Phê duyệt / từ chối POI (PENDING → APPROVED/REJECTED)</li>
-        <li>Rút duyệt APPROVED → REJECTED</li>
+        <li>Xem & quản lý tất cả POI/Audio/Users</li>
+        <li>Phê duyệt / từ chối POI (PENDING→APPROVED/REJECTED)</li>
         <li>Xóa hàng loạt POI bị từ chối</li>
-        <li>Xem toàn bộ lịch sử phát</li>
+        <li>Xem toàn bộ lịch sử phát + nhật ký hoạt động</li>
         <li>Dashboard thống kê toàn hệ thống</li>
+        <li>Badge pending POI trên sidebar</li>
       </ul>
     </div>
     <div class="role-card owner">
-      <div class="role-icon">🟣</div>
-      <div class="role-name">OWNER</div>
+      <div class="role-icon">🟣</div><div class="role-name">OWNER</div>
       <ul class="role-perms">
         <li>Chỉ thấy POI có OwnerId = mình</li>
-        <li>Tạo POI → status PENDING, chờ Admin duyệt</li>
-        <li>Sửa POI đang APPROVED → status PENDING lại</li>
-        <li>CRUD Audio của POI mình sở hữu</li>
-        <li>Xem lịch sử phát POI của mình</li>
-        <li>Upload ảnh POI (lưu vào bảng POIImages)</li>
-        <li>Dashboard thống kê riêng</li>
-        <li>Sửa thông tin cá nhân (/Profile)</li>
+        <li>Tạo POI → Status=PENDING, chờ Admin duyệt</li>
+        <li>Sửa POI APPROVED → Status=PENDING lại</li>
+        <li>CRUD Audio POI mình (chỉ khi POI APPROVED)</li>
+        <li>Upload ảnh POI tối đa 5 ảnh/5MB</li>
+        <li>Đăng ký /Register → vào luôn, role=OWNER</li>
       </ul>
     </div>
     <div class="role-card customer">
-      <div class="role-icon">🟢</div>
-      <div class="role-name">CUSTOMER</div>
+      <div class="role-icon">🟢</div><div class="role-name">CUSTOMER</div>
       <ul class="role-perms">
         <li>Chỉ dùng Mobile App MAUI Android</li>
         <li>Bị chặn đăng nhập Web CMS</li>
         <li>GPS geofencing tự động phát TTS</li>
-        <li>Nghe TTS 4 ngôn ngữ vi/en/ja/zh</li>
-        <li>Offline mode: đọc POI từ SQLite cache</li>
-        <li>Lịch sử phát kiểm soát bởi DB Trigger</li>
-        <li>Bản đồ Leaflet real-time + vẽ lộ trình OSRM</li>
-        <li>Đăng ký → tạo account CUSTOMER</li>
+        <li>Nghe 4 ngôn ngữ vi/en/ja/zh</li>
+        <li>Offline mode — SQLite cache + seed JSON</li>
+        <li>Lịch sử kiểm soát bởi DB Trigger</li>
       </ul>
     </div>
   </div>
-
-  <div class="callout callout-purple">
-    <span class="callout-icon">🔄</span>
-    <div><strong>POI Approval Workflow:</strong> Owner tạo POI → Status = PENDING → POI không hiện trong App. Admin vào trang Phê duyệt → Duyệt → Status = APPROVED → hiện trong App. Admin có thể Từ chối (Status = REJECTED) kèm lý do, hoặc Rút duyệt APPROVED → về REJECTED. Xóa tất cả REJECTED bằng một nút.</div>
+  <div class="highlight warning">
+    <strong>POI Approval Workflow:</strong> Owner tạo → <code>PENDING</code> (ẩn trên App) → Admin duyệt → <code>APPROVED</code> (hiện trên App). Từ chối → <code>REJECTED</code> kèm lý do. Rút duyệt APPROVED → REJECTED. Owner sửa APPROVED → về PENDING lại. X-Role header phân biệt Admin/Owner tại API.
   </div>
-
-  <h2>Ma trận phân quyền theo trang</h2>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Trang / Route</th><th>ADMIN</th><th>OWNER</th></tr></thead>
-      <tbody>
-        <tr><td><code>/</code> — Dashboard</td><td>✅ Thống kê toàn hệ thống</td><td>✅ Thống kê POI của mình</td></tr>
-        <tr><td><code>/Pois</code> — Điểm thuyết minh</td><td>✅ Tất cả POI + dropdown Owner</td><td>✅ POI OwnerId = mình</td></tr>
-        <tr><td><code>/AudioManager</code> — Quản lý Audio</td><td>✅ Tất cả Audio</td><td>✅ Audio POI mình</td></tr>
-        <tr><td><code>/HistoryPage</code> — Lịch sử phát</td><td>✅ Tất cả</td><td>✅ POI của mình</td></tr>
-        <tr><td><code>/Users</code> — Người dùng</td><td>✅ Full CRUD</td><td>❌ Ẩn hoàn toàn</td></tr>
-        <tr><td><code>/Approval</code> — Phê duyệt POI</td><td>✅ Approve/Reject/Revoke</td><td>❌ Ẩn hoàn toàn</td></tr>
-        <tr><td><code>/Profile</code> — Thông tin cá nhân</td><td>❌ Ẩn</td><td>✅ Sửa info</td></tr>
-        <tr><td><code>/Auth</code> — Đăng nhập</td><td colspan="2">✅ — CUSTOMER bị từ chối</td></tr>
-        <tr><td><code>/Register</code> — Đăng ký</td><td colspan="2">✅ — tạo role OWNER</td></tr>
-      </tbody>
-    </table>
-  </div>
+</div>
 </section>
 
-<!-- ═══ DATABASE ═══ -->
+<!-- DATABASE -->
 <section id="database">
-  <div class="chapter-header">
-    <span class="icon">🗃️</span>
-    <div>
-      <div class="meta">Chapter 02</div>
-      <h1>Database — SQL Server Express</h1>
+  <div class="section-header">
+    <div class="icon" style="background:#ecfdf5;color:#065f46">🗃️</div>
+    <div><div class="section-num">Chapter 02</div><h2>Database — SQL Server Express</h2></div>
+  </div>
+  <p>5 bảng + 1 Trigger INSTEAD OF INSERT bảo vệ tầng dữ liệu. EF Core làm ORM. Schema tạo thủ công qua SQL script, không dùng migrations.</p>
+  <div class="db-grid">
+    <div class="db-card">
+      <div class="db-name">Users</div>
+      <div class="db-field"><span class="fname">Id</span><span class="ftype">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fname">Username</span><span class="ftype">NVARCHAR(100)</span></div>
+      <div class="db-field"><span class="fname">PasswordHash</span><span class="ftype">NVARCHAR(255)</span></div>
+      <div class="db-field"><span class="fname">Name / Email / Phone</span><span class="ftype">NVARCHAR</span></div>
+      <div class="db-field"><span class="fname">Role</span><span class="ftype">NVARCHAR(50)</span><span class="fdesc">CHECK ADMIN/OWNER/CUSTOMER</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-name">POI</div>
+      <div class="db-field"><span class="fname">Id</span><span class="ftype">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fname">Name / Description / Address / Phone</span><span class="ftype">NVARCHAR</span></div>
+      <div class="db-field"><span class="fname">Latitude / Longitude</span><span class="ftype">FLOAT</span></div>
+      <div class="db-field"><span class="fname">Radius</span><span class="ftype">INT</span><span class="fdesc">mét — vùng geofence</span></div>
+      <div class="db-field"><span class="fname">OwnerId</span><span class="ftype">INT FK→Users</span></div>
+      <div class="db-field"><span class="fname">Status</span><span class="ftype">NVARCHAR(20)</span><span class="fdesc">PENDING/APPROVED/REJECTED</span></div>
+      <div class="db-field"><span class="fname">RejectReason</span><span class="ftype">NVARCHAR(500) NULL</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-name">Audio</div>
+      <div class="db-field"><span class="fname">Id</span><span class="ftype">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fname">PoiId</span><span class="ftype">INT FK→POI</span></div>
+      <div class="db-field"><span class="fname">vi / en / ja / zh</span><span class="ftype">NVARCHAR(MAX)</span><span class="fdesc">4 script ngôn ngữ</span></div>
+      <div class="db-field"><span class="fname">Ràng buộc</span><span class="ftype">—</span><span class="fdesc">1 record / POI, chỉ thêm khi APPROVED</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-name">History</div>
+      <div class="db-field"><span class="fname">Id</span><span class="ftype">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fname">PoiId</span><span class="ftype">INT FK→POI</span></div>
+      <div class="db-field"><span class="fname">UserId</span><span class="ftype">INT FK→Users</span></div>
+      <div class="db-field"><span class="fname">PlayTime</span><span class="ftype">DATETIME DEFAULT GETDATE()</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-name">POIImages</div>
+      <div class="db-field"><span class="fname">Id</span><span class="ftype">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fname">PoiId</span><span class="ftype">INT NOT NULL FK→POI</span></div>
+      <div class="db-field"><span class="fname">ImageUrl</span><span class="ftype">NVARCHAR(500)</span><span class="fdesc">/uploads/poi/...</span></div>
+      <div class="db-field"><span class="fname">IsThumbnail</span><span class="ftype">BIT DEFAULT 0</span></div>
+      <div class="db-field"><span class="fname">CreatedAt</span><span class="ftype">DATETIME DEFAULT GETDATE()</span></div>
+    </div>
+    <div class="db-card" style="border-color:#dc2626">
+      <div class="db-name" style="color:#dc2626">🛡️ Trigger: trg_OnlyCustomerHistory</div>
+      <div class="db-field"><span class="fname">Loại</span><span class="ftype">INSTEAD OF INSERT</span><span class="fdesc">ON History</span></div>
+      <div class="db-field"><span class="fname">Logic</span><span class="fdesc">JOIN Users → kiểm tra Role = 'CUSTOMER'</span></div>
+      <div class="db-field"><span class="fname">Nếu sai</span><span class="ftype">RAISERROR + RETURN</span></div>
+      <div class="db-field"><span class="fname">Mục đích</span><span class="fdesc">Bảo vệ tầng DB — không bypass được dù gọi SQL trực tiếp</span></div>
     </div>
   </div>
-
-  <p>5 bảng chính + 1 Trigger bảo vệ. Connection string: <code>Server=NONAME\SQLEXPRESS;Database=TourGuideDB;Trusted_Connection=True;TrustServerCertificate=True</code>. EF Core làm ORM, schema tạo thủ công bằng SQL script.</p>
-
-  <div class="entity-grid">
-    <div class="entity-box">
-      <div class="entity-header">Users</div>
-      <table>
-        <tr><td class="entity-pk">Id</td><td>INT PK IDENTITY</td><td></td></tr>
-        <tr><td>Username</td><td>NVARCHAR(100)</td><td></td></tr>
-        <tr><td>PasswordHash</td><td>NVARCHAR(255)</td><td></td></tr>
-        <tr><td>Name</td><td>NVARCHAR(150)</td><td></td></tr>
-        <tr><td>Email</td><td>NVARCHAR(150)</td><td></td></tr>
-        <tr><td>Phone</td><td>NVARCHAR(20)</td><td></td></tr>
-        <tr><td>Role</td><td>NVARCHAR(50)</td><td>ADMIN/OWNER/CUSTOMER</td></tr>
-      </table>
-    </div>
-    <div class="entity-box">
-      <div class="entity-header">POI</div>
-      <table>
-        <tr><td class="entity-pk">Id</td><td>INT PK IDENTITY</td><td></td></tr>
-        <tr><td>Name</td><td>NVARCHAR(255)</td><td></td></tr>
-        <tr><td>Description</td><td>NVARCHAR(MAX)</td><td></td></tr>
-        <tr><td>Address</td><td>NVARCHAR(255)</td><td></td></tr>
-        <tr><td>Phone</td><td>NVARCHAR(20)</td><td></td></tr>
-        <tr><td>Latitude/Longitude</td><td>FLOAT</td><td></td></tr>
-        <tr><td>Radius</td><td>INT</td><td>mét — vùng geofence</td></tr>
-        <tr><td class="entity-fk">OwnerId</td><td>INT FK → Users</td><td></td></tr>
-        <tr><td>Status</td><td>NVARCHAR(20)</td><td>PENDING/APPROVED/REJECTED</td></tr>
-        <tr><td>RejectReason</td><td>NVARCHAR(500)</td><td>NULL</td></tr>
-      </table>
-    </div>
-    <div class="entity-box">
-      <div class="entity-header">Audio</div>
-      <table>
-        <tr><td class="entity-pk">Id</td><td>INT PK IDENTITY</td><td></td></tr>
-        <tr><td class="entity-fk">PoiId</td><td>INT FK → POI</td><td></td></tr>
-        <tr><td>vi</td><td>NVARCHAR(MAX)</td><td>Script tiếng Việt</td></tr>
-        <tr><td>en</td><td>NVARCHAR(MAX)</td><td>Script tiếng Anh</td></tr>
-        <tr><td>ja</td><td>NVARCHAR(MAX)</td><td>Script tiếng Nhật</td></tr>
-        <tr><td>zh</td><td>NVARCHAR(MAX)</td><td>Script tiếng Trung</td></tr>
-        <tr><td>Giới hạn</td><td>—</td><td>1 Audio record / POI</td></tr>
-      </table>
-    </div>
-    <div class="entity-box">
-      <div class="entity-header">History</div>
-      <table>
-        <tr><td class="entity-pk">Id</td><td>INT PK IDENTITY</td><td></td></tr>
-        <tr><td class="entity-fk">PoiId</td><td>INT FK → POI</td><td></td></tr>
-        <tr><td class="entity-fk">UserId</td><td>INT FK → Users</td><td></td></tr>
-        <tr><td>PlayTime</td><td>DATETIME</td><td>DEFAULT GETDATE()</td></tr>
-      </table>
-    </div>
-    <div class="entity-box">
-      <div class="entity-header">POIImages</div>
-      <table>
-        <tr><td class="entity-pk">Id</td><td>INT PK IDENTITY</td><td></td></tr>
-        <tr><td class="entity-fk">PoiId</td><td>INT NOT NULL FK → POI</td><td></td></tr>
-        <tr><td>ImageUrl</td><td>NVARCHAR(500)</td><td>/uploads/poi/...</td></tr>
-        <tr><td>IsThumbnail</td><td>BIT DEFAULT 0</td><td>Ảnh đại diện</td></tr>
-        <tr><td>CreatedAt</td><td>DATETIME</td><td>DEFAULT GETDATE()</td></tr>
-      </table>
-    </div>
-    <div class="entity-box">
-      <div class="entity-header">🛡️ Trigger: trg_OnlyCustomerHistory</div>
-      <table>
-        <tr><td>Loại</td><td>INSTEAD OF INSERT</td><td>ON History</td></tr>
-        <tr><td>Logic</td><td>JOIN Users</td><td>Kiểm tra Role = 'CUSTOMER'</td></tr>
-        <tr><td>Nếu không hợp lệ</td><td>RAISERROR + RETURN</td><td>Không INSERT</td></tr>
-        <tr><td>Mục đích</td><td>—</td><td>Bảo vệ tầng DB, không bypass được</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <div class="callout callout-info">
-    <span class="callout-icon">📦</span>
-    <div><strong>POIDto (trả về cho Mobile App):</strong> Chứa Id, Name, Description, Address, Phone, Latitude, Longitude, Radius, ScriptVi, ScriptEn, ScriptJa, ScriptZh, Images (<code>List&lt;string&gt;</code>). Không có OwnerId, không có Status. App chỉ nhận POI có Status = APPROVED.</div>
+  <div class="highlight">
+    <strong>POIDto (trả về cho Mobile App):</strong> <code>Id, Name, Description, Address, Phone, Latitude, Longitude, Radius, ScriptVi, ScriptEn, ScriptJa, ScriptZh, Images(List&lt;string&gt;)</code>. Không có OwnerId, không có Status. App chỉ nhận POI Status=APPROVED.
   </div>
 </section>
 
-<!-- ═══ API ═══ -->
-<section id="api">
-  <div class="chapter-header">
-    <span class="icon">⚙️</span>
-    <div>
-      <div class="meta">Chapter 03</div>
-      <h1>TourGuideAPI — REST Endpoints</h1>
-    </div>
+<!-- API -->
+<section id="api" class="alt">
+<div class="inner">
+  <div class="section-header">
+    <div class="icon" style="background:#dbeafe;color:#1e40af">⚙️</div>
+    <div><div class="section-num">Chapter 03</div><h2>TourGuideAPI — REST Endpoints</h2></div>
   </div>
-
-  <p>ASP.NET Core 8 Web API với Swagger UI. CORS AllowAll. 5 controller. Phân biệt Admin/Owner qua header <code>X-Role</code> gửi từ Web CMS. App dùng endpoint không có X-Role (chỉ lấy APPROVED POI).</p>
-
-  <h2>📍 POI Controller — <code>/api/poi</code></h2>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Method</th><th>Route</th><th>Mô tả</th><th>Dùng bởi</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi</code></td><td>POI APPROVED → POIDto (ScriptVi/En/Ja/Zh + Images)</td><td><span class="badge badge-app">APP</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi/top</code></td><td>Top 5 POI được phát nhiều nhất (từ History)</td><td><span class="badge badge-app">APP</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi/count</code></td><td>Số POI APPROVED</td><td><span class="badge badge-app">APP</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi/audio-count</code></td><td>Tổng số lịch sử phát (History.Count)</td><td><span class="badge badge-app">APP</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi/all</code></td><td>Tất cả POI mọi status</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi/owner/{ownerId}</code></td><td>POI của một Owner</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi/pending</code></td><td>POI có Status = PENDING</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi/{id}</code></td><td>Chi tiết một POI theo ID</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/poi/{id}/images</code></td><td>Danh sách ảnh của POI</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/poi</code></td><td>Tạo POI — Owner → PENDING, Admin → APPROVED</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/poi/{id}</code></td><td>Sửa POI — Owner → PENDING lại, Admin → cập nhật thẳng (X-Role header)</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/poi/{id}/approve</code></td><td>Admin duyệt POI → APPROVED</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-        <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/poi/{id}/reject</code></td><td>Admin từ chối → REJECTED + RejectReason</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-        <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/poi/{id}</code></td><td>Xóa POI + cascade Audio/History/Images</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/poi/rejected</code></td><td>Xóa tất cả POI status REJECTED</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-        <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/poi/{id}/image</code></td><td>Upload ảnh → lưu vào wwwroot/uploads/poi/ + POIImages</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/poi/image/{imageId}/thumbnail</code></td><td>Đặt ảnh làm thumbnail (IsThumbnail=true)</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/poi/image/{imageId}</code></td><td>Xóa ảnh khỏi DB + file vật lý</td><td><span class="badge badge-web">WEB</span></td></tr>
-      </tbody>
-    </table>
+  <h3>📍 POI Controller — <code>/api/poi</code></h3>
+  <div class="endpoints">
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi</span><span class="ep-desc">APPROVED POIs → POIDto (join Audio + Images)</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi/top</span><span class="ep-desc">Top 5 POI được phát nhiều nhất (từ History)</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi/count</span><span class="ep-desc">Số POI APPROVED</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi/audio-count</span><span class="ep-desc">Tổng số lịch sử phát</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi/all</span><span class="ep-desc">Tất cả POI mọi status</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi/owner/{ownerId}</span><span class="ep-desc">POI của một Owner</span><span class="ep-badge">WEB OWNER</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi/pending</span><span class="ep-desc">POI Status=PENDING (dùng cho badge sidebar)</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi/{id}</span><span class="ep-desc">Chi tiết POI kèm Audio + Images</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/poi/{id}/images</span><span class="ep-desc">Danh sách ảnh POIImages</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method post">POST</span><span class="ep-path">/api/poi</span><span class="ep-desc">Tạo POI — Owner→PENDING, Admin→APPROVED (X-Role)</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method put">PUT</span><span class="ep-path">/api/poi/{id}</span><span class="ep-desc">Sửa POI — Owner→PENDING, Admin→thẳng (X-Role)</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method put">PUT</span><span class="ep-path">/api/poi/{id}/approve</span><span class="ep-desc">Admin duyệt → APPROVED, xóa RejectReason</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method put">PUT</span><span class="ep-path">/api/poi/{id}/reject</span><span class="ep-desc">Admin từ chối → REJECTED + RejectReason</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method delete">DELETE</span><span class="ep-path">/api/poi/{id}</span><span class="ep-desc">Xóa POI + cascade Audio/History/Images</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method delete">DELETE</span><span class="ep-path">/api/poi/rejected</span><span class="ep-desc">Xóa tất cả POI Status=REJECTED</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method post">POST</span><span class="ep-path">/api/poi/{id}/image</span><span class="ep-desc">Upload ảnh → wwwroot/uploads/poi/ + POIImages</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method put">PUT</span><span class="ep-path">/api/poi/image/{imageId}/thumbnail</span><span class="ep-desc">Đặt IsThumbnail=true, reset các ảnh còn lại</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method delete">DELETE</span><span class="ep-path">/api/poi/image/{imageId}</span><span class="ep-desc">Xóa ảnh DB + file vật lý trên disk</span><span class="ep-badge">WEB</span></div>
   </div>
-
-  <h2>🎵 Audio Controller — <code>/api/audio</code></h2>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Method</th><th>Route</th><th>Mô tả</th><th>Dùng bởi</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/audio</code></td><td>Tất cả audio (có PoiName join)</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/audio/{id}</code></td><td>Chi tiết một audio</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/audio</code></td><td>Tạo audio — kiểm tra POI đã APPROVED + 1 audio/POI</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/audio/{id}</code></td><td>Sửa script audio</td><td><span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/audio/{id}</code></td><td>Xóa audio</td><td><span class="badge badge-web">WEB</span></td></tr>
-      </tbody>
-    </table>
+  <h3 style="margin-top:1.3rem">🎵 Audio Controller — <code>/api/audio</code></h3>
+  <div class="endpoints">
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/audio</span><span class="ep-desc">Tất cả audio, kèm PoiName (join POI)</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/audio/{id}</span><span class="ep-desc">Chi tiết một audio</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method post">POST</span><span class="ep-path">/api/audio</span><span class="ep-desc">Tạo — kiểm tra POI APPROVED + 1 record/POI</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method put">PUT</span><span class="ep-path">/api/audio/{id}</span><span class="ep-desc">Sửa 4 cột script vi/en/ja/zh</span><span class="ep-badge">WEB</span></div>
+    <div class="ep"><span class="ep-method delete">DELETE</span><span class="ep-path">/api/audio/{id}</span><span class="ep-desc">Xóa audio</span><span class="ep-badge">WEB</span></div>
   </div>
-
-  <h2>📜 History Controller — <code>/api/history</code></h2>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Method</th><th>Route</th><th>Mô tả</th><th>Dùng bởi</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/history</code></td><td>Tất cả lịch sử (kèm PoiName)</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-        <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/history</code></td><td>Ghi lịch sử {PoiId, UserId} — DB Trigger kiểm tra Role=CUSTOMER</td><td><span class="badge badge-app">APP</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/history/user/{userId}</code></td><td>Lịch sử của một user (kèm PoiName)</td><td><span class="badge badge-app">APP</span></td></tr>
-        <tr><td><span class="badge badge-delete">DELETE</span></td><td><code>/api/history/{id}</code></td><td>Xóa một history record</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-      </tbody>
-    </table>
+  <h3 style="margin-top:1.3rem">📜 History Controller — <code>/api/history</code></h3>
+  <div class="endpoints">
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/history</span><span class="ep-desc">Tất cả lịch sử, LEFT JOIN Users + POI → UserLogin, UserFullName, PoiName</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method post">POST</span><span class="ep-path">/api/history</span><span class="ep-desc">Ghi lịch sử — kiểm tra UserId + Role=CUSTOMER trước DB Trigger</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/history/user/{userId}</span><span class="ep-desc">Lịch sử của một CUSTOMER kèm PoiName/PoiImage</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method delete">DELETE</span><span class="ep-path">/api/history/{id}</span><span class="ep-desc">Xóa một record lịch sử</span><span class="ep-badge">WEB ADMIN</span></div>
   </div>
-
-  <h2>👤 Users Controller — <code>/api/users</code></h2>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Method</th><th>Route</th><th>Mô tả</th><th>Dùng bởi</th></tr></thead>
-      <tbody>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/users</code></td><td>Tất cả users</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-        <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/users/owners</code></td><td>Chỉ OWNER — dùng cho dropdown tạo POI</td><td><span class="badge badge-admin">ADMIN</span></td></tr>
-        <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/users/login</code></td><td>Đăng nhập — trả UserDto (không có PasswordHash)</td><td><span class="badge badge-app">APP</span>+<span class="badge badge-web">WEB</span></td></tr>
-        <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/users/register</code></td><td>Đăng ký CUSTOMER (từ App)</td><td><span class="badge badge-app">APP</span></td></tr>
-        <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/users/customer/{id}</code></td><td>Cập nhật Name + Phone của CUSTOMER</td><td><span class="badge badge-app">APP</span></td></tr>
-      </tbody>
-    </table>
+  <h3 style="margin-top:1.3rem">👤 Users Controller — <code>/api/users</code></h3>
+  <div class="endpoints">
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/users</span><span class="ep-desc">Tất cả users (ADMIN dùng)</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method get">GET</span><span class="ep-path">/api/users/owners</span><span class="ep-desc">Chỉ OWNER — dropdown tạo POI</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method post">POST</span><span class="ep-path">/api/users/login</span><span class="ep-desc">Đăng nhập — chỉ CUSTOMER, trả UserDto (không có PasswordHash)</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method post">POST</span><span class="ep-path">/api/users/register</span><span class="ep-desc">Đăng ký CUSTOMER từ App, tự động gán Role=CUSTOMER</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method put">PUT</span><span class="ep-path">/api/users/customer/{id}</span><span class="ep-desc">Cập nhật Name + Phone CUSTOMER</span><span class="ep-badge">APP</span></div>
+    <div class="ep"><span class="ep-method post">POST</span><span class="ep-path">/api/users</span><span class="ep-desc">Admin tạo user bất kỳ role</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method put">PUT</span><span class="ep-path">/api/users/{id}</span><span class="ep-desc">Admin sửa info + đổi role + reset password</span><span class="ep-badge">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-method delete">DELETE</span><span class="ep-path">/api/users/{id}</span><span class="ep-desc">Admin xóa user</span><span class="ep-badge">WEB ADMIN</span></div>
   </div>
+</div>
 </section>
 
-<!-- ═══ TTS ═══ -->
+<!-- TTS -->
 <section id="tts">
-  <div class="chapter-header">
-    <span class="icon">🎙️</span>
-    <div>
-      <div class="meta">Chapter 04</div>
-      <h1>Text-to-Speech Pipeline</h1>
-    </div>
+  <div class="section-header">
+    <div class="icon" style="background:#f5f3ff;color:var(--primary)">🎙️</div>
+    <div><div class="section-num">Chapter 04</div><h2>Text-to-Speech Pipeline</h2></div>
   </div>
-
-  <p>TTS hoàn toàn miễn phí, không cần API key. 4 ngôn ngữ vi/en/ja/zh. Web CMS dùng Web Speech API (browser native). Mobile App dùng MAUI TextToSpeech.SpeakAsync + fallback chain chọn giọng tốt nhất.</p>
-
-  <h2>Fallback Chain theo ngôn ngữ (LocalePriority)</h2>
+  <p>TTS hoàn toàn miễn phí, không cần API key. Web CMS dùng Web Speech API (browser native). Mobile App dùng MAUI TextToSpeech.SpeakAsync với LocalePriority fallback chain.</p>
+  <div class="flow">
+    <span class="flow-step">📝 Script (vi)</span><span class="flow-arrow">→</span>
+    <span class="flow-step alt">🌐 TranslateService (sl=vi)</span><span class="flow-arrow">→</span>
+    <span class="flow-step warning">📄 Translated text</span><span class="flow-arrow">→</span>
+    <span class="flow-step">🎤 ResolveLocaleAsync</span><span class="flow-arrow">→</span>
+    <span class="flow-step success">🔊 SpeakAsync()</span>
+  </div>
   <div class="card-grid">
     <div class="card">
-      <h3>🇻🇳 vi — Tiếng Việt (Script gốc)</h3>
-      <p>Ưu tiên: <code>Google Vietnamese</code> → <code>Microsoft HoaiMy</code> → <code>vi-VN</code></p>
-      <p>Script gốc luôn là tiếng Việt, không qua Google Translate.</p>
+      <h3>📱 Mobile: MAUI TextToSpeech</h3>
+      <p>LocalePriority: vi→[Google Vietnamese, HoaiMy, vi-VN], en→[Google US English, Aria, en-US], ja→[Google 日本語, Nanami, ja-JP], zh→[Google 普通话, Xiaoxiao, zh-CN]. Hỗ trợ Pause/Resume native Android. Waveform 7-bar animation khi phát.</p>
     </div>
     <div class="card">
-      <h3>🇺🇸 en — Tiếng Anh</h3>
-      <p>Ưu tiên: <code>Google US English</code> → <code>Microsoft Aria</code> → <code>en-US</code></p>
-      <p>Script dịch từ vi → en qua Google Translate free endpoint.</p>
-    </div>
-    <div class="card">
-      <h3>🇯🇵 ja — Tiếng Nhật</h3>
-      <p>Ưu tiên: <code>Google 日本語</code> → <code>Microsoft Nanami</code> → <code>ja-JP</code></p>
-      <p>TranslateService dịch vi → ja trước khi phát.</p>
-    </div>
-    <div class="card">
-      <h3>🇨🇳 zh — Tiếng Trung (Phổ thông)</h3>
-      <p>Ưu tiên: <code>Google 普通话</code> → <code>Microsoft Xiaoxiao</code> → <code>zh-CN</code></p>
-      <p>Google Translate free tier (không cần key).</p>
-    </div>
-  </div>
-
-  <div class="callout callout-info">
-    <span class="callout-icon">🌐</span>
-    <div><strong>TranslateService (Mobile App):</strong> Gọi <code>translate.googleapis.com/translate_a/single?client=gtx&sl=vi&tl={lang}&dt=t&q={text}</code>. Có retry wrapper (maxRetries=2). Nếu dịch thất bại → fallback phát tiếng Việt gốc. User-Agent bắt buộc để Google không trả 403.</div>
-  </div>
-
-  <div class="card-grid">
-    <div class="card">
-      <h3>📱 Mobile: Waveform Animation</h3>
-      <p>PlaceDetailPage có 7 bar BoxView animate khi TTS đang phát. Mỗi bar có peak height và delay khác nhau tạo hiệu ứng sóng âm. CancellationToken dừng animation khi TTS kết thúc. <code>OnTtsFinished</code> callback ghi History và cập nhật UI.</p>
-    </div>
-    <div class="card">
-      <h3>🌐 Web: Browser Preview</h3>
-      <p>AudioManager cho phép Owner preview TTS trực tiếp trong browser bằng <code>window.speechSynthesis.speak(utterance)</code>. Hỗ trợ Play/Pause/Resume/Stop cho từng hàng. Auto-translate Google Translate free khi bấm nút dịch.</p>
+      <h3>🌐 Web: Browser Speech API</h3>
+      <p>AudioManager preview TTS trực tiếp qua <code>window.speechSynthesis</code>. Dropdown chọn ngôn ngữ nguồn dịch (sl=auto). Auto-translate sang 3 ngôn ngữ còn lại. Google Translate free endpoint không cần key.</p>
     </div>
   </div>
 </section>
 
-<!-- ═══ AUTH ═══ -->
-<section id="auth">
-  <div class="chapter-header">
-    <span class="icon">🔐</span>
-    <div>
-      <div class="meta">Chapter 05</div>
-      <h1>Authentication</h1>
-    </div>
+<!-- AUTH -->
+<section id="auth" class="alt">
+<div class="inner">
+  <div class="section-header">
+    <div class="icon" style="background:#fef3c7;color:#92400e">🔐</div>
+    <div><div class="section-num">Chapter 05</div><h2>Authentication</h2></div>
   </div>
-
-  <p>Web CMS dùng Session-based auth (<code>HttpContext.Session</code>). Mobile App dùng <code>AuthService</code> + Preferences để lưu token/user local. Không dùng JWT — đơn giản hóa cho scope đồ án.</p>
-
-  <h2>Web CMS — Session Keys</h2>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Session Key</th><th>Kiểu</th><th>Mục đích</th></tr></thead>
-      <tbody>
-        <tr><td><code>UserId</code></td><td>int</td><td>Lọc POI/Audio theo OwnerId khi Role=OWNER</td></tr>
-        <tr><td><code>Username</code></td><td>string</td><td>Hiển thị trên top navigation bar</td></tr>
-        <tr><td><code>Role</code></td><td>ADMIN | OWNER</td><td>Phân quyền UI, ẩn/hiện menu, filter dữ liệu</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <h2>Mobile App — AuthService (Preferences)</h2>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Preference Key</th><th>Nội dung</th></tr></thead>
-      <tbody>
-        <tr><td><code>user_token</code></td><td>GUID random (không phải JWT) — chỉ để check IsLoggedIn</td></tr>
-        <tr><td><code>user_id</code></td><td>UserId từ API — dùng để ghi History</td></tr>
-        <tr><td><code>user_username / name / email / phone</code></td><td>Thông tin profile hiển thị</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="callout callout-warn">
-    <span class="callout-icon">👤</span>
-    <div><strong>Guest Login:</strong> App hỗ trợ <code>AuthService.LoginOfflineAsGuest()</code> — tạo token giả <code>"offline_guest_token"</code>, UserId=0. Khách có thể dùng App và xem POI mà không cần đăng ký. History sẽ không ghi được (UserId=0 không hợp lệ với Trigger).</div>
-  </div>
-</section>
-
-<!-- ═══ GEOFENCING ═══ -->
-<section id="geofencing">
-  <div class="chapter-header">
-    <span class="icon">📡</span>
-    <div>
-      <div class="meta">Chapter 06</div>
-      <h1>GPS Geofencing — Core Feature</h1>
-    </div>
-  </div>
-
-  <p>Tính năng cốt lõi. Sử dụng Haversine formula tính khoảng cách client-side, không cần server. Khi khách vào bán kính POI → tự động phát TTS → ghi History. <code>LocationService</code> + <code>DistanceHelper.GetDistance()</code>.</p>
-
-  <div class="steps">
-    <div class="step">
-      <div class="step-num"></div>
-      <div>
-        <h3>Load POI từ API hoặc SQLite Cache</h3>
-        <p><code>ApiService.GetPOI()</code> → nếu online: gọi <code>/api/poi</code> lấy POIDto → cache xuống SQLite (<code>LocalDbService.SavePOIsAsync</code>). Nếu offline: đọc từ <code>GetCachedPOIsAsync()</code>. File seed mặc định: <code>seed_pois.json</code> trong Resources/Raw.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num"></div>
-      <div>
-        <h3>GPS Tracking</h3>
-        <p><code>LocationService.GetCurrentLocationAsync()</code> → <code>GeolocationAccuracy.Best</code>, timeout 5s. Fallback: <code>GetLastKnownLocationAsync()</code>. Lọc nhiễu bằng accuracy threshold. <code>ConnectivityService.IsConnected</code> kiểm tra mạng trước khi gọi API.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num"></div>
-      <div>
-        <h3>Haversine Distance Check</h3>
-        <p><code>DistanceHelper.GetDistance(lat1, lon1, lat2, lon2)</code> → trả về khoảng cách mét. Dùng công thức Haversine trên mặt cầu R=6,371,000m. So sánh với <code>POI.Radius</code>. Display: DistanceText (350m / 1.2km).</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num"></div>
-      <div>
-        <h3>TTS Playback</h3>
-        <p>Chọn script theo <code>SettingService.Instance.Language</code>: vi/en/ja/zh. Nếu lang ≠ vi → <code>TranslateService.TranslateAsync(script, toLang)</code>. Phát bằng <code>TextToSpeechService.SpeakAsync()</code> với LocalePriority chain. Waveform animation 7 bars.</p>
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num"></div>
-      <div>
-        <h3>Ghi History + Offline Queue</h3>
-        <p>Online: <code>POST /api/history {poiId, userId}</code> → DB Trigger kiểm tra Role=CUSTOMER. Offline: <code>LocalDbService.AddPendingHistoryAsync()</code>. Khi có mạng lại: <code>SyncPendingHistoriesAsync()</code> sync queue lên server. <code>HistoryStore.AddAsync(poi)</code> cập nhật UI real-time.</p>
-      </div>
-    </div>
-  </div>
-
   <div class="card-grid">
     <div class="card">
-      <h3>🗺️ OSRM Route Drawing</h3>
-      <p>MapPage hỗ trợ vẽ lộ trình thực tế qua <code>router.project-osrm.org/route/v1/driving</code>. OSRM trả về GeoJSON coordinates → vẽ polyline màu xanh lên Leaflet map. Tự động fitBounds sau khi vẽ.</p>
+      <h3>🌐 Web CMS — Session Based</h3>
+      <p><code>HttpContext.Session</code> lưu UserId, Username, Role. CUSTOMER bị chặn với thông báo rõ ràng. Register → role=OWNER, đăng nhập luôn. Auth.cshtml so sánh username/password trực tiếp (chưa hash).</p>
+    </div>
+    <div class="card">
+      <h3>📱 Mobile App — Preferences</h3>
+      <p><code>AuthService</code> lưu token (GUID random), user_id, name, email, phone vào <code>Preferences</code>. Login chỉ cho CUSTOMER. Guest mode: <code>LoginOfflineAsGuest()</code> với UserId=0 — không ghi được History. ConnectivityService kiểm tra server trước khi login.</p>
+    </div>
+  </div>
+  <div class="highlight info">
+    <strong>Lưu ý bảo mật:</strong> PasswordHash trong DB hiện lưu plaintext (chưa bcrypt). Web CMS so sánh trực tiếp. Đây là điểm cần cải thiện cho production — phạm vi đồ án chấp nhận được.
+  </div>
+</div>
+</section>
+
+<!-- GEOFENCE -->
+<section id="geofence">
+  <div class="section-header">
+    <div class="icon" style="background:#e0f2f1;color:#00695c">📡</div>
+    <div><div class="section-num">Chapter 06</div><h2>GPS Geofencing — Core Feature</h2></div>
+  </div>
+  <p>Tính năng cốt lõi. <strong>Haversine formula</strong> tính khoảng cách client-side (R=6,371,000m) — không cần server roundtrip. Khi khách vào bán kính POI → tự động phát TTS → ghi History.</p>
+  <div class="timeline">
+    <div class="timeline-item">
+      <h4>Bước 1 — Load POI</h4>
+      <p>Online: <code>GET /api/poi</code> → POIDto[] → <code>LocalDbService.SavePOIsAsync()</code> cache SQLite. Offline: <code>GetCachedPOIsAsync()</code>. Lần đầu chưa có cache: seed từ <code>seed_pois.json</code> (Resources/Raw).</p>
+    </div>
+    <div class="timeline-item">
+      <h4>Bước 2 — GPS Tracking</h4>
+      <p><code>LocationService.GetCurrentLocationAsync()</code> → <code>GeolocationAccuracy.Best</code>, timeout 5s. Fallback: <code>GetLastKnownLocationAsync()</code>.</p>
+    </div>
+    <div class="timeline-item">
+      <h4>Bước 3 — Haversine Check</h4>
+      <p><code>DistanceHelper.GetDistance(lat1,lon1,lat2,lon2)</code> → mét. Nếu distance ≤ POI.Radius → trigger. Display <code>DistanceText</code> dạng "350m" hoặc "1.2km".</p>
+    </div>
+    <div class="timeline-item">
+      <h4>Bước 4 — TTS Playback</h4>
+      <p>Chọn script theo <code>SettingService.Instance.Language</code>. Nếu lang≠vi → <code>TranslateService.TranslateAsync()</code>. Phát qua <code>TextToSpeechService.SpeakAsync()</code>. Waveform 7-bar animation. <code>OnTtsFinished</code> callback ghi History.</p>
+    </div>
+    <div class="timeline-item">
+      <h4>Bước 5 — Ghi History + Offline Queue</h4>
+      <p>Online: <code>POST /api/history {poiId, userId}</code> → API kiểm tra Role + DB Trigger verify CUSTOMER. Offline: <code>AddPendingHistoryAsync()</code> → sync bằng <code>SyncPendingHistoriesAsync()</code> khi có mạng lại.</p>
+    </div>
+  </div>
+  <div class="card-grid">
+    <div class="card">
+      <h3>🗺️ OSRM Routing</h3>
+      <p>MapPage vẽ lộ trình thực tế qua <code>router.project-osrm.org/route/v1/driving</code>. OSRM trả GeoJSON [lon,lat] → đảo thành [lat,lon] → polyline xanh Leaflet. Tự fitBounds sau khi vẽ.</p>
     </div>
     <div class="card">
       <h3>📍 Leaflet via WebView</h3>
-      <p><code>MapService.BuildLeafletHtml()</code> tạo HTML string với Leaflet.js nhúng. C# ↔ JS bridge qua <code>mapWebView.EvaluateJavaScriptAsync(js)</code>. Bắt URL scheme <code>tourguide://poi/{id}</code> để C# xử lý khi tap marker.</p>
+      <p><code>MapService.BuildLeafletHtml()</code> tạo HTML+JS inline. C#↔JS bridge qua <code>EvaluateJavaScriptAsync()</code>. Bắt URL scheme <code>tourguide://poi/{id}</code> khi tap marker. POI marker highlight/unhighlight qua <code>highlightPOI(id)</code>.</p>
     </div>
   </div>
 </section>
 
-<!-- ═══ MOBILE ═══ -->
-<section id="mobile">
-  <div class="chapter-header">
-    <span class="icon">📱</span>
-    <div>
-      <div class="meta">Chapter 07</div>
-      <h1>Mobile App — .NET MAUI Android</h1>
-    </div>
+<!-- MOBILE -->
+<section id="mobile" class="alt">
+<div class="inner">
+  <div class="section-header">
+    <div class="icon" style="background:#ecfdf5;color:#065f46">📱</div>
+    <div><div class="section-num">Chapter 07</div><h2>Mobile App — .NET MAUI Android</h2></div>
   </div>
-
-  <h2>Tab Navigation (AppShell)</h2>
-  <div class="pipe">
-    <div class="pipe-item">🏠 Home (//home)</div>
-    <span class="pipe-arrow">→</span>
-    <div class="pipe-item">🗺️ Map (//map)</div>
-    <span class="pipe-arrow">→</span>
-    <div class="pipe-item">📜 History (//history)</div>
-    <span class="pipe-arrow">→</span>
-    <div class="pipe-item">⚙️ Settings (//settings)</div>
+  <div class="flow" style="margin-bottom:1.2rem">
+    <span class="flow-step">🏠 Trang chủ (//home)</span><span class="flow-arrow">→</span>
+    <span class="flow-step alt">🗺️ Bản đồ (//map)</span><span class="flow-arrow">→</span>
+    <span class="flow-step success">📜 Lịch sử (//history)</span><span class="flow-arrow">→</span>
+    <span class="flow-step warning">⚙️ Cài đặt (//settings)</span>
   </div>
-
   <div class="card-grid">
-    <div class="card">
-      <h3>🏠 HomePage</h3>
-      <ul>
-        <li>Danh sách POI + khoảng cách real-time</li>
-        <li>Hiển thị địa chỉ GPS hiện tại (Geocoding)</li>
-        <li><code>HomeViewModel.LoadData()</code> — load POI + Top POI</li>
-        <li>Nút chuyển sang MapPage</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>🗺️ MapPage</h3>
-      <ul>
-        <li>Leaflet.js qua WebView + OSRM routing</li>
-        <li>Search POI inline, full list bottom sheet</li>
-        <li>Detail card khi tap marker</li>
-        <li>Play/Pause audio trực tiếp từ card</li>
-        <li><code>highlightPOI(id)</code> — highlight marker đang chọn</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>📋 PlaceDetailPage</h3>
-      <ul>
-        <li><code>[QueryProperty]</code> nhận POI object</li>
-        <li>Play / Pause / Resume TTS</li>
-        <li>7-bar waveform animation</li>
-        <li><code>OnTtsFinished</code> → ghi History + cập nhật UI</li>
-        <li><code>GetScriptForLang(poi, lang)</code> chọn đúng script</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>⚙️ SettingsPage</h3>
-      <ul>
-        <li>Chọn ngôn ngữ TTS (vi/en/ja/zh)</li>
-        <li>Xem profile, navigate AccountPage</li>
-        <li>Đăng xuất → LoginPage</li>
-        <li><code>SettingService.Instance</code> (singleton + Preferences)</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>📜 HistoryPage</h3>
-      <ul>
-        <li><code>HistoryViewModel</code> + <code>HistoryStore.OnItemAdded</code> event</li>
-        <li>Real-time update khi có play mới</li>
-        <li>Unsubscribe event OnDisappearing (tránh memory leak)</li>
-        <li><code>GET /api/history/user/{userId}</code></li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>🔐 LoginPage</h3>
-      <ul>
-        <li>Tab Login / Register</li>
-        <li><code>AuthService.LoginAsync</code> + <code>RegisterAsync</code></li>
-        <li>Guest login offline (<code>LoginOfflineAsGuest</code>)</li>
-        <li><code>ConnectivityService.CanReachApiAsync()</code> trước login</li>
-      </ul>
-    </div>
+    <div class="card"><h3>🏠 HomePage</h3><ul><li>Danh sách POI + khoảng cách real-time</li><li>Địa chỉ GPS hiện tại (Geocoding)</li><li>HomeViewModel.LoadData() — POI + Top POI</li><li>Nút chuyển sang MapPage</li></ul></div>
+    <div class="card"><h3>🗺️ MapPage</h3><ul><li>Leaflet WebView + OSRM routing</li><li>Search POI inline, bottom sheet list</li><li>Detail card khi tap marker</li><li>Play/Pause audio từ card</li><li>SelectRouteDestCommand + drawRoute()</li></ul></div>
+    <div class="card"><h3>📋 PlaceDetailPage</h3><ul><li>[QueryProperty] nhận POI object</li><li>Play/Pause/Resume TTS</li><li>7-bar waveform animation</li><li>OnTtsFinished → ghi History</li><li>GetScriptForLang() chọn đúng script</li></ul></div>
+    <div class="card"><h3>⚙️ SettingsPage</h3><ul><li>Chọn ngôn ngữ TTS vi/en/ja/zh</li><li>Avatar + Profile → AccountPage</li><li>Đăng xuất → LoginPage</li><li>SettingService.Instance (singleton+Preferences)</li></ul></div>
+    <div class="card"><h3>📜 HistoryPage</h3><ul><li>HistoryViewModel + HistoryStore event</li><li>Real-time update khi có play mới</li><li>Unsubscribe OnDisappearing (tránh leak)</li><li>GET /api/history/user/{userId}</li></ul></div>
+    <div class="card"><h3>🔐 LoginPage</h3><ul><li>Tab Login / Register</li><li>Guest login offline (UserId=0)</li><li>ConnectivityService.CanReachApiAsync()</li><li>POST /api/users/login (chỉ CUSTOMER)</li></ul></div>
   </div>
+</div>
 </section>
 
-<!-- ═══ WEB ═══ -->
+<!-- WEB -->
 <section id="web">
-  <div class="chapter-header">
-    <span class="icon">🌐</span>
-    <div>
-      <div class="meta">Chapter 08</div>
-      <h1>Web CMS — GPSGuide.Web (Razor Pages)</h1>
-    </div>
+  <div class="section-header">
+    <div class="icon" style="background:#ede9fe;color:var(--primary)">🌐</div>
+    <div><div class="section-num">Chapter 08</div><h2>Web CMS — GPSGuide.Web</h2></div>
   </div>
-
   <div class="table-wrap">
     <table>
       <thead><tr><th>Trang</th><th>Route</th><th>ADMIN</th><th>OWNER</th></tr></thead>
       <tbody>
-        <tr><td>🏠 Dashboard</td><td><code>/</code></td><td>✅ Thống kê toàn hệ thống</td><td>✅ Thống kê POI của mình</td></tr>
+        <tr><td>🏠 Trang chủ</td><td><code>/</code></td><td>✅ Thống kê toàn hệ thống</td><td>✅ Thống kê POI của mình</td></tr>
         <tr><td>📍 Điểm thuyết minh</td><td><code>/Pois</code></td><td>✅ Tất cả POI + dropdown Owner</td><td>✅ POI OwnerId = mình</td></tr>
-        <tr><td>🎵 Quản lý Audio</td><td><code>/AudioManager</code></td><td>✅ Tất cả Audio</td><td>✅ Audio POI mình</td></tr>
+        <tr><td>🎵 Quản lý Audio</td><td><code>/AudioManager</code></td><td>✅ Tất cả Audio</td><td>✅ Audio POI mình (chỉ APPROVED)</td></tr>
         <tr><td>📜 Lịch sử phát</td><td><code>/HistoryPage</code></td><td>✅ Tất cả</td><td>✅ POI của mình</td></tr>
-        <tr><td>👤 Người dùng</td><td><code>/Users</code></td><td>✅ Full CRUD</td><td>❌ Ẩn hoàn toàn</td></tr>
+        <tr><td>👤 Người dùng</td><td><code>/Users</code></td><td>✅ Full CRUD + đổi role</td><td>❌ Ẩn hoàn toàn</td></tr>
         <tr><td>✅ Phê duyệt POI</td><td><code>/Approval</code></td><td>✅ Approve/Reject/Revoke</td><td>❌ Ẩn hoàn toàn</td></tr>
-        <tr><td>🧑 Thông tin cá nhân</td><td><code>/Profile</code></td><td>❌ Ẩn</td><td>✅ Sửa info</td></tr>
-        <tr><td>🔐 Đăng nhập</td><td><code>/Auth</code></td><td colspan="2">✅ — CUSTOMER bị từ chối</td></tr>
-        <tr><td>📝 Đăng ký</td><td><code>/Register</code></td><td colspan="2">✅ — tạo role OWNER</td></tr>
+        <tr><td>📋 Nhật ký hoạt động</td><td><code>/Activitylog</code></td><td>✅ Xem ai nghe POI nào khi nào</td><td>❌ Ẩn</td></tr>
+        <tr><td>🧑 Thông tin cá nhân</td><td><code>/Profile</code></td><td>❌ Ẩn</td><td>✅ Sửa info bản thân</td></tr>
+        <tr><td>🔐 Đăng nhập</td><td><code>/Auth</code></td><td colspan="2" style="text-align:center">✅ — CUSTOMER bị từ chối</td></tr>
+        <tr><td>📝 Đăng ký</td><td><code>/Register</code></td><td colspan="2" style="text-align:center">✅ — tạo role OWNER, đăng nhập luôn</td></tr>
       </tbody>
     </table>
   </div>
-
-  <div class="card-grid">
-    <div class="card">
-      <h3>📍 POI Management (Pois.cshtml)</h3>
-      <ul>
-        <li>Map Leaflet picker chọn tọa độ</li>
-        <li>Upload ảnh drag-drop tối đa 5 ảnh/5MB</li>
-        <li>Thumbnail strip click để xem ảnh lớn</li>
-        <li>Xóa ảnh qua hidden form (tránh SameSite cookie)</li>
-        <li><code>/img-proxy?url=</code> proxy ảnh tránh mixed content HTTPS/HTTP</li>
-        <li>Badge trạng thái: ⏳ Chờ duyệt / ❌ Từ chối</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>🎵 Audio Manager</h3>
-      <ul>
-        <li>Mỗi POI chỉ có 1 Audio record</li>
-        <li>Chỉ thêm Audio khi POI đã APPROVED</li>
-        <li>4 textarea vi/en/ja/zh</li>
-        <li>Auto-translate Google Translate free</li>
-        <li>Preview TTS Web Speech API per row</li>
-        <li>Dropdown chọn ngôn ngữ nghe thử</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>✅ Phê duyệt POI (Approval.cshtml)</h3>
-      <ul>
-        <li>3 tabs: Chờ duyệt / Đã duyệt / Từ chối</li>
-        <li>Duyệt → APPROVED, Từ chối → REJECTED + reason</li>
-        <li>Rút duyệt APPROVED → REJECTED</li>
-        <li>Xóa tất cả POI bị từ chối</li>
-        <li>Badge số pending trên sidebar (_Layout)</li>
-        <li><code>PendingCountFilter</code> inject ViewData tự động</li>
-      </ul>
-    </div>
+  <div class="highlight">
+    <strong>PendingCountFilter:</strong> IAsyncPageFilter inject <code>ViewData["PendingCount"]</code> tự động trên mọi trang → badge số POI đang PENDING hiện trên sidebar mà không cần code từng page. Img-proxy endpoint proxy ảnh từ API tránh mixed content HTTPS/HTTP.
   </div>
 </section>
 
-<!-- ═══ PATTERNS ═══ -->
-<section id="patterns">
-  <div class="chapter-header">
-    <span class="icon">⚡</span>
-    <div>
-      <div class="meta">Summary</div>
-      <h1>Design Patterns &amp; Key Decisions</h1>
-    </div>
+<!-- DIAGRAMS -->
+<section id="diagrams" class="alt">
+<div class="inner">
+  <div class="section-header">
+    <div class="icon" style="background:#fce4ec;color:#c62828">📊</div>
+    <div><div class="section-num">Chapter 09</div><h2>Sơ Đồ UML — 7 Diagrams</h2></div>
   </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Pattern / Decision</th><th>Mô tả thực tế</th><th>Lý do</th></tr></thead>
-      <tbody>
-        <tr><td>3-Project Solution</td><td>Web (5248) + API (5266) + MAUI Android</td><td>Tách biệt hoàn toàn, API dùng chung, deploy độc lập</td></tr>
-        <tr><td>X-Role Header</td><td>Web gửi <code>X-Role: ADMIN/OWNER</code> header</td><td>API phân biệt Owner/Admin mà không cần JWT, đơn giản cho scope đồ án</td></tr>
-        <tr><td>POI Approval Workflow</td><td>PENDING → APPROVED/REJECTED, Owner sửa → PENDING lại</td><td>Owner không thể thay đổi trực tiếp POI đang APPROVED mà không qua Admin</td></tr>
-        <tr><td>DTO Pattern</td><td>POIDto không có OwnerId, Status — chỉ cho App</td><td>Không leak thông tin nhạy cảm ra Mobile App</td></tr>
-        <tr><td>DB Trigger</td><td><code>trg_OnlyCustomerHistory</code> INSTEAD OF INSERT</td><td>Bảo vệ tầng DB — không bypass được dù gọi SQL trực tiếp</td></tr>
-        <tr><td>SQLite Offline Cache</td><td><code>tourguide_local.db3</code> + PendingHistory queue</td><td>App dùng được không cần mạng, sync history khi có mạng trở lại</td></tr>
-        <tr><td>Haversine Client-side</td><td><code>DistanceHelper.GetDistance()</code> trong MAUI</td><td>Không cần server roundtrip mỗi GPS update → tiết kiệm data + pin</td></tr>
-        <tr><td>img-proxy Endpoint</td><td>Web proxy ảnh từ API qua <code>/img-proxy</code></td><td>Tránh mixed content khi Web chạy HTTPS và API chạy HTTP</td></tr>
-        <tr><td>Hidden Form xóa ảnh</td><td><code>deleteImageForm</code> submit thay vì fetch</td><td>Tránh SameSite cookie issue — antiforgery token không gửi được qua fetch cross-scheme</td></tr>
-        <tr><td>PendingCountFilter</td><td><code>IAsyncPageFilter</code> inject <code>ViewData["PendingCount"]</code></td><td>Badge số POI pending hiện tự động trên mọi trang mà không cần code riêng từng page</td></tr>
-        <tr><td>1 Audio per POI</td><td>AudioController kiểm tra <code>AnyAsync</code> trước khi Create</td><td>Đơn giản hóa — 1 record với 4 cột vi/en/ja/zh thay vì nhiều records per language</td></tr>
-        <tr><td>Zero-Cost TTS</td><td>Web Speech API + Google Translate free endpoint</td><td>Không cần API key, không tốn tiền, hoạt động native</td></tr>
-        <tr><td>OSRM Route API</td><td><code>router.project-osrm.org/route/v1/driving</code></td><td>Free, không cần key, vẽ lộ trình thực tế trên bản đồ</td></tr>
-        <tr><td>Seed Data Offline</td><td><code>seed_pois.json</code> trong Resources/Raw</td><td>App có dữ liệu ngay lần đầu mở kể cả chưa có mạng</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="callout callout-success">
-    <span class="callout-icon">✅</span>
-    <div><strong>Tóm tắt:</strong> TourGuide là hệ thống thuyết minh du lịch tự động hoàn chỉnh — 3 project .NET, 5 bảng SQL Server, GPS Geofencing Haversine, TTS 4 ngôn ngữ zero-cost, offline SQLite cache, POI approval workflow, image upload/thumbnail, OSRM routing. Chi phí vận hành API lõi = <strong>$0/tháng</strong>.</div>
-  </div>
+  <p>7 sơ đồ bao gồm: 1 Class Diagram tổng thể, 2 Sequence (luồng Web và Mobile), 2 Activity (quy trình nghiệp vụ Web và App), 2 State (trạng thái POI và Audio playback).</p>
+</div>
 </section>
 
-<!-- ═══ DIAGRAMS ═══ -->
-<section id="class-diagram">
-  <div class="chapter-header">
-    <span class="icon">📊</span>
-    <div>
-      <div class="meta">Chapter 09 · UML Diagrams</div>
-      <h1>Class Diagram — TourGuide System</h1>
-    </div>
-  </div>
-  <div class="diagram-wrap">
-    <div class="diagram-title">Entities, Services, và quan hệ</div>
-    <div class="mermaid">
+<section>
+
+<!-- 1. CLASS DIAGRAM -->
+<div class="diagram-group">
+  <div class="diagram-title">① Class Diagram — Toàn bộ hệ thống TourGuide</div>
+  <div class="mermaid-container"><pre class="mermaid">
 classDiagram
     class User {
         +int Id
@@ -926,12 +515,16 @@ classDiagram
         +int Id
         +string Name
         +string Description
+        +string Address
+        +string Phone
         +double Latitude
         +double Longitude
         +int Radius
         +int OwnerId
         +string Status
         +string RejectReason
+        +NotMapped OwnerName
+        +NotMapped ImageUrl
     }
     class Audio {
         +int Id
@@ -974,298 +567,420 @@ classDiagram
         +DbSet~POIImage~ POIImages
     }
     class TextToSpeechService {
+        +string CurrentText
         +bool IsFinished
         +bool IsPaused
-        +LoadText(text) void
-        +SpeakAsync(cancelToken) Task
-        +Pause() void
+        +LoadText(text)
+        +SpeakAsync(token)
+        +Pause()
         +OnFinished event
-        +OnProgress event
     }
     class ApiService {
-        +BaseUrl string
-        +GetPOI() Task
-        +GetTopPOI() Task
-        +SaveHistory(poiId, userId) Task
-        +Login(username, password) Task
+        +GetPOI() Task~List~POI~~
+        +GetTopPOI() Task~List~POI~~
+        +SaveHistory(poiId, userId)
+        +Login(username, password)
+        +Register(username, name, email, pwd)
     }
     class LocalDbService {
-        +SavePOIsAsync(pois) Task
-        +GetCachedPOIsAsync() Task
-        +AddPendingHistoryAsync(poiId, userId) Task
-        +SyncPendingHistoriesAsync() Task
+        +SavePOIsAsync(pois)
+        +GetCachedPOIsAsync()
+        +AddPendingHistoryAsync(poiId, userId)
+        +SyncPendingHistoriesAsync()
     }
     class TranslateService {
-        +TranslateAsync(text, toLang) Task
-        +TranslateWithRetryAsync(text, toLang, max) Task
+        +TranslateAsync(text, toLang) Task~string~
+        +TranslateWithRetryAsync(text, toLang, max)
     }
     class DistanceHelper {
         +GetDistance(lat1,lon1,lat2,lon2) double$
     }
-    User "1" --> "many" POI : owns
-    POI "1" --> "0..1" Audio : has
+    class AuthService {
+        +IsLoggedIn bool$
+        +LoginAsync(username, pwd) Task~bool~$
+        +RegisterAsync(username, name, email, pwd)$
+        +LoginOfflineAsGuest()$
+        +Logout()$
+    }
+
+    User "1" --> "many" POI : owns (OwnerId FK)
+    POI "1" --> "0..1" Audio : has (1 per POI)
     POI "1" --> "many" POIImage : has images
     User "1" --> "many" History : records
     POI "1" --> "many" History : logged in
-    POI ..> POIDto : maps to APPROVED only
+    POI ..> POIDto : maps to (APPROVED only)
     AppDbContext --> POI
     AppDbContext --> Audio
     AppDbContext --> History
     AppDbContext --> User
     AppDbContext --> POIImage
     ApiService ..> POIDto : deserializes
-    ApiService --> LocalDbService : cache
-    TextToSpeechService --> TranslateService : translates before speak
+    ApiService --> LocalDbService : cache offline
+    TextToSpeechService --> TranslateService : translate before speak
     DistanceHelper ..> POI : checks radius
-    </div>
-  </div>
-</section>
+    AuthService --> ApiService : calls login/register
+  </pre></div>
+</div>
 
-<section id="seq-approval">
-  <h2>🔄 Sequence — POI Approval Workflow</h2>
-  <div class="diagram-wrap">
-    <div class="mermaid">
+<!-- 2. SEQUENCE — WEB CMS -->
+<div class="diagram-group">
+  <div class="diagram-title">② Sequence — Owner tạo POI và Admin phê duyệt (Web CMS)</div>
+  <div class="mermaid-container"><pre class="mermaid">
 sequenceDiagram
-    participant O as Owner
+    participant O as Owner (Browser)
     participant WEB as GPSGuide.Web
     participant API as TourGuideAPI
     participant DB as SQL Server
-    participant A as Admin
-    participant APP as TourGuideApp
+    participant A as Admin (Browser)
+    participant APP as Mobile App
 
-    O->>WEB: POST /Pois {Name, Lat, Lng, Radius}
-    WEB->>WEB: OwnerId = Session[UserId]
-    WEB->>API: POST /api/poi Status=PENDING
-    API->>DB: INSERT INTO POI Status=PENDING
+    O->>WEB: GET /Pois
+    WEB->>API: GET /api/poi/owner/{ownerId} (X-Role:OWNER)
+    API->>DB: SELECT WHERE OwnerId=?
+    DB-->>API: POI list của Owner
+    API-->>WEB: POI list
+    WEB-->>O: Render bảng POI
+
+    O->>WEB: POST /Pois (Name, Lat, Lng, Radius, ảnh)
+    WEB->>WEB: Status = "PENDING", OwnerId = Session UserId
+    WEB->>API: POST /api/poi {Status=PENDING}
+    API->>DB: INSERT INTO POI (Status='PENDING')
     DB-->>API: Id = 42
     API-->>WEB: 201 Created
-    WEB-->>O: Da gui - dang cho Admin phe duyet
-
-    Note over APP: App goi /api/poi - chi lay APPROVED
-    APP->>API: GET /api/poi
-    API->>DB: SELECT WHERE Status=APPROVED
-    DB-->>API: POI list khong co id=42
-    API-->>APP: List khong co POI moi
-
-    A->>WEB: GET /Approval tab Cho duyet
-    WEB->>API: GET /api/poi/all
-    API-->>WEB: Tat ca POI ke ca PENDING
-    WEB-->>A: Hien POI 42 cho duyet
-
-    A->>WEB: Bam Duyet POI 42
-    WEB->>API: PUT /api/poi/42/approve
-    API->>DB: UPDATE Status=APPROVED RejectReason=NULL
+    WEB->>API: POST /api/poi/42/image (multipart file)
+    API->>DB: INSERT INTO POIImages
     DB-->>API: OK
-    WEB-->>A: Da duyet POI thanh cong
+    WEB-->>O: ✅ "Đã gửi — đang chờ Admin phê duyệt"
 
-    APP->>API: GET /api/poi next refresh
-    API->>DB: SELECT WHERE Status=APPROVED
-    DB-->>API: Co POI 42 roi
-    API-->>APP: POIDto list co POI moi
-    APP->>APP: Cache xuong SQLite
-    </div>
-  </div>
-</section>
+    Note over APP: App chỉ lấy APPROVED → chưa thấy POI #42
 
-<section id="seq-geofence">
-  <h2>📡 Sequence — Geofence + TTS + History</h2>
-  <div class="diagram-wrap">
-    <div class="mermaid">
+    A->>WEB: GET /Approval (tab Chờ duyệt)
+    WEB->>API: GET /api/poi/all
+    API-->>WEB: Tất cả POI kể cả PENDING
+    WEB-->>A: Hiện POI #42 badge ⏳
+
+    A->>WEB: Bấm "Duyệt" POI #42
+    WEB->>API: PUT /api/poi/42/approve
+    API->>DB: UPDATE POI SET Status='APPROVED', RejectReason=NULL
+    DB-->>API: OK
+    WEB-->>A: ✅ "Đã duyệt POI thành công"
+
+    APP->>API: GET /api/poi (next refresh)
+    API->>DB: SELECT WHERE Status='APPROVED'
+    DB-->>API: Có POI #42 rồi
+    API-->>APP: POIDto list có POI mới
+    APP-->>APP: Cache xuống SQLite
+  </pre></div>
+</div>
+
+<!-- 3. SEQUENCE — MOBILE APP -->
+<div class="diagram-group">
+  <div class="diagram-title">③ Sequence — Khách nghe thuyết minh qua Geofencing (Mobile App)</div>
+  <div class="mermaid-container"><pre class="mermaid">
 sequenceDiagram
-    participant C as Customer
+    participant C as Khách (Android)
     participant APP as TourGuideApp
+    participant LOC as LocationService
     participant DH as DistanceHelper
     participant TTS as TextToSpeechService
     participant TR as TranslateService
     participant API as TourGuideAPI
     participant DB as SQL Server
 
-    APP->>API: GET /api/poi
-    API->>DB: JOIN Audio WHERE Status=APPROVED
-    DB-->>API: POIDto list
-    API-->>APP: POIs voi ScriptVi/En/Ja/Zh
-    APP->>APP: LocalDbService.SavePOIsAsync cache SQLite
+    C->>APP: Mở App → đăng nhập
+    APP->>API: POST /api/users/login {username, password}
+    API->>DB: SELECT Users WHERE Username=? AND Role=CUSTOMER
+    DB-->>API: UserDto {Id, Name, ...}
+    API-->>APP: UserDto
+    APP->>APP: AuthService lưu token + userId vào Preferences
 
-    loop GPS Update
-        APP->>APP: GetCurrentLocationAsync GeolocationAccuracy.Best
+    APP->>API: GET /api/poi (APPROVED only)
+    API->>DB: SELECT POI JOIN Audio WHERE Status=APPROVED
+    DB-->>API: POIDto[] với ScriptVi/En/Ja/Zh + Images
+    API-->>APP: POIDto list
+    APP->>APP: LocalDbService.SavePOIsAsync() → SQLite cache
+
+    loop GPS Update (~3 giây)
+        APP->>LOC: GetCurrentLocationAsync(Best, 5s)
+        LOC-->>APP: Location {lat, lng}
 
         loop Foreach POI
             APP->>DH: GetDistance(userLat, userLng, poi.Lat, poi.Lng)
-            DH-->>APP: distance metres Haversine
+            DH-->>APP: distance (Haversine, mét)
 
-            alt distance le poi.Radius
+            alt distance ≤ poi.Radius
                 APP->>APP: GetScriptForLang(poi, SettingService.Language)
-
-                alt Language = vi
+                alt Language = "vi"
                     APP->>TTS: LoadText(poi.ScriptVi)
-                else Language khac vi
+                else Language ≠ "vi"
                     APP->>TR: TranslateAsync(poi.ScriptVi, lang)
-                    TR->>TR: GET translate.googleapis.com free
+                    TR->>TR: GET translate.googleapis.com
                     TR-->>APP: translatedText
                     APP->>TTS: LoadText(translatedText)
                 end
-
-                APP->>TTS: SpeakAsync(cancelToken)
-                TTS->>TTS: ResolveLocaleAsync(lang, availableLocales)
-                TTS-->>C: TTS phat + waveform animation
-
-                TTS->>APP: OnFinished event
-                APP->>API: POST /api/history {PoiId, UserId}
-                API->>DB: INSERT INTO History
-                DB->>DB: Trigger verify Role=CUSTOMER
+                APP->>TTS: SpeakAsync()
+                TTS->>TTS: ResolveLocaleAsync → chọn giọng tốt nhất
+                TTS-->>C: 🔊 Phát TTS + waveform animation
+                TTS->>APP: OnFinished callback
+                APP->>API: POST /api/history {poiId, userId}
+                API->>DB: INSERT → Trigger verify Role=CUSTOMER
                 DB-->>API: OK
-                API-->>APP: History saved
             end
         end
     end
-    </div>
-  </div>
-</section>
+  </pre></div>
+</div>
 
-<section id="state-poi">
-  <h2>🔄 State — POI Status Flow</h2>
-  <div class="diagram-wrap">
-    <div class="mermaid">
+<!-- 4. ACTIVITY — WEB CMS -->
+<div class="diagram-group">
+  <div class="diagram-title">④ Activity — Quy trình quản lý POI và Audio (Web CMS)</div>
+  <div class="mermaid-container"><pre class="mermaid">
+flowchart TD
+    A([Mở Web CMS]) --> B{Có Session?}
+    B -- Không --> C[GET /Auth → điền username + password]
+    C --> D{Xác thực OK?}
+    D -- Sai / CUSTOMER --> C
+    D -- ADMIN hoặc OWNER --> E[Set Session UserId, Role, Username]
+    E --> F[Redirect /Index Dashboard]
+    B -- Có --> F
+
+    F --> G{Chọn chức năng}
+
+    G -- Quản lý POI --> H[GET /Pois]
+    H --> I{Thêm / Sửa / Xóa?}
+    I -- Thêm --> J[Mở form modal\nLeaflet map picker chọn tọa độ]
+    J --> K[Upload ảnh tối đa 5 files 5MB]
+    K --> L{Admin hay Owner?}
+    L -- Admin --> M[Status = APPROVED\nPOST /api/poi]
+    L -- Owner --> N[Status = PENDING\nPOST /api/poi]
+    M --> O[✅ Hiện ngay trên App]
+    N --> P[⏳ Chờ Admin phê duyệt]
+    I -- Sửa --> Q[PUT /api/poi\nOwner → PENDING lại\nAdmin → thẳng]
+    I -- Xóa --> R[DELETE /api/poi\nCascade Audio + Images]
+
+    G -- Phê duyệt POI --> S[GET /Approval\n3 tab: Chờ / Đã duyệt / Từ chối]
+    S --> T{Hành động?}
+    T -- Duyệt --> U[PUT /approve → APPROVED]
+    T -- Từ chối --> V[PUT /reject + lý do → REJECTED]
+    T -- Rút duyệt --> W[PUT /reject → REJECTED]
+    T -- Xóa hàng loạt --> X[DELETE /poi/rejected]
+
+    G -- Quản lý Audio --> Y[GET /AudioManager\nChỉ POI APPROVED chưa có Audio]
+    Y --> Z[Nhập 4 script vi/en/ja/zh\nAuto-dịch từ nguồn bất kỳ]
+    Z --> AA[Preview TTS Web Speech API]
+    AA --> AB{OK?}
+    AB -- Sửa lại --> Z
+    AB -- Lưu --> AC[POST /api/audio]
+
+    G -- Nhật ký --> AD[GET /Activitylog\nXem ai nghe POI nào + thời gian]
+    G -- Đăng xuất --> AE[Session.Clear → /Auth]
+
+    style O fill:#dcfce7,stroke:#059669
+    style P fill:#fef3c7,stroke:#d97706
+    style AE fill:#f3f4f6,stroke:#6b7280
+  </pre></div>
+</div>
+
+<!-- 5. ACTIVITY — MOBILE APP -->
+<div class="diagram-group">
+  <div class="diagram-title">⑤ Activity — Quy trình sử dụng ứng dụng Mobile (CUSTOMER)</div>
+  <div class="mermaid-container"><pre class="mermaid">
+flowchart TD
+    A([Mở TourGuideApp]) --> B{Đã đăng nhập?}
+    B -- Chưa --> C[LoginPage]
+    C --> D{Chọn hành động}
+    D -- Đăng nhập --> E[POST /api/users/login]
+    E --> F{CUSTOMER?}
+    F -- Không --> G[Hiện lỗi]
+    G --> C
+    F -- Có --> H[Lưu Preferences\ntoken, userId, name...]
+    D -- Đăng ký --> I[POST /api/users/register\nRole=CUSTOMER tự động]
+    I --> H
+    D -- Khách offline --> J[LoginOfflineAsGuest\nUserId=0]
+    H --> K[Vào AppShell]
+    J --> K
+    B -- Rồi --> K
+
+    K --> L{Tab Navigation}
+
+    L -- Trang chủ --> M[Load POI gần nhất\nHiển thị khoảng cách + địa chỉ GPS]
+    M --> N{Bấm xem điểm?}
+    N -- Có --> O[Navigate PlaceDetailPage]
+    O --> P[Play/Pause/Resume TTS\n7-bar waveform animation]
+    P --> Q[OnTtsFinished → ghi History]
+
+    L -- Bản đồ --> R[Leaflet WebView\nMarkers POI + vị trí user]
+    R --> S{Tap marker?}
+    S -- Có --> T[Hiện Detail Card\nPlay audio / Xem chi tiết / Chỉ đường]
+    T --> U[drawRoute OSRM\nPolyline xanh trên map]
+
+    L -- Lịch sử --> V["GET /api/history/user/{id}\nDanh sách POI đã nghe"]
+
+    L -- Cài đặt --> W[Chọn ngôn ngữ vi/en/ja/zh\nXem profile / Đăng xuất]
+
+    K --> X{GPS Geofencing loop}
+    X --> Y[GetCurrentLocationAsync]
+    Y --> Z{distance ≤ Radius?}
+    Z -- Không --> X
+    Z -- Có --> AA[TranslateAsync nếu cần]
+    AA --> AB[SpeakAsync TTS]
+    AB --> AC[POST /api/history\nOffline → SQLite queue]
+    AC --> X
+
+    style Q fill:#dcfce7,stroke:#059669
+    style AC fill:#dcfce7,stroke:#059669
+  </pre></div>
+</div>
+
+<!-- 6. STATE — POI STATUS -->
+<div class="diagram-group">
+  <div class="diagram-title">⑥ State — Trạng thái POI (Web CMS)</div>
+  <div class="mermaid-container"><pre class="mermaid">
 stateDiagram-v2
-    [*] --> PENDING : Owner tao POI moi
+    [*] --> PENDING : Owner tạo POI mới (POST /api/poi)
 
-    PENDING --> APPROVED : Admin bam Duyet
-    PENDING --> REJECTED : Admin bam Tu choi kem reason
+    PENDING --> APPROVED : Admin duyệt (PUT /api/poi/id/approve)
 
-    APPROVED --> PENDING : Owner sua POI
-    APPROVED --> REJECTED : Admin Rut duyet
+    PENDING --> REJECTED : Admin từ chối (PUT /api/poi/id/reject)
 
-    REJECTED --> APPROVED : Admin Duyet lai
-    REJECTED --> [*] : Admin xoa
+    APPROVED --> PENDING : Owner sửa POI (PUT /api/poi/id)
+
+    APPROVED --> REJECTED : Admin rút duyệt (PUT /api/poi/id/reject)
+
+    REJECTED --> APPROVED : Admin duyệt lại (PUT /api/poi/id/approve)
+
+    REJECTED --> [*] : Admin xóa hàng loạt (DELETE /api/poi/rejected)
 
     note right of APPROVED
-        App /api/poi chi tra APPROVED
-        Audio chi them duoc khi APPROVED
+        App chỉ trả APPROVED
+        Hiện trên bản đồ Mobile App
+        Mới có thể thêm Audio
     end note
 
     note right of PENDING
-        Khong hien tren Mobile App
-        Hien tren Web CMS tab Cho duyet
+        Ẩn trên Mobile App
+        Hiện badge số trên sidebar
+        PendingCountFilter inject tự động
     end note
-    </div>
-  </div>
-</section>
 
-<section id="arch">
-  <h2>🏗️ Architecture — Data Flow</h2>
-  <div class="diagram-wrap">
-    <div class="mermaid">
-graph TB
-    subgraph WEB["GPSGuide.Web - Razor Pages 5248/7070"]
-        AUTH_PAGE["/Auth Session Login\nCUSTOMER bi chan"]
-        POIS_PAGE["/Pois POI CRUD\nLeaflet Map Picker\nImage Upload"]
-        AUDIO_PAGE["/AudioManager\nWeb Speech TTS Preview\nGoogle Translate"]
-        APPROVAL_PAGE["/Approval Admin Only\nPENDING to APPROVED/REJECTED"]
-        PROXY["/img-proxy\nProxy anh tranh mixed content"]
-    end
-
-    subgraph API["TourGuideAPI - Web API 5266/7134"]
-        POIC["POIController\nX-Role header\nOwner to PENDING\nAdmin thang"]
-        AUDIOC["AudioController\nKiem tra POI APPROVED\n1 Audio per POI"]
-        HISTC["HistoryController"]
-        USERSC["UsersController\n/login /register /customer"]
-    end
-
-    subgraph APP["TourGuideApp - MAUI Android"]
-        MAP_PAGE["MapPage\nLeaflet WebView\nOSRM routing"]
-        DETAIL["PlaceDetailPage\nTTS + Waveform 7 bars"]
-        APPSVC["ApiService\nAuto emulator/real device URL"]
-        LOCDB["LocalDbService\nSQLite cache\nPending history queue"]
-        TTSSVC["TextToSpeechService\nLocalePriority chain"]
-        TRANSVC["TranslateService\nGoogle Translate free"]
-    end
-
-    subgraph DB["SQL Server Express - TourGuideDB"]
-        POI_T[("POI Status field")]
-        AUDIO_T[("Audio 1 per POI")]
-        HIST_T[("History")]
-        USERS_T[("Users")]
-        POIIMG_T[("POIImages wwwroot/uploads")]
-        TRIGGER["Trigger trg_OnlyCustomerHistory"]
-    end
-
-    WEB -->|X-Role header| API
-    APPSVC -->|HTTP JSON| API
-    APPSVC --> LOCDB
-    TTSSVC --> TRANSVC
-    DETAIL --> TTSSVC
-
-    POIC --> POI_T
-    AUDIOC --> AUDIO_T
-    HISTC --> HIST_T
-    USERSC --> USERS_T
-    HIST_T --> TRIGGER
-    POIC --> POIIMG_T
-
-    style WEB fill:#ede9fe,stroke:#7c3aed
-    style API fill:#dbeafe,stroke:#2563eb
-    style APP fill:#ecfdf5,stroke:#059669
-    style DB fill:#fef3c7,stroke:#d97706
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<div style="padding:2rem; background:#1e1b4b; text-align:center; color:rgba(255,255,255,.6); font-size:.8rem;">
-  <strong style="color:rgba(255,255,255,.9)">TourGuide System</strong> — Product Requirements Document<br>
-  ASP.NET Core 8 · .NET MAUI Android · SQL Server Express · Entity Framework Core · SQLite<br>
-  Web Speech API · Google Translate Free · Leaflet.js · OSRM Routing · GPS Haversine · Session Auth · DB Trigger
+    note right of REJECTED
+        Ẩn trên App
+        Owner thấy trạng thái từ chối
+        Admin có thể duyệt lại
+    end note
+  </pre></div>
 </div>
 
-</div><!-- /main -->
+<!-- 7. STATE — AUDIO PLAYBACK -->
+<div class="diagram-group">
+  <div class="diagram-title">⑦ State — Trạng thái phát Audio (Mobile App)</div>
+  <div class="mermaid-container"><pre class="mermaid">
+stateDiagram-v2
+    [*] --> Idle : App khởi động\nPOI list đã load
 
+    Idle --> Translating : Geofence trigger\nhoặc user bấm Play thủ công\nLanguage ≠ "vi"
+
+    Idle --> Playing : Geofence trigger\nhoặc user bấm Play\nLanguage = "vi" (không cần dịch)
+
+    state Translating {
+        [*] --> CallingGoogleTranslate
+        CallingGoogleTranslate --> TranslateSuccess : 200 OK
+        CallingGoogleTranslate --> TranslateFailed : Network error
+        TranslateFailed --> UsingOriginalVi : Fallback dùng ScriptVi
+        TranslateSuccess --> [*]
+        UsingOriginalVi --> [*]
+    }
+
+    Translating --> Playing : Có text (dịch hoặc gốc)
+
+    state Playing {
+        [*] --> ResolveLocale : TextToSpeechService\nchọn giọng từ LocalePriority
+        ResolveLocale --> SpeakingNative : Android native TTS\nSpeakNativeAndroidAsync()
+        SpeakingNative --> [*] : OnFinished callback
+    }
+
+    Playing --> Paused : User bấm Pause\nhoặc Pause() — StopNativeAndroid()
+
+    Paused --> Playing : User bấm Resume\ntiếp tục từ _charIndex
+
+    Playing --> Idle : TTS kết thúc tự nhiên\nOnFinished → ghi History\nUpdate UI waveform stop
+
+    Playing --> Idle : User bấm Stop\nhoặc navigate away\nOnDisappearing → StopPlayback()
+
+    Paused --> Idle : User bấm Stop
+
+    state "Ghi History" as GhiHistory {
+        [*] --> CheckOnline
+        CheckOnline --> PostAPI : IsConnected = true
+        CheckOnline --> SaveLocal : IsConnected = false
+        PostAPI --> TriggerDB : API kiểm tra Role=CUSTOMER
+        TriggerDB --> [*] : DB Trigger verify OK
+        SaveLocal --> [*] : SQLite PendingHistory queue
+    }
+
+    Idle --> GhiHistory : OnTtsFinished
+    GhiHistory --> Idle : Hoàn tất
+  </pre></div>
+</div>
+
+</section>
+
+<!-- PATTERNS -->
+<section id="patterns" class="alt">
+<div class="inner">
+  <div class="section-header">
+    <div class="icon" style="background:#ede9fe;color:#4527a0">⚡</div>
+    <div><div class="section-num">Summary</div><h2>Design Patterns & Key Decisions</h2></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Pattern</th><th>Mô tả thực tế trong code</th><th>Lý do</th></tr></thead>
+      <tbody>
+        <tr><td><strong>3-Project Solution</strong></td><td>Web (5248) + API (5266) + MAUI Android</td><td>API dùng chung, tách biệt hoàn toàn</td></tr>
+        <tr><td><strong>X-Role Header</strong></td><td>Web gửi <code>X-Role: ADMIN/OWNER</code> qua HttpClient</td><td>API phân biệt Owner/Admin không cần JWT</td></tr>
+        <tr><td><strong>POI Approval Workflow</strong></td><td>PENDING→APPROVED/REJECTED, Owner sửa→PENDING lại</td><td>Kiểm soát chất lượng nội dung</td></tr>
+        <tr><td><strong>DTO Pattern</strong></td><td>POIDto không có OwnerId, Status, PasswordHash</td><td>Bảo vệ thông tin nhạy cảm khỏi Mobile App</td></tr>
+        <tr><td><strong>DB Trigger INSTEAD OF</strong></td><td><code>trg_OnlyCustomerHistory</code> on History</td><td>Bảo vệ tầng DB — không bypass được</td></tr>
+        <tr><td><strong>SQLite Offline Cache</strong></td><td>tourguide_local.db3 + PendingHistory queue + seed_pois.json</td><td>App dùng không cần mạng, sync khi online</td></tr>
+        <tr><td><strong>Haversine Client-side</strong></td><td><code>DistanceHelper.GetDistance()</code> trong MAUI</td><td>Không cần server roundtrip mỗi GPS update</td></tr>
+        <tr><td><strong>img-proxy Endpoint</strong></td><td>Web proxy ảnh qua <code>/img-proxy?url=</code></td><td>Tránh mixed content HTTPS Web / HTTP API</td></tr>
+        <tr><td><strong>Hidden Form xóa ảnh</strong></td><td>Form submit thay vì fetch() cho deleteImage</td><td>SameSite cookie — antiforgery không qua fetch</td></tr>
+        <tr><td><strong>PendingCountFilter</strong></td><td>IAsyncPageFilter inject ViewData tự động</td><td>Badge pending mọi trang, không code lặp</td></tr>
+        <tr><td><strong>1 Audio per POI</strong></td><td>AnyAsync check trước Create, 4 cột vi/en/ja/zh</td><td>Đơn giản — 1 record thay vì nhiều records</td></tr>
+        <tr><td><strong>Auto-detect translate</strong></td><td>sl=auto trong Google Translate, dropdown chọn nguồn</td><td>Dịch từ bất kỳ ngôn ngữ nào sang 3 ngôn ngữ còn lại</td></tr>
+        <tr><td><strong>OSRM Route API</strong></td><td>router.project-osrm.org, vẽ polyline Leaflet</td><td>Free, không cần key, lộ trình thực tế</td></tr>
+        <tr><td><strong>Zero-Cost TTS</strong></td><td>Web Speech API + Google Translate free endpoint</td><td>$0/tháng, không cần API key</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="highlight success" style="margin-top:1.3rem">
+    <strong>Tóm tắt:</strong> TourGuide là hệ thống thuyết minh du lịch tự động hoàn chỉnh — 3 project .NET, 5 bảng SQL Server + 1 Trigger, GPS Geofencing Haversine, TTS 4 ngôn ngữ $0/tháng, offline SQLite cache, POI approval workflow, image upload multi-file, OSRM routing, nhật ký hoạt động Admin.
+  </div>
+</div>
+</section>
+
+<footer>
+  <p><strong>TourGuide System — PRD & System Presentation</strong></p>
+  <p>ASP.NET Core 8 · .NET MAUI Android · SQL Server Express · Entity Framework Core · SQLite</p>
+  <p style="margin-top:.4rem;opacity:.5">Web Speech API · Google Translate Free · Leaflet.js · OSRM Routing · GPS Haversine · Session Auth · DB Trigger</p>
+</footer>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({startOnLoad:true,theme:'default',securityLevel:'loose',sequence:{mirrorActors:false,messageMargin:30,actorFontWeight:'bold'}});
+</script>
 <script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'default',
-    themeVariables: {
-      primaryColor: '#ede9fe',
-      primaryTextColor: '#1e1b4b',
-      primaryBorderColor: '#7c3aed',
-      lineColor: '#6b7280',
-      secondaryColor: '#f5f3ff',
-      tertiaryColor: '#fdf4ff',
-      background: '#ffffff',
-      mainBkg: '#ede9fe',
-      nodeBorder: '#7c3aed',
-      clusterBkg: '#f5f3ff',
-      titleColor: '#1e1b4b',
-      edgeLabelBackground: '#f5f3ff',
-      actorBkg: '#ede9fe',
-      actorBorder: '#7c3aed',
-      actorTextColor: '#1e1b4b',
-      activationBorderColor: '#7c3aed',
-      activationBkgColor: '#ddd6fe',
-      sequenceNumberColor: '#ffffff',
-      labelBoxBkgColor: '#ede9fe',
-      labelBoxBorderColor: '#7c3aed',
-      labelTextColor: '#1e1b4b',
-      loopTextColor: '#1e1b4b',
-      noteBorderColor: '#a855f7',
-      noteBkgColor: '#fdf4ff',
-      noteTextColor: '#1e1b4b',
-    },
-    flowchart: { htmlLabels: true, curve: 'basis' },
-    sequence: { actorMargin: 60, mirrorActors: false, diagramMarginX: 20 },
+document.querySelectorAll('nav a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth',block:'start'})});
+});
+var sections=document.querySelectorAll('section[id]');
+window.addEventListener('scroll',function(){
+  var y=window.pageYOffset;
+  sections.forEach(s=>{
+    var top=s.offsetTop-80,id=s.getAttribute('id'),lnk=document.querySelector('nav a[href="#'+id+'"]');
+    if(lnk){if(y>=top&&y<top+s.offsetHeight)lnk.classList.add('active');else lnk.classList.remove('active');}
   });
-
-  const sections = document.querySelectorAll('section[id]');
-  const navLinks = document.querySelectorAll('#sidebar a[href^="#"]');
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        navLinks.forEach(a => a.classList.remove('active'));
-        const active = document.querySelector(`#sidebar a[href="#${entry.target.id}"]`);
-        if (active) active.classList.add('active');
-      }
-    });
-  }, { rootMargin: '-20% 0px -70% 0px' });
-  sections.forEach(s => observer.observe(s));
+});
 </script>
 </body>
 </html>
