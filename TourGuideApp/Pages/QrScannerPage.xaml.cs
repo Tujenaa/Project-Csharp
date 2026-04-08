@@ -1,5 +1,6 @@
 using TourGuideApp.Models;
 using TourGuideApp.Services;
+using TourGuideApp.Utils;
 using BarcodeScanner.Mobile;
 
 namespace TourGuideApp.Pages;
@@ -7,11 +8,7 @@ namespace TourGuideApp.Pages;
 public partial class QrScannerPage : ContentPage
 {
     private readonly ApiService _apiService = new();
-    private readonly TextToSpeechService _ttsService = new();
-    private CancellationTokenSource? _ttsToken;
-
     private bool _isProcessingResult = false;
-    private bool _isPaused = false;
 
     private POI? _scannedPoi;
     public POI? ScannedPoi
@@ -25,10 +22,14 @@ public partial class QrScannerPage : ContentPage
         InitializeComponent();
         BindingContext = this;
 
-        _ttsService.OnFinished += OnTtsFinished;
-        _ttsService.OnProgress += OnTtsProgress;
+        AudioPlaybackService.Instance.PlaybackStateChanged += OnPlaybackStateChanged;
 
         StartScanningAnimation();
+    }
+
+    private void OnPlaybackStateChanged()
+    {
+        // UI tự cập nhật qua DataTrigger và Binding với poi.IsPlaying trong XAML
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ public partial class QrScannerPage : ContentPage
     {
         base.OnDisappearing();
         BarcodeReader.IsScanning = false;
-        StopAudio();
+        AudioPlaybackService.Instance.PlaybackStateChanged -= OnPlaybackStateChanged;
     }
 
     // ── Scanner animation ─────────────────────────────────────────────────────
@@ -110,8 +111,8 @@ public partial class QrScannerPage : ContentPage
         if (poi != null)
         {
             ScannedPoi = poi;
-            ShowResultCard();       // hiện card ngay lập tức (không await)
-            await PlayAudioFromStart();
+            ShowResultCard();
+            await AudioPlaybackService.Instance.PlayAsync(poi);
         }
         else
         {
@@ -122,15 +123,13 @@ public partial class QrScannerPage : ContentPage
 
     // ── Show / hide card ──────────────────────────────────────────────────────
 
-    /// Hiện card ngay — Grid Row="Auto" tự tính chiều cao, không cần animation phức tạp
     private void ShowResultCard()
     {
         ResultCard.Opacity = 0;
         ResultCard.IsVisible = true;
-        ResultCard.FadeTo(1, 300, Easing.SinOut);   // fade in nhẹ
+        ResultCard.FadeTo(1, 300, Easing.SinOut);
     }
 
-    /// Ẩn card với fade out
     private async Task HideResultCard()
     {
         await ResultCard.FadeTo(0, 220, Easing.SinIn);
@@ -140,7 +139,6 @@ public partial class QrScannerPage : ContentPage
     private void ResetScanner()
     {
         _isProcessingResult = false;
-        _isPaused = false;
         ScannerFrame.Scale = 1;
         ScannerFrame.Opacity = 1;
         ScannerLine.Opacity = 1;
@@ -154,13 +152,13 @@ public partial class QrScannerPage : ContentPage
     {
         _isProcessingResult = true;
         BarcodeReader.IsScanning = false;
-        StopAudio();
+        AudioPlaybackService.Instance.Stop();
         await Navigation.PopAsync();
     }
 
     private async void OnCloseResultClicked(object sender, EventArgs e)
     {
-        StopAudio();
+        AudioPlaybackService.Instance.Stop();
         await HideResultCard();
         ScannedPoi = null;
         ResetScanner();
@@ -169,119 +167,28 @@ public partial class QrScannerPage : ContentPage
     private async void OnDetailClicked(object sender, EventArgs e)
     {
         if (ScannedPoi == null) return;
-        StopAudio();
+        // Không stop âm thanh, để nó tiếp tục phát khi sang trang chi tiết
         await Shell.Current.GoToAsync("placeDetail", new Dictionary<string, object>
         {
             { "poi", ScannedPoi }
         });
     }
 
-    // ── Audio: 3 nút riêng ────────────────────────────────────────────────────
+    // ── Audio controls ────────────────────────────────────────────────────────
 
     private async void OnPlayAudioClicked(object sender, EventArgs e)
     {
         if (ScannedPoi == null) return;
-        if (_isPaused)
-            await ResumeAudio();
-        else
-            await PlayAudioFromStart();
+        await AudioPlaybackService.Instance.PlayAsync(ScannedPoi);
     }
 
     private void OnPauseAudioClicked(object sender, EventArgs e)
     {
-        if (ScannedPoi == null || !ScannedPoi.IsPlaying) return;
-        _ttsToken?.Cancel();
-        _ttsService.Pause();
-        _isPaused = true;
-        ScannedPoi.IsPlaying = false; // DataTrigger: ẩn Pause+Stop, hiện Play
+        AudioPlaybackService.Instance.Pause();
     }
 
-    private void OnStopAudioClicked(object sender, EventArgs e) => StopAudio();
-
-    // ── Audio core ────────────────────────────────────────────────────────────
-
-    private async Task PlayAudioFromStart()
+    private void OnStopAudioClicked(object sender, EventArgs e)
     {
-        if (ScannedPoi == null) return;
-        _isPaused = false;
-        _ttsService.ForceLoadText(GetScriptForLang(ScannedPoi, SettingService.Instance.Language));
-        await RunTts();
+        AudioPlaybackService.Instance.Stop();
     }
-
-    private async Task ResumeAudio()
-    {
-        if (ScannedPoi == null) return;
-        _isPaused = false;
-        await RunTts(); // không ForceLoadText → _charIndex còn nguyên
-    }
-
-    private async Task RunTts()
-    {
-        if (ScannedPoi == null) return;
-
-        ScannedPoi.IsPlaying = true; // DataTrigger: ẩn Play, hiện Pause+Stop
-
-        _ttsToken?.Cancel();
-        _ttsToken?.Dispose();
-        _ttsToken = new CancellationTokenSource();
-
-        try
-        {
-            await _ttsService.SpeakAsync(_ttsToken.Token);
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[QRScan] TTS Error: {ex.Message}");
-        }
-        finally
-        {
-            if (ScannedPoi != null && !_isPaused)
-                ScannedPoi.IsPlaying = false;
-        }
-    }
-
-    private void StopAudio()
-    {
-        _ttsToken?.Cancel();
-        _ttsToken?.Dispose();
-        _ttsToken = null;
-        _ttsService.Stop();
-        _isPaused = false;
-
-        if (ScannedPoi == null) return;
-        ScannedPoi.IsPlaying = false;
-        ScannedPoi.AudioProgress = 0;
-    }
-
-    // ── TTS callbacks ─────────────────────────────────────────────────────────
-
-    private void OnTtsProgress(int current, int total)
-    {
-        if (ScannedPoi == null || total == 0) return;
-        MainThread.BeginInvokeOnMainThread(() =>
-            ScannedPoi.AudioProgress = (double)current / total);
-    }
-
-    private void OnTtsFinished()
-    {
-        if (ScannedPoi == null) return;
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            _isPaused = false;
-            ScannedPoi.IsPlaying = false;
-            ScannedPoi.AudioProgress = 1.0;
-        });
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static string GetScriptForLang(POI poi, string lang) =>
-        lang switch
-        {
-            "en" => string.IsNullOrWhiteSpace(poi.ScriptEn) ? null : poi.ScriptEn,
-            "ja" => string.IsNullOrWhiteSpace(poi.ScriptJa) ? null : poi.ScriptJa,
-            "zh" => string.IsNullOrWhiteSpace(poi.ScriptZh) ? null : poi.ScriptZh,
-            _ => string.IsNullOrWhiteSpace(poi.ScriptVi) ? null : poi.ScriptVi,
-        } ?? "Không có dữ liệu thuyết minh.";
 }
