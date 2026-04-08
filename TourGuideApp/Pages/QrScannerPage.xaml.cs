@@ -9,18 +9,15 @@ public partial class QrScannerPage : ContentPage
     private readonly ApiService _apiService = new();
     private readonly TextToSpeechService _ttsService = new();
     private CancellationTokenSource? _ttsToken;
-    
-    private bool _isProcessingResult = false;
-    private POI? _scannedPoi;
 
+    private bool _isProcessingResult = false;
+    private bool _isPaused = false;
+
+    private POI? _scannedPoi;
     public POI? ScannedPoi
     {
         get => _scannedPoi;
-        set 
-        { 
-            _scannedPoi = value; 
-            OnPropertyChanged(); 
-        }
+        set { _scannedPoi = value; OnPropertyChanged(); }
     }
 
     public QrScannerPage()
@@ -34,15 +31,15 @@ public partial class QrScannerPage : ContentPage
         StartScanningAnimation();
     }
 
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        
+
         var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
         if (status != PermissionStatus.Granted)
-        {
             status = await Permissions.RequestAsync<Permissions.Camera>();
-        }
 
         if (status != PermissionStatus.Granted)
         {
@@ -51,7 +48,6 @@ public partial class QrScannerPage : ContentPage
         }
         else
         {
-            // Bật Camera với ML Kit
             await Task.Delay(500);
             BarcodeReader.IsScanning = true;
         }
@@ -64,11 +60,17 @@ public partial class QrScannerPage : ContentPage
         StopAudio();
     }
 
+    // ── Scanner animation ─────────────────────────────────────────────────────
+
     private void StartScanningAnimation()
     {
-        var animation = new Animation(v => ScannerLine.TranslationY = v, 0, 220);
-        animation.Commit(this, "ScannerAnimation", 16, 2000, Easing.Linear, (v, c) => ScannerLine.TranslationY = 0, () => !_isProcessingResult);
+        var animation = new Animation(v => ScannerLine.TranslationY = v, 0, 224);
+        animation.Commit(this, "ScannerAnimation", 16, 2000, Easing.Linear,
+            (v, c) => ScannerLine.TranslationY = 0,
+            () => !_isProcessingResult);
     }
+
+    // ── Barcode detected ──────────────────────────────────────────────────────
 
     private async void OnBarcodesDetected(object sender, OnDetectedEventArg e)
     {
@@ -80,34 +82,25 @@ public partial class QrScannerPage : ContentPage
         var first = barcodes.FirstOrDefault();
         if (first == null) return;
 
-        // Định dạng mong đợi: https://poi:1
         string code = first.DisplayValue;
         if (!code.StartsWith("https://poi:")) return;
 
         _isProcessingResult = true;
-        
+
         await Dispatcher.DispatchAsync(async () =>
         {
-            // Tắt bộ quét ngay lập tức
             BarcodeReader.IsScanning = false;
 
-            // Hiệu ứng "Zoom" lại khung quét (thu nhỏ và mờ dần)
             await Task.WhenAll(
-                ScannerFrame.ScaleTo(0.7, 300, Easing.CubicOut),
-                ScannerFrame.FadeTo(0, 300),
-                ScannerLine.FadeTo(0, 300)
-            );
+                ScannerFrame.ScaleTo(0.8, 250, Easing.CubicOut),
+                ScannerFrame.FadeTo(0, 250),
+                ScannerLine.FadeTo(0, 250));
 
             string idStr = code.Replace("https://poi:", "");
             if (int.TryParse(idStr, out int id))
-            {
                 await ProcessScannedId(id);
-            }
             else
-            {
-                // Nếu sai định dạng sâu bên trong thì reset
                 ResetScanner();
-            }
         });
     }
 
@@ -117,26 +110,45 @@ public partial class QrScannerPage : ContentPage
         if (poi != null)
         {
             ScannedPoi = poi;
-            // Hiển thị thẻ kết quả
-            await ResultCard.TranslateTo(0, 0, 400, Easing.SinOut);
-            // Tự động phát âm thanh
-            await StartAudio();
+            ShowResultCard();       // hiện card ngay lập tức (không await)
+            await PlayAudioFromStart();
         }
         else
         {
-            // Không tìm thấy POI -> bật lại quét
+            await DisplayAlert("Không tìm thấy", "Không có thông tin cho mã QR này.", "OK");
             ResetScanner();
         }
+    }
+
+    // ── Show / hide card ──────────────────────────────────────────────────────
+
+    /// Hiện card ngay — Grid Row="Auto" tự tính chiều cao, không cần animation phức tạp
+    private void ShowResultCard()
+    {
+        ResultCard.Opacity = 0;
+        ResultCard.IsVisible = true;
+        ResultCard.FadeTo(1, 300, Easing.SinOut);   // fade in nhẹ
+    }
+
+    /// Ẩn card với fade out
+    private async Task HideResultCard()
+    {
+        await ResultCard.FadeTo(0, 220, Easing.SinIn);
+        ResultCard.IsVisible = false;
     }
 
     private void ResetScanner()
     {
         _isProcessingResult = false;
+        _isPaused = false;
         ScannerFrame.Scale = 1;
         ScannerFrame.Opacity = 1;
         ScannerLine.Opacity = 1;
         BarcodeReader.IsScanning = true;
+        StartScanningAnimation();
     }
+
+    // ── Navigation ────────────────────────────────────────────────────────────
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
@@ -149,48 +161,72 @@ public partial class QrScannerPage : ContentPage
     private async void OnCloseResultClicked(object sender, EventArgs e)
     {
         StopAudio();
-        await ResultCard.TranslateTo(0, 400, 300, Easing.SinIn);
+        await HideResultCard();
         ScannedPoi = null;
         ResetScanner();
     }
 
-    // ── AUDIO LOGIC ──────────────────────────────────────────────────────────
-
-    private async void OnPlayPauseAudioClicked(object sender, EventArgs e)
+    private async void OnDetailClicked(object sender, EventArgs e)
     {
         if (ScannedPoi == null) return;
-
-        if (ScannedPoi.IsPlaying)
-        {
-            PauseAudio();
-        }
-        else
-        {
-            await StartAudio();
-        }
-    }
-
-    private void OnStopAudioClicked(object sender, EventArgs e)
-    {
         StopAudio();
+        await Shell.Current.GoToAsync("placeDetail", new Dictionary<string, object>
+        {
+            { "poi", ScannedPoi }
+        });
     }
 
-    private async Task StartAudio()
+    // ── Audio: 3 nút riêng ────────────────────────────────────────────────────
+
+    private async void OnPlayAudioClicked(object sender, EventArgs e)
+    {
+        if (ScannedPoi == null) return;
+        if (_isPaused)
+            await ResumeAudio();
+        else
+            await PlayAudioFromStart();
+    }
+
+    private void OnPauseAudioClicked(object sender, EventArgs e)
+    {
+        if (ScannedPoi == null || !ScannedPoi.IsPlaying) return;
+        _ttsToken?.Cancel();
+        _ttsService.Pause();
+        _isPaused = true;
+        ScannedPoi.IsPlaying = false; // DataTrigger: ẩn Pause+Stop, hiện Play
+    }
+
+    private void OnStopAudioClicked(object sender, EventArgs e) => StopAudio();
+
+    // ── Audio core ────────────────────────────────────────────────────────────
+
+    private async Task PlayAudioFromStart()
+    {
+        if (ScannedPoi == null) return;
+        _isPaused = false;
+        _ttsService.ForceLoadText(GetScriptForLang(ScannedPoi, SettingService.Instance.Language));
+        await RunTts();
+    }
+
+    private async Task ResumeAudio()
+    {
+        if (ScannedPoi == null) return;
+        _isPaused = false;
+        await RunTts(); // không ForceLoadText → _charIndex còn nguyên
+    }
+
+    private async Task RunTts()
     {
         if (ScannedPoi == null) return;
 
-        string lang = SettingService.Instance.Language;
-        string text = GetScriptForLang(ScannedPoi, lang);
-
-        ScannedPoi.IsPlaying = true;
-        PlayPauseIcon.Source = "ic_white_pause.svg";
+        ScannedPoi.IsPlaying = true; // DataTrigger: ẩn Play, hiện Pause+Stop
 
         _ttsToken?.Cancel();
+        _ttsToken?.Dispose();
         _ttsToken = new CancellationTokenSource();
 
         try
         {
-            _ttsService.LoadText(text);
             await _ttsService.SpeakAsync(_ttsToken.Token);
         }
         catch (OperationCanceledException) { }
@@ -198,33 +234,33 @@ public partial class QrScannerPage : ContentPage
         {
             System.Diagnostics.Debug.WriteLine($"[QRScan] TTS Error: {ex.Message}");
         }
-    }
-
-    private void PauseAudio()
-    {
-        if (ScannedPoi == null) return;
-        _ttsToken?.Cancel();
-        ScannedPoi.IsPlaying = false;
-        PlayPauseIcon.Source = "ic_white_play.svg";
+        finally
+        {
+            if (ScannedPoi != null && !_isPaused)
+                ScannedPoi.IsPlaying = false;
+        }
     }
 
     private void StopAudio()
     {
-        if (ScannedPoi == null) return;
         _ttsToken?.Cancel();
+        _ttsToken?.Dispose();
+        _ttsToken = null;
+        _ttsService.Stop();
+        _isPaused = false;
+
+        if (ScannedPoi == null) return;
         ScannedPoi.IsPlaying = false;
         ScannedPoi.AudioProgress = 0;
-        PlayPauseIcon.Source = "ic_white_play.svg";
-        _ttsService.LoadText("");
     }
+
+    // ── TTS callbacks ─────────────────────────────────────────────────────────
 
     private void OnTtsProgress(int current, int total)
     {
         if (ScannedPoi == null || total == 0) return;
         MainThread.BeginInvokeOnMainThread(() =>
-        {
-            ScannedPoi.AudioProgress = (double)current / total;
-        });
+            ScannedPoi.AudioProgress = (double)current / total);
     }
 
     private void OnTtsFinished()
@@ -232,33 +268,20 @@ public partial class QrScannerPage : ContentPage
         if (ScannedPoi == null) return;
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            _isPaused = false;
             ScannedPoi.IsPlaying = false;
-            PlayPauseIcon.Source = "ic_white_play.svg";
             ScannedPoi.AudioProgress = 1.0;
         });
     }
 
-    private string GetScriptForLang(POI poi, string lang)
-    {
-        string? script = lang switch
-        {
-            "en" => poi.ScriptEn,
-            "ja" => poi.ScriptJa,
-            "zh" => poi.ScriptZh,
-            _ => poi.ScriptVi
-        };
-        return string.IsNullOrWhiteSpace(script) ? "Không có dữ liệu thuyết minh" : script;
-    }
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private async void OnDetailClicked(object sender, EventArgs e)
-    {
-        if (ScannedPoi == null) return;
-        StopAudio();
-        
-        // Navigation consistent with HomeViewModel
-        await Shell.Current.GoToAsync("placeDetail", new Dictionary<string, object>
+    private static string GetScriptForLang(POI poi, string lang) =>
+        lang switch
         {
-            { "poi", ScannedPoi }
-        });
-    }
+            "en" => string.IsNullOrWhiteSpace(poi.ScriptEn) ? null : poi.ScriptEn,
+            "ja" => string.IsNullOrWhiteSpace(poi.ScriptJa) ? null : poi.ScriptJa,
+            "zh" => string.IsNullOrWhiteSpace(poi.ScriptZh) ? null : poi.ScriptZh,
+            _ => string.IsNullOrWhiteSpace(poi.ScriptVi) ? null : poi.ScriptVi,
+        } ?? "Không có dữ liệu thuyết minh.";
 }

@@ -4,21 +4,26 @@ using System.Diagnostics;
 namespace TourGuideApp.Services;
 
 /// <summary>
-/// TTS service hỗ trợ Native Pause/Resume thông qua Android/iOS API.
+/// TTS service: phát văn bản theo ngôn ngữ hiện tại của SettingService.
+/// Hỗ trợ Play / Pause / Stop và báo cáo tiến trình qua OnProgress / OnFinished.
 /// </summary>
 public partial class TextToSpeechService
 {
     private string _currentText = "";
-    private int _charIndex = 0; // Vị trí ký tự đang đọc (để Resume chính xác)
+    private int _charIndex = 0;
     private bool _finished = false;
     private bool _isPaused = false;
 
     public bool IsFinished => _finished;
     public bool IsPaused => _isPaused;
 
+    /// <summary>Phát ra khi TTS đọc xong toàn bộ văn bản.</summary>
     public event Action? OnFinished;
+
+    /// <summary>Phát ra định kỳ: (ký tự hiện tại, tổng số ký tự).</summary>
     public event Action<int, int>? OnProgress;
 
+    // Độ ưu tiên giọng đọc theo ngôn ngữ
     private static readonly Dictionary<string, string[]> LocalePriority = new()
     {
         ["vi"] = new[] { "Google Vietnamese", "Microsoft HoaiMy", "vi-VN" },
@@ -27,10 +32,16 @@ public partial class TextToSpeechService
         ["zh"] = new[] { "Google 普通话", "Microsoft Xiaoxiao", "zh-CN" },
     };
 
+    // ── PUBLIC API ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Nạp văn bản mới. Nếu văn bản trùng với lần trước, không reset (tiếp tục từ vị trí cũ).
+    /// Dùng ForceLoadText để buộc reset và replay từ đầu.
+    /// </summary>
     public void LoadText(string text)
     {
-        string finalText = string.IsNullOrWhiteSpace(text) ? "Không có dữ liệu" : text;
-        if (_currentText == finalText) return;
+        string finalText = string.IsNullOrWhiteSpace(text) ? "Không có dữ liệu." : text;
+        if (_currentText == finalText) return; // không thay đổi → giữ nguyên trạng thái
         _currentText = finalText;
         _charIndex = 0;
         _finished = false;
@@ -38,6 +49,21 @@ public partial class TextToSpeechService
         Debug.WriteLine($"[TTS] LoadText: {_currentText.Length} chars");
     }
 
+    /// <summary>
+    /// Buộc nạp lại văn bản và reset về đầu, kể cả khi nội dung không đổi.
+    /// Dùng khi muốn replay cùng một POI.
+    /// </summary>
+    public void ForceLoadText(string text)
+    {
+        string finalText = string.IsNullOrWhiteSpace(text) ? "Không có dữ liệu." : text;
+        _currentText = finalText;
+        _charIndex = 0;
+        _finished = false;
+        _isPaused = false;
+        Debug.WriteLine($"[TTS] ForceLoadText: {_currentText.Length} chars");
+    }
+
+    /// <summary>Phát TTS từ vị trí hiện tại (_charIndex).</summary>
     public async Task SpeakAsync(CancellationToken cancelToken = default)
     {
         if (string.IsNullOrWhiteSpace(_currentText)) return;
@@ -50,58 +76,134 @@ public partial class TextToSpeechService
         }
 
         _isPaused = false;
-        var lang = SettingService.Instance.Language;
 
+        // Đọc ngôn ngữ ngay tại lúc phát để luôn phản ánh setting mới nhất
+        string lang = SettingService.Instance.Language;
+        Debug.WriteLine($"[TTS] SpeakAsync lang={lang}, charIndex={_charIndex}");
+
+        try
+        {
 #if ANDROID
-        await SpeakNativeAndroidAsync(lang, cancelToken);
+            await SpeakNativeAndroidAsync(lang, cancelToken);
 #else
-        await SpeakMauiAsync(lang, cancelToken);
+            await SpeakMauiAsync(lang, cancelToken);
 #endif
+            // Chỉ invoke OnFinished nếu không bị cancel
+            if (!cancelToken.IsCancellationRequested)
+            {
+                _finished = true;
+                OnFinished?.Invoke();
+                Debug.WriteLine("[TTS] Finished");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("[TTS] Cancelled");
+            throw; // re-throw để caller xử lý
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[TTS] Error: {ex.Message}");
+            throw;
+        }
     }
 
+    /// <summary>Overload tiện lợi: nạp text rồi phát ngay.</summary>
     public async Task SpeakAsync(string text, CancellationToken cancelToken = default)
     {
-        LoadText(text);
+        ForceLoadText(text);
         await SpeakAsync(cancelToken);
     }
 
+    /// <summary>Tạm dừng phát (Android: dừng engine; iOS/Windows: cancel).</summary>
     public void Pause()
     {
         _isPaused = true;
 #if ANDROID
         StopNativeAndroid();
-#else
-        // MAUI Essentials không có Pause thực sự
 #endif
+        Debug.WriteLine("[TTS] Paused");
     }
+
+    /// <summary>Dừng hẳn và reset tiến trình về 0.</summary>
+    public void Stop()
+    {
+        _isPaused = false;
+        _finished = false;
+        _charIndex = 0;
+#if ANDROID
+        StopNativeAndroid();
+#endif
+        Debug.WriteLine("[TTS] Stopped");
+    }
+
+    // ── INTERNAL – MAUI FALLBACK (iOS / Windows) ──────────────────────────────
 
     private async Task SpeakMauiAsync(string lang, CancellationToken cancelToken)
     {
         var locales = await TextToSpeech.GetLocalesAsync();
         var locale = await ResolveLocaleAsync(lang, locales);
-        await TextToSpeech.SpeakAsync(_currentText, new SpeechOptions { Locale = locale }, cancelToken);
+
+        // Tính toán text cần đọc (hỗ trợ resume từ _charIndex)
+        string textToSpeak = _charIndex > 0 && _charIndex < _currentText.Length
+            ? _currentText[_charIndex..]
+            : _currentText;
+
+        int total = _currentText.Length;
+
+        // Báo progress thủ công vì MAUI không có callback ký tự
+        // Estimate: cập nhật mỗi 500ms dựa trên thời gian trôi qua
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(cancelToken);
+        _ = Task.Run(async () =>
+        {
+            // Ước tính tốc độ đọc: ~15 ký tự/giây
+            const double charsPerMs = 15.0 / 1000.0;
+            int reported = _charIndex;
+            while (!cts.Token.IsCancellationRequested && reported < total)
+            {
+                await Task.Delay(300, cts.Token).ConfigureAwait(false);
+                reported = Math.Min(reported + (int)(300 * charsPerMs), total);
+                _charIndex = reported;
+                OnProgress?.Invoke(reported, total);
+            }
+        }, cts.Token);
+
+        await TextToSpeech.SpeakAsync(textToSpeak, new SpeechOptions { Locale = locale }, cancelToken);
+        await cts.CancelAsync();
     }
 
-    private async Task<Locale?> ResolveLocaleAsync(string lang, IEnumerable<Locale> locales)
+    private static async Task<Locale?> ResolveLocaleAsync(string lang, IEnumerable<Locale> locales)
     {
+        var localeList = locales.ToList();
         if (LocalePriority.TryGetValue(lang.ToLowerInvariant(), out var preferred))
         {
             foreach (var pref in preferred)
             {
-                var matchByName = locales.FirstOrDefault(l =>
+                // Thử khớp theo tên hiển thị
+                var byName = localeList.FirstOrDefault(l =>
                     l.Name != null && l.Name.Contains(pref, StringComparison.OrdinalIgnoreCase));
-                if (matchByName != null) return matchByName;
+                if (byName != null) return byName;
 
+                // Thử khớp theo mã ngôn ngữ (vd: vi-VN)
                 var parts = pref.Split('-');
-                var matchByCode = locales.FirstOrDefault(l =>
+                var byCode = localeList.FirstOrDefault(l =>
                     l.Language.Equals(parts[0], StringComparison.OrdinalIgnoreCase) &&
                     (parts.Length <= 1 || l.Country?.Equals(parts[1], StringComparison.OrdinalIgnoreCase) == true));
-                if (matchByCode != null) return matchByCode;
+                if (byCode != null) return byCode;
             }
         }
-        return locales.FirstOrDefault(l => l.Language.StartsWith(lang, StringComparison.OrdinalIgnoreCase));
+
+        // Fallback: tìm bất kỳ locale nào bắt đầu bằng mã ngôn ngữ
+        var fallback = localeList.FirstOrDefault(l =>
+            l.Language.StartsWith(lang, StringComparison.OrdinalIgnoreCase));
+
+        if (fallback == null)
+            Debug.WriteLine($"[TTS] No locale found for lang='{lang}', using system default");
+
+        return await Task.FromResult(fallback);
     }
 
+    // ── ANDROID PARTIAL DECLARATIONS ─────────────────────────────────────────
 #if ANDROID
     private partial Task SpeakNativeAndroidAsync(string lang, CancellationToken cancelToken);
     private partial void StopNativeAndroid();
