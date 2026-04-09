@@ -8,9 +8,9 @@ CREATE TABLE Users (
     Username NVARCHAR(100),
     PasswordHash NVARCHAR(255),
 
-    Name NVARCHAR(150),          -- Tên người dùng
-    Email NVARCHAR(150),         -- Email
-    Phone NVARCHAR(20),          -- SĐT
+    Name NVARCHAR(150),         
+    Email NVARCHAR(150),        
+    Phone NVARCHAR(20),
 
     Role NVARCHAR(50) CHECK (Role IN ('ADMIN', 'OWNER', 'CUSTOMER'))
 );
@@ -24,11 +24,16 @@ CREATE TABLE POI (
     Description NVARCHAR(MAX),
     Address NVARCHAR(255),
 
-    Phone NVARCHAR(20),          -- SĐT địa điểm
+    Phone NVARCHAR(20),
 
     Latitude FLOAT,
     Longitude FLOAT,
     Radius INT,
+
+    Status NVARCHAR(20) 
+	CHECK (Status IN ('PENDING', 'APPROVED', 'REJECTED')) 
+	DEFAULT 'APPROVED',
+    RejectReason NVARCHAR(500) NULL,                
 
     OwnerId INT,
     FOREIGN KEY (OwnerId) REFERENCES Users(Id)
@@ -56,7 +61,9 @@ CREATE TABLE History (
     Id INT PRIMARY KEY IDENTITY(1,1),
     PoiId INT,
     UserId INT,
+
     PlayTime DATETIME DEFAULT GETDATE(),
+    ListenDuration INT NOT NULL DEFAULT 0,
 
     FOREIGN KEY (PoiId) REFERENCES POI(Id),
     FOREIGN KEY (UserId) REFERENCES Users(Id)
@@ -66,40 +73,14 @@ CREATE TABLE History (
 -- ========================
 CREATE TABLE POIImages (
     Id INT PRIMARY KEY IDENTITY(1,1),
-    PoiId INT NOT NULL,                 -- liên kết POI
-    ImageUrl NVARCHAR(500) NOT NULL,    -- đường dẫn ảnh
-    IsThumbnail BIT DEFAULT 0,          -- ảnh đại diện
+    PoiId INT NOT NULL,
+    ImageUrl NVARCHAR(500) NOT NULL, 
+    IsThumbnail BIT DEFAULT 0,        
 
     CreatedAt DATETIME DEFAULT GETDATE(),
 
     FOREIGN KEY (PoiId) REFERENCES POI(Id)
 );
--- ========================
--- TRIGGER
--- ========================
-GO
-CREATE TRIGGER trg_OnlyCustomerHistory
-ON History
-INSTEAD OF INSERT
-AS
-BEGIN
-    IF EXISTS (
-        SELECT 1
-        FROM inserted i
-        JOIN Users u ON i.UserId = u.Id
-        WHERE u.Role <> 'CUSTOMER'
-    )
-    BEGIN
-        RAISERROR (N'Chỉ CUSTOMER mới được ghi lịch sử', 16, 1);
-        RETURN;
-    END
-
-    INSERT INTO History (PoiId, UserId, PlayTime)
-    SELECT PoiId, UserId, PlayTime
-    FROM inserted;
-END
-GO
-DROP TRIGGER trg_OnlyCustomerHistory;
 -- ========================
 -- DATA MẪU
 -- ========================
@@ -203,10 +184,13 @@ N'スパイシーな巻貝料理が特徴です。味付けはしっかりして
 N'这里的辣味螺非常有特色，味道浓烈。适合喜欢吃辣的人。'); 
 
 -- TEST HISTORY
-INSERT INTO History (PoiId, UserId)
+INSERT INTO History (PoiId, UserId, ListenDuration)
 VALUES
-(1, 8),
-(2, 9);
+(3, 8, 200),
+(4, 9, 150),
+(5, 8, 90),
+(1, 9, 60),
+(2, 8, 30);
 
 INSERT INTO POIImages (PoiId, ImageUrl, IsThumbnail)
 VALUES
@@ -215,6 +199,11 @@ VALUES
 (2, N'images/oc_thao_1.jpg', 1),
 (3, N'images/oc_nho_1.jpg', 1);
 
--- Thêm cột Status và ImageUrl vào bảng POI
-ALTER TABLE POI ADD Status NVARCHAR(20) NOT NULL DEFAULT 'APPROVED';
-ALTER TABLE POI ADD RejectReason NVARCHAR(500) NULL;
+CREATE TABLE AudioExtra (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    AudioId INT NOT NULL,
+    LangCode NVARCHAR(10) NOT NULL,
+    LangName NVARCHAR(50) NOT NULL,
+    Script NVARCHAR(MAX) NULL,
+    FOREIGN KEY (AudioId) REFERENCES Audio(Id)
+);
