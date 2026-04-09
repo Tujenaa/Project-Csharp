@@ -1,203 +1,247 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:BarcodeScanner.Mobile;assembly=BarcodeScanner.Mobile.Maui"
              x:Class="TourGuideApp.Pages.QrScannerPage"
              Title="Quét mã QR"
              BackgroundColor="Black"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="Auto, *, Auto">
-        
-        <!-- Camera Placeholder -->
-        <BoxView Grid.RowSpan="3" Color="#121212" />
+    <!--
+        Layout 2 tầng:
+          Row 0 (*) → Camera + khung quét (chiếm hết phần trên)
+          Row 1 (Auto) → Result card (ẩn mặc định, hiện khi quét xong)
+        Camera trải Grid.RowSpan="2" làm nền toàn màn hình.
+    -->
+    <Grid RowDefinitions="*, Auto">
 
-        <!-- Top Bar -->
-        <Grid Grid.Row="0" Padding="15,40,15,10" ColumnDefinitions="Auto, *">
-            <ImageButton Source="ic_back.svg"
-                         WidthRequest="40"
-                         HeightRequest="40"
-                         Clicked="OnBackClicked"
-                         BackgroundColor="Transparent"/>
-            <Label Grid.Column="1" 
-                   Text="Quét mã QR" 
-                   TextColor="White" 
-                   FontSize="18" 
-                   FontAttributes="Bold"
-                   HorizontalOptions="Center"
-                   VerticalOptions="Center"
-                   Margin="0,0,40,0"/>
-        </Grid>
+        <!-- ── CAMERA nền toàn màn hình ── -->
+        <m:CameraView x:Name="BarcodeReader"
+                      Grid.RowSpan="2"
+                      OnDetected="OnBarcodesDetected"
+                      ScanInterval="500"/>
 
-        <!-- Scanner Viewport Layer -->
-        <Grid Grid.Row="1">
-            <!-- Dimmed background with cutout -->
-            <Path Fill="#80000000"
-                  Aspect="Fill"
-                  Data="M 0,0 L 1,0 L 1,1 L 0,1 Z M 0.15,0.3 L 0.85,0.3 L 0.85,0.6 L 0.15,0.6 Z"
-                  HorizontalOptions="Fill"
-                  VerticalOptions="Fill"/>
+        <!-- ── ROW 0: Top bar + khung quét ── -->
+        <Grid Grid.Row="0" RowDefinitions="Auto,*">
 
-            <!-- Scanner Frame Corners -->
-            <Grid WidthRequest="260" HeightRequest="260" HorizontalOptions="Center" VerticalOptions="Center">
-                <!-- Top-Left -->
-                <BoxView WidthRequest="30" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="Start" CornerRadius="2"/>
-                <BoxView WidthRequest="4" HeightRequest="30" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="Start" CornerRadius="2"/>
-                
-                <!-- Top-Right -->
-                <BoxView WidthRequest="30" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="End" VerticalOptions="Start" CornerRadius="2"/>
-                <BoxView WidthRequest="4" HeightRequest="30" BackgroundColor="#9B7FEA" HorizontalOptions="End" VerticalOptions="Start" CornerRadius="2"/>
-
-                <!-- Bottom-Left -->
-                <BoxView WidthRequest="30" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="End" CornerRadius="2"/>
-                <BoxView WidthRequest="4" HeightRequest="30" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="End" CornerRadius="2"/>
-
-                <!-- Bottom-Right -->
-                <BoxView WidthRequest="30" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="End" VerticalOptions="End" CornerRadius="2"/>
-                <BoxView WidthRequest="4" HeightRequest="30" BackgroundColor="#9B7FEA" HorizontalOptions="End" VerticalOptions="End" CornerRadius="2"/>
-
-                <!-- Scanning Animation Line -->
-                <BoxView x:Name="ScannerLine"
-                         WidthRequest="240"
-                         HeightRequest="2"
-                         BackgroundColor="#9B7FEA"
-                         HorizontalOptions="Center"
-                         VerticalOptions="Start"
-                         Margin="0,20,0,0">
-                    <BoxView.Shadow>
-                        <Shadow Brush="#9B7FEA" Offset="0,0" Radius="10" Opacity="0.8"/>
-                    </BoxView.Shadow>
-                </BoxView>
+            <!-- Top bar -->
+            <Grid Grid.Row="0" Padding="15,48,15,10" ColumnDefinitions="Auto,*">
+                <ImageButton Source="ic_back.svg"
+                             WidthRequest="40" HeightRequest="40"
+                             BackgroundColor="Transparent"
+                             Clicked="OnBackClicked"/>
+                <Label Grid.Column="1"
+                       Text="Quét mã QR"
+                       TextColor="White" FontSize="18" FontAttributes="Bold"
+                       HorizontalOptions="Center" VerticalOptions="Center"
+                       Margin="0,0,40,0"/>
             </Grid>
 
-            <Label Text="Di chuyển camera đến mã QR để quét"
-                   TextColor="#CCCCCC"
-                   FontSize="14"
-                   HorizontalOptions="Center"
-                   VerticalOptions="End"
-                   Margin="0,0,0,40"/>
+            <!-- Khung quét -->
+            <Grid Grid.Row="1">
+                <!-- Dimmed overlay -->
+                <Path Fill="#88000000" Aspect="Fill"
+                      Data="M 0,0 L 1,0 L 1,1 L 0,1 Z M 0.12,0.15 L 0.88,0.15 L 0.88,0.8 L 0.12,0.8 Z"
+                      HorizontalOptions="Fill" VerticalOptions="Fill"/>
 
-            <!-- Mock Trigger (For Demo) -->
-            <Button Text="Simulate Success" 
-                    Clicked="OnSimulateScanResult" 
-                    VerticalOptions="Start" 
-                    HorizontalOptions="End" 
-                    Margin="20"
-                    BackgroundColor="#333333"
-                    TextColor="White"
-                    FontSize="10"
-                    Padding="10,5"/>
+                <!-- Corner brackets -->
+                <Grid x:Name="ScannerFrame"
+                      WidthRequest="268" HeightRequest="268"
+                      HorizontalOptions="Center" VerticalOptions="Center">
+                    <BoxView WidthRequest="32" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="Start" CornerRadius="2"/>
+                    <BoxView WidthRequest="4" HeightRequest="32" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="Start" CornerRadius="2"/>
+                    <BoxView WidthRequest="32" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="End"   VerticalOptions="Start" CornerRadius="2"/>
+                    <BoxView WidthRequest="4" HeightRequest="32" BackgroundColor="#9B7FEA" HorizontalOptions="End"   VerticalOptions="Start" CornerRadius="2"/>
+                    <BoxView WidthRequest="32" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="End"   CornerRadius="2"/>
+                    <BoxView WidthRequest="4" HeightRequest="32" BackgroundColor="#9B7FEA" HorizontalOptions="Start" VerticalOptions="End"   CornerRadius="2"/>
+                    <BoxView WidthRequest="32" HeightRequest="4" BackgroundColor="#9B7FEA" HorizontalOptions="End"   VerticalOptions="End"   CornerRadius="2"/>
+                    <BoxView WidthRequest="4" HeightRequest="32" BackgroundColor="#9B7FEA" HorizontalOptions="End"   VerticalOptions="End"   CornerRadius="2"/>
+
+                    <BoxView x:Name="ScannerLine"
+                             WidthRequest="244" HeightRequest="2"
+                             BackgroundColor="#9B7FEA"
+                             HorizontalOptions="Center" VerticalOptions="Start"
+                             Margin="0,22,0,0">
+                        <BoxView.Shadow>
+                            <Shadow Brush="#9B7FEA" Offset="0,0" Radius="10" Opacity="0.9"/>
+                        </BoxView.Shadow>
+                    </BoxView>
+                </Grid>
+
+                <Label Text="Di chuyển camera đến mã QR để quét"
+                       TextColor="#CCCCCC" FontSize="13"
+                       HorizontalOptions="Center" VerticalOptions="End"
+                       Margin="0,0,0,20"/>
+            </Grid>
         </Grid>
 
-        <!-- Result Tab (Bottom Sheet) -->
+        <!-- ── ROW 1: Result card — nằm ngay dưới khung quét ────────────────
+             IsVisible="False" mặc định.
+             Code-behind set IsVisible=True khi quét thành công.
+        ─────────────────────────────────────────────────────────────────── -->
         <Border x:Name="ResultCard"
-                Grid.Row="2"
+                Grid.Row="1"
                 BackgroundColor="White"
-                Padding="20"
-                TranslationY="400"
-                HeightRequest="320">
+                Stroke="#E8E3F5" StrokeThickness="1"
+                IsVisible="False"
+                Margin="12,0,12,20">
             <Border.StrokeShape>
-                <RoundRectangle CornerRadius="24,24,0,0"/>
+                <RoundRectangle CornerRadius="20"/>
             </Border.StrokeShape>
             <Border.Shadow>
-                <Shadow Brush="Black" Offset="0,-5" Radius="20" Opacity="0.2"/>
+                <Shadow Brush="#50000000" Offset="0,-3" Radius="18"/>
             </Border.Shadow>
 
-            <Grid RowDefinitions="Auto, Auto, Auto, *">
-                <!-- Handle -->
-                <BoxView Grid.Row="0" 
-                         WidthRequest="40" 
-                         HeightRequest="4" 
-                         CornerRadius="2" 
-                         BackgroundColor="#E5E7EB" 
-                         HorizontalOptions="Center" 
-                         Margin="0,0,0,15"/>
+            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="0" Padding="16,14">
 
-                <!-- POI Info -->
-                <Grid Grid.Row="1" ColumnDefinitions="70, *" ColumnSpacing="15" Margin="0,0,0,20">
-                    <Border Grid.Column="0" WidthRequest="70" HeightRequest="70" StrokeThickness="0">
+                <!-- ── Ảnh + Tên + Khoảng cách + Nút đóng ── -->
+                <Grid Grid.Row="0"
+                      ColumnDefinitions="64,*,Auto"
+                      ColumnSpacing="12"
+                      Margin="0,0,0,12">
+
+                    <Border Grid.Column="0"
+                            WidthRequest="64" HeightRequest="64"
+                            StrokeThickness="0">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="12"/>
                         </Border.StrokeShape>
-                        <Image Source="{Binding ScannedPoi.MainImage}" Aspect="AspectFill" />
+                        <Image Source="{Binding ScannedPoi.MainImage}" Aspect="AspectFill"/>
                     </Border>
-                    
-                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4">
-                        <Label Text="{Binding ScannedPoi.Name}" 
-                               FontSize="18" 
-                               FontAttributes="Bold" 
-                               TextColor="#1A1035"/>
-                        <Label Text="{Binding ScannedPoi.Description}" 
-                               FontSize="13" 
-                               TextColor="#6B7280"
-                               MaxLines="2"
-                               LineBreakMode="TailTruncation"/>
+
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
+                        <Label Text="{Binding ScannedPoi.Name}"
+                               FontSize="16" FontAttributes="Bold"
+                               TextColor="#1A1035" LineBreakMode="TailTruncation"/>
+                        <Label Text="{Binding ScannedPoi.DistanceText}"
+                               FontSize="12" TextColor="#64748B"/>
+                        <Label Text="{Binding ScannedPoi.Description}"
+                               FontSize="12" TextColor="#475569"
+                               MaxLines="2" LineBreakMode="TailTruncation"/>
                     </VerticalStackLayout>
-                    
-                    <ImageButton Grid.Column="1" 
-                                 Source="ic_back.svg" 
-                                 HorizontalOptions="End" 
-                                 VerticalOptions="Start"
-                                 WidthRequest="24"
-                                 HeightRequest="24"
-                                 Clicked="OnCloseResultClicked"/>
+
+                    <!-- Nút đóng -->
+                    <Border Grid.Column="2"
+                            BackgroundColor="#F4F2FB"
+                            Stroke="Transparent" StrokeThickness="0"
+                            WidthRequest="32" HeightRequest="32"
+                            VerticalOptions="Start">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="9"/>
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCloseResultClicked"/>
+                        </Border.GestureRecognizers>
+                        <Label Text="✕" FontSize="14" TextColor="#512BD4"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
                 </Grid>
 
-                <!-- Audio Controls -->
-                <VerticalStackLayout Grid.Row="2" Spacing="15">
-                    <!-- Progress Bar -->
-                    <Grid RowDefinitions="Auto, Auto" RowSpacing="5">
-                        <Slider Minimum="0" Maximum="100" 
-                                Value="{Binding ScannedPoi.AudioProgress}"
-                                MinimumTrackColor="#9B7FEA"
-                                MaximumTrackColor="#E8E3F5"
-                                ThumbColor="#512BD4"/>
-                        <Grid Grid.Row="1" ColumnDefinitions="*, *">
-                            <Label Text="1:24" FontSize="11" TextColor="#94A3B8"/>
-                            <Label Grid.Column="1" Text="3:45" FontSize="11" TextColor="#94A3B8" HorizontalOptions="End"/>
-                        </Grid>
-                    </Grid>
+                <!-- ── Progress bar ── -->
+                <Slider Grid.Row="1"
+                        Minimum="0" Maximum="1"
+                        Value="{Binding ScannedPoi.AudioProgress}"
+                        MinimumTrackColor="#9B7FEA"
+                        MaximumTrackColor="#E8E3F5"
+                        ThumbColor="#512BD4"
+                        IsEnabled="False"
+                        Margin="0,0,0,12"/>
 
-                    <!-- Play/Stop Buttons -->
-                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="30">
-                        <Border BackgroundColor="#FCE7F3" WidthRequest="60" HeightRequest="60" StrokeThickness="0">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="30"/>
-                            </Border.StrokeShape>
-                            <Image Source="ic_white_stop.svg" WidthRequest="24" HeightRequest="24" HorizontalOptions="Center" VerticalOptions="Center"/>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnStopAudioClicked"/>
-                            </Border.GestureRecognizers>
-                        </Border>
+                <!-- ── Audio controls + Nút xem chi tiết ──────────────────────
+                     IsPlaying=False → Play HIỆN, Pause+Stop ẨN
+                     IsPlaying=True  → Play ẨN,  Pause+Stop HIỆN
+                ─────────────────────────────────────────────────────────────-->
+                <Grid Grid.Row="2"
+                      ColumnDefinitions="Auto,Auto,Auto,*"
+                      ColumnSpacing="10">
 
-                        <Border BackgroundColor="#EDE7FF" WidthRequest="80" HeightRequest="80" StrokeThickness="0">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="40"/>
-                            </Border.StrokeShape>
-                            <Image x:Name="PlayPauseIcon" 
-                                   Source="ic_white_play.svg" 
-                                   WidthRequest="32" 
-                                   HeightRequest="32" 
-                                   HorizontalOptions="Center" 
-                                   VerticalOptions="Center"/>
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnPlayPauseAudioClicked"/>
-                            </Border.GestureRecognizers>
-                        </Border>
-                    </HorizontalStackLayout>
-                </VerticalStackLayout>
-                
-                <!-- Action Button -->
-                <Button Grid.Row="3" 
-                        Text="Xem chi tiết địa điểm"
-                        BackgroundColor="#512BD4"
-                        TextColor="White"
-                        CornerRadius="16"
-                        HeightRequest="54"
-                        FontAttributes="Bold"
-                        VerticalOptions="End"
-                        Margin="0,15,0,0"
-                        Clicked="OnDetailClicked"/>
+                    <!-- PLAY -->
+                    <Border Grid.Column="0"
+                            BackgroundColor="#EDE7FF"
+                            Stroke="Transparent" StrokeThickness="0"
+                            WidthRequest="46" HeightRequest="46">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="14"/>
+                        </Border.StrokeShape>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding ScannedPoi.IsPlaying}" Value="True">
+                                <Setter Property="IsVisible" Value="False"/>
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPlayAudioClicked"/>
+                        </Border.GestureRecognizers>
+                        <Image Source="ic_play.svg"
+                               WidthRequest="20" HeightRequest="20"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+
+                    <!-- PAUSE -->
+                    <Border Grid.Column="1"
+                            BackgroundColor="#FCE7F3"
+                            Stroke="Transparent" StrokeThickness="0"
+                            WidthRequest="46" HeightRequest="46"
+                            IsVisible="False">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="14"/>
+                        </Border.StrokeShape>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding ScannedPoi.IsPlaying}" Value="True">
+                                <Setter Property="IsVisible" Value="True"/>
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnPauseAudioClicked"/>
+                        </Border.GestureRecognizers>
+                        <Image Source="ic_pause.svg"
+                               WidthRequest="20" HeightRequest="20"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+
+                    <!-- STOP -->
+                    <Border Grid.Column="2"
+                            BackgroundColor="#F1F5F9"
+                            Stroke="Transparent" StrokeThickness="0"
+                            WidthRequest="46" HeightRequest="46"
+                            IsVisible="False">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="14"/>
+                        </Border.StrokeShape>
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding ScannedPoi.IsPlaying}" Value="True">
+                                <Setter Property="IsVisible" Value="True"/>
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnStopAudioClicked"/>
+                        </Border.GestureRecognizers>
+                        <Image Source="ic_white_stop.svg"
+                               WidthRequest="20" HeightRequest="20"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+
+                    <!-- Xem chi tiết -->
+                    <Border Grid.Column="3"
+                            BackgroundColor="#512BD4"
+                            Stroke="Transparent" StrokeThickness="0"
+                            HeightRequest="46">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="14"/>
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnDetailClicked"/>
+                        </Border.GestureRecognizers>
+                        <Label Text="Xem chi tiết"
+                               FontSize="13" FontAttributes="Bold" TextColor="White"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
+                </Grid>
+
             </Grid>
         </Border>
+
     </Grid>
 </ContentPage>

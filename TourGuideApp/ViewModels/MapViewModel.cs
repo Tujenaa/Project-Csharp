@@ -13,8 +13,6 @@ public class MapViewModel
     readonly MapService mapService = new();
     readonly LocationService locationService = new();
     readonly ApiService apiService = new();
-    readonly TextToSpeechService ttsService = new();
-    readonly TranslateService translateService = new();
 
     // ── State ─────────────────────────────────────────────────────────────────
     readonly List<POI> allPOIs = new();
@@ -28,11 +26,8 @@ public class MapViewModel
     public string MapHtml { get; }
 
     // ── TTS state ─────────────────────────────────────────────────────────────
-    POI? currentPlayingPoi;
-    bool isPlaying = false;
-    CancellationTokenSource? ttsToken;
-
-    string _currentLoadedLang = "";
+    // ── TTS state ─────────────────────────────────────────────────────────────
+    // Logic đã chuyển sang AudioPlaybackService
 
     // ── Events ────────────────────────────────────────────────────────────────
     public event Action? POIUpdated;
@@ -49,8 +44,8 @@ public class MapViewModel
     {
         MapHtml = mapService.BuildLeafletHtml();
 
-        PlayAudioCommand = new Command<POI>(poi => _ = HandlePlay(poi));
-        PauseAudioCommand = new Command<POI>(poi => HandlePause(poi));
+        PlayAudioCommand = new Command<POI>(poi => _ = AudioPlaybackService.Instance.PlayAsync(poi));
+        PauseAudioCommand = new Command<POI>(poi => AudioPlaybackService.Instance.Pause());
 
         GoToDetailCommand = new Command<POI>(async poi =>
         {
@@ -61,37 +56,11 @@ public class MapViewModel
 
         SelectRouteDestCommand = new Command<POI>(_ => { });
 
-        // Đăng ký event ghi lịch sử khi TTS phát xong
-        ttsService.OnFinished += OnTtsFinished;
-        ttsService.OnProgress += OnTtsProgress;
-
         _ = InitAsync();
     }
 
     // ── TTS callbacks ─────────────────────────────────────────────────────────
-
-    void OnTtsProgress(int current, int total)
-    {
-        if (currentPlayingPoi == null || total == 0) return;
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            currentPlayingPoi.AudioProgress = (double)current / total;
-            currentPlayingPoi.AudioDuration = $"{current}/{total} câu";
-        });
-    }
-
-    async void OnTtsFinished()
-    {
-        if (currentPlayingPoi == null) return;
-
-        var poi = currentPlayingPoi;
-        System.Diagnostics.Debug.WriteLine($"[Map] TTS finished → saving history for {poi.Name}");
-
-        await HistoryStore.AddAsync(poi);
-
-        // Cập nhật UI icon sau khi kết thúc
-        MainThread.BeginInvokeOnMainThread(() => POIUpdated?.Invoke());
-    }
+    // Logic đã chuyển sang AudioPlaybackService
 
     // ── Init ──────────────────────────────────────────────────────────────────
     async Task InitAsync()
@@ -151,7 +120,7 @@ public class MapViewModel
         if (userLat.HasValue && userLon.HasValue)
         {
             sorted = allPOIs
-                .OrderBy(p => DistanceHelper.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude))
+                .OrderBy(p => DistanceUtils.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude))
                 .ToList();
         }
         else
@@ -166,8 +135,7 @@ public class MapViewModel
             p.IndexLabel = (i + 1).ToString();
             if (userLat.HasValue && userLon.HasValue)
             {
-                double d = DistanceHelper.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude);
-                p.DistanceText = FormatDistance(d);
+                DistanceUtils.UpdatePoiDistance(p, userLat.Value, userLon.Value);
             }
         }
 
@@ -200,7 +168,7 @@ public class MapViewModel
         return allPOIs
             .Where(p => p.Name != null && p.Name.ToLowerInvariant().Contains(q))
             .OrderBy(p => userLat.HasValue && userLon.HasValue
-                ? DistanceHelper.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude)
+                ? DistanceUtils.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude)
                 : 0)
             .ToList();
     }
@@ -209,122 +177,15 @@ public class MapViewModel
     public void RefreshDistances() => RefreshNearbyOrder();
 
     // ── Tạm Dừng (Pause) ──────────────────────────────────────────────────────
-    void HandlePause(POI poi)
-    {
-        if (poi == null) return;
-        if (currentPlayingPoi?.Id == poi.Id && isPlaying)
-        {
-            ttsToken?.Cancel();
-            isPlaying = false;
-            poi.IsPlaying = false;
-            POIUpdated?.Invoke();
-        }
-    }
+    // ── Tạm Dừng (Pause) ──────────────────────────────────────────────────────
+    public void HandlePause(POI poi) => AudioPlaybackService.Instance.Pause();
 
     // ── Phát / Tiếp tục (Play / Resume) ───────────────────────────────────────
-    async Task HandlePlay(POI poi)
-    {
-        if (poi == null) return;
+    public async Task HandlePlay(POI poi) => await AudioPlaybackService.Instance.PlayAsync(poi);
 
-        if (currentPlayingPoi?.Id == poi.Id && isPlaying) return;
+    void StopAll() => AudioPlaybackService.Instance.Stop();
 
-        // ── RESUME ───────────────────────────────────────────────────────────
-        if (currentPlayingPoi?.Id == poi.Id && !isPlaying)
-        {
-            string langNow = SettingService.Instance.Language;
-
-            if (langNow != _currentLoadedLang)
-            {
-                string freshText = GetScriptForLang(poi, langNow);
-                ttsService.LoadText(freshText);
-                _currentLoadedLang = langNow;
-            }
-
-            isPlaying = true;
-            poi.IsPlaying = true;
-            POIUpdated?.Invoke();
-
-            ttsToken = new CancellationTokenSource();
-            try
-            {
-                await ttsService.SpeakAsync(ttsToken.Token);
-            }
-            catch (OperationCanceledException) { }
-            catch { }
-
-            isPlaying = false;
-            poi.IsPlaying = false;
-            POIUpdated?.Invoke();
-            return;
-        }
-
-        // ── PLAY MỚI ─────────────────────────────────────────────────────────
-        StopAll();
-
-        currentPlayingPoi = poi;
-        isPlaying = true;
-        poi.IsPlaying = true;
-        POIUpdated?.Invoke();
-
-        string lang = SettingService.Instance.Language;
-        
-        // --- LUÔN SYNC KHI ONLINE: Ưu tiên lấy kịch bản từ API nếu có mạng ---
-        if (ConnectivityService.IsConnected)
-        {
-            var freshPoi = await apiService.GetPOIById(poi.Id);
-            if (freshPoi != null)
-            {
-                // Cập nhật dữ liệu mới nhất vào object hiện tại
-                poi.ScriptVi = freshPoi.ScriptVi;
-                poi.ScriptEn = freshPoi.ScriptEn;
-                poi.ScriptJa = freshPoi.ScriptJa;
-                poi.ScriptZh = freshPoi.ScriptZh;
-                // Lưu ý: apiService.GetPOIById đã tự động lưu xuống SQLite Cache
-                System.Diagnostics.Debug.WriteLine($"[Sync] Đã tải kịch bản mới nhất từ API cho POI {poi.Id}");
-            }
-        }
-
-        string finalText = GetScriptForLang(poi, lang);
-        ttsService.LoadText(finalText);
-        _currentLoadedLang = lang;
-
-        ttsToken = new CancellationTokenSource();
-        try
-        {
-            await ttsService.SpeakAsync(ttsToken.Token);
-        }
-        catch (OperationCanceledException) { }
-        catch { }
-
-        isPlaying = false;
-        poi.IsPlaying = false;
-        POIUpdated?.Invoke();
-    }
-
-    private string GetScriptForLang(POI poi, string lang)
-    {
-        string? script = lang switch
-        {
-            "en" => poi.ScriptEn,
-            "ja" => poi.ScriptJa,
-            "zh" => poi.ScriptZh,
-            _ => poi.ScriptVi
-        };
-
-        if (string.IsNullOrWhiteSpace(script)) 
-            return "Không có dữ liệu thuyết minh";
-            
-        return script;
-    }
-
-    void StopAll()
-    {
-        ttsToken?.Cancel();
-        foreach (var p in NearbyPOI) p.IsPlaying = false;
-        isPlaying = false;
-    }
-
-    public void PlayPOIManually(POI poi) => _ = HandlePlay(poi);
+    public void PlayPOIManually(POI poi) => _ = AudioPlaybackService.Instance.PlayAsync(poi);
 
     // ── Auto-play ─────────────────────────────────────────────────────────────
     void CheckNearbyPOI(double lat, double lon)
@@ -336,12 +197,12 @@ public class MapViewModel
 
         foreach (var poi in NearbyPOI)
         {
-            double dist = DistanceHelper.GetDistance(lat, lon, poi.Latitude, poi.Longitude);
+            double dist = DistanceUtils.GetDistance(lat, lon, poi.Latitude, poi.Longitude);
             
             if (dist > poi.Radius * 2 && autoPlayedIds.Contains(poi.Id))
                 autoPlayedIds.Remove(poi.Id);
 
-            if (dist < poi.Radius && !autoPlayedIds.Contains(poi.Id) && !isPlaying)
+            if (dist < poi.Radius && !autoPlayedIds.Contains(poi.Id) && !AudioPlaybackService.Instance.IsPlaying)
             {
                 if (dist < minDistance)
                 {
@@ -354,7 +215,7 @@ public class MapViewModel
         if (closestPoi != null)
         {
             autoPlayedIds.Add(closestPoi.Id);
-            _ = HandlePlay(closestPoi);
+            _ = AudioPlaybackService.Instance.PlayAsync(closestPoi);
         }
     }
 
@@ -402,11 +263,6 @@ public class MapViewModel
     }
 
 
-    static string FormatDistance(double meters)
-    {
-        if (meters < 1000) return $"{(int)meters} m";
-        return $"{(meters / 1000.0):F1} km";
-    }
 
     static string BuildPOIJson(IEnumerable<POI> pois) =>
         JsonSerializer.Serialize(pois.Select(p => new
@@ -441,7 +297,7 @@ public class MapViewModel
         while (remaining.Count > 0)
         {
             var nearest = remaining
-                .OrderBy(p => DistanceHelper.GetDistance(curLat, curLon, p.Latitude, p.Longitude))
+                .OrderBy(p => DistanceUtils.GetDistance(curLat, curLon, p.Latitude, p.Longitude))
                 .First();
             sorted.Add(nearest);
             remaining.Remove(nearest);

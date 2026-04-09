@@ -42,7 +42,6 @@ public partial class TextToSpeechService
             if (string.IsNullOrWhiteSpace(textToSpeak))
             {
                 _finished = true;
-                OnFinished?.Invoke();
                 return;
             }
 
@@ -88,7 +87,6 @@ public partial class TextToSpeechService
             {
                 _parent._finished = true;
                 _parent._charIndex = 0;
-                _parent.OnFinished?.Invoke();
             }
             _parent._speechTcs?.TrySetResult(true);
         }

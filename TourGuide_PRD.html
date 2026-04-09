@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TourGuide System — PRD</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --p:#6d28d9;--pd:#4c1d95;--acc:#0ea5e9;--bg:#f8f7ff;--surf:#fff;
+  --text:#1a1033;--text2:#64748b;--border:#e2e0f0;
+  --green:#059669;--yellow:#d97706;--red:#dc2626;--blue:#2563eb;
+  --grad:linear-gradient(135deg,#4c1d95,#6d28d9,#db2777);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;margin-left:230px}
+code,pre{font-family:'JetBrains Mono',monospace}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;bottom:0;width:230px;background:#1a1033;color:#fff;display:flex;flex-direction:column;overflow-y:auto;z-index:200}
+nav .logo{padding:1.4rem 1.1rem 1rem;border-bottom:1px solid rgba(255,255,255,.08);font-weight:700;font-size:.95rem;letter-spacing:.5px}
+nav .logo span{color:#a78bfa}
+nav ul{list-style:none;padding:.5rem 0;flex:1}
+nav li a{color:rgba(255,255,255,.7);text-decoration:none;font-size:.78rem;padding:.5rem 1.1rem;display:block;border-left:2px solid transparent;transition:all .18s}
+nav li a:hover{color:#fff;background:rgba(255,255,255,.06);border-left-color:rgba(255,255,255,.3)}
+nav li a.active{color:#c4b5fd;background:rgba(167,139,250,.12);border-left-color:#c4b5fd;font-weight:600}
+nav .nav-group{font-size:.65rem;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);padding:.9rem 1.1rem .25rem;font-weight:600;list-style:none}
+
+/* ── HERO ── */
+.hero{background:var(--grad);color:#fff;padding:3.5rem 2.5rem 3rem;text-align:center}
+.hero h1{font-size:2.2rem;font-weight:700;margin-bottom:.5rem}
+.hero p{font-size:.97rem;max-width:700px;margin:0 auto 1.4rem;opacity:1;color:rgba(255,255,255,.95);text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.badges{display:flex;justify-content:center;gap:.4rem;flex-wrap:wrap}
+.badge{background:rgba(255,255,255,.15);backdrop-filter:blur(4px);padding:.22rem .7rem;border-radius:20px;font-size:.73rem;font-weight:500;border:1px solid rgba(255,255,255,.2)}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.9rem;padding:1.6rem 2.5rem;background:var(--surf);border-bottom:1px solid var(--border)}
+.stat-card{text-align:center;padding:.9rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.stat-card .val{font-size:1.6rem;font-weight:700;color:var(--p)}
+.stat-card .lbl{font-size:.7rem;color:var(--text2);margin-top:.15rem}
+
+/* ── SECTIONS ── */
+section{max-width:1080px;margin:0 auto;padding:2.2rem 2.5rem}
+section.alt{background:var(--surf);max-width:none}
+section.alt>.inner{max-width:1080px;margin:0 auto;padding:2.2rem 2.5rem}
+.sec-hdr{display:flex;align-items:center;gap:.8rem;margin-bottom:1.2rem}
+.sec-hdr .icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.sec-hdr h2{font-size:1.4rem;font-weight:700}
+.sec-num{font-size:.65rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--p);font-weight:600;margin-bottom:.1rem}
+h3{font-size:.95rem;margin:1.2rem 0 .6rem;color:var(--text);font-weight:600}
+p{color:var(--text2);font-size:.88rem;margin-bottom:.7rem}
+
+/* ── CARDS ── */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:1.1rem 0}
+.card{background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:1.2rem;transition:box-shadow .2s,transform .2s}
+.card:hover{box-shadow:0 4px 18px rgba(109,40,217,.1);transform:translateY(-2px)}
+.card h3{font-size:.9rem;margin:.2rem 0 .35rem;color:var(--pd)}
+.card p,.card li{font-size:.83rem;color:var(--text2)}
+.card ul{padding-left:1rem;margin-top:.3rem}
+.card li{margin-bottom:.18rem}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;margin:1rem 0}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{background:var(--p);color:#fff;padding:.5rem .75rem;text-align:left;font-weight:600}
+td{padding:.45rem .75rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+tr:hover td{background:#f5f3ff}
+
+/* ── CODE ── */
+code{background:#ede9fe;padding:.1rem .35rem;border-radius:3px;font-size:.8em;color:var(--pd)}
+
+/* ── HIGHLIGHT ── */
+.hl{border-left:3px solid var(--p);background:#ede9fe;padding:.8rem 1rem;border-radius:0 8px 8px 0;margin:.8rem 0;font-size:.84rem;color:var(--text2)}
+.hl.info{border-color:var(--blue);background:#eff6ff}
+.hl.success{border-color:var(--green);background:#ecfdf5}
+.hl.warn{border-color:var(--yellow);background:#fffbeb}
+.hl.danger{border-color:var(--red);background:#fef2f2}
+.hl strong{color:var(--text)}
+
+/* ── ARCH GRID ── */
+.arch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin:1.2rem 0}
+.arch-mod{border:2px solid var(--border);border-radius:9px;padding:.85rem;text-align:center;transition:all .2s}
+.arch-mod:hover{border-color:var(--p);box-shadow:0 2px 12px rgba(109,40,217,.12)}
+.arch-mod .mi{font-size:1.5rem;margin-bottom:.2rem}
+.arch-mod .mn{font-weight:700;font-size:.83rem;color:var(--pd)}
+.arch-mod .md{font-size:.7rem;color:var(--text2);margin-top:.18rem}
+
+/* ── ROLES ── */
+.roles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.2rem 0}
+.role-card{background:var(--surf);border:2px solid var(--border);border-radius:10px;padding:1.2rem;position:relative;overflow:hidden}
+.role-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.role-card.admin::before{background:linear-gradient(90deg,#dc2626,#ec4899)}
+.role-card.owner::before{background:linear-gradient(90deg,#6d28d9,#a855f7)}
+.role-card.customer::before{background:linear-gradient(90deg,#0ea5e9,#059669)}
+.role-icon{font-size:1.3rem;margin-bottom:.35rem}
+.role-name{font-size:.9rem;font-weight:700;margin-bottom:.6rem}
+.role-card.admin .role-name{color:#dc2626}
+.role-card.owner .role-name{color:var(--p)}
+.role-card.customer .role-name{color:#0284c7}
+.role-perms{list-style:none}
+.role-perms li{font-size:.77rem;color:var(--text2);padding:.16rem 0 .16rem .9rem;position:relative}
+.role-perms li::before{content:'→';position:absolute;left:0;opacity:.45;font-size:.75rem}
+
+/* ── DB ── */
+.db-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin:1.2rem 0}
+.db-card{background:var(--surf);border:1px solid var(--border);border-radius:9px;padding:1rem}
+.db-name{font-family:'JetBrains Mono',monospace;font-size:.88rem;color:var(--acc);font-weight:600;margin-bottom:.4rem;padding-bottom:.3rem;border-bottom:1px solid var(--border)}
+.db-field{display:flex;gap:.45rem;font-size:.75rem;padding:.15rem 0}
+.db-field .fn{color:var(--text);min-width:135px;font-weight:500}
+.db-field .ft{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--p)}
+.db-field .fd{font-size:.72rem;color:var(--text2)}
+
+/* ── ENDPOINTS ── */
+.endpoints{display:flex;flex-direction:column;gap:.4rem;margin:.8rem 0}
+.ep{display:flex;align-items:center;gap:.7rem;background:var(--surf);border:1px solid var(--border);border-radius:7px;padding:.6rem .85rem}
+.ep-m{font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:700;width:50px;text-align:center;padding:.15rem 0;border-radius:4px;flex-shrink:0}
+.ep-m.get{background:#dcfce7;color:#166534}
+.ep-m.post{background:#dbeafe;color:#1e40af}
+.ep-m.put{background:#fef3c7;color:#92400e}
+.ep-m.del{background:#fee2e2;color:#991b1b}
+.ep-path{font-family:'JetBrains Mono',monospace;font-size:.79rem;color:var(--pd);flex:1}
+.ep-desc{font-size:.74rem;color:var(--text2)}
+.ep-tag{font-size:.64rem;background:#ede9fe;color:var(--pd);padding:.1rem .4rem;border-radius:9px;white-space:nowrap}
+
+/* ── FLOW ── */
+.flow{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin:.8rem 0}
+.flow-step{background:var(--p);color:#fff;padding:.3rem .75rem;border-radius:7px;font-size:.76rem;font-weight:600;white-space:nowrap}
+.flow-step.acc{background:var(--acc)}
+.flow-step.green{background:var(--green)}
+.flow-step.yel{background:var(--yellow)}
+.flow-arrow{color:var(--text2)}
+
+/* ── TIMELINE ── */
+.timeline{position:relative;padding-left:1.7rem;margin:1.1rem 0}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--p)}
+.timeline-item{position:relative;margin-bottom:1.2rem}
+.timeline-item::before{content:'';position:absolute;left:-1.7rem;top:4px;width:12px;height:12px;border-radius:50%;background:var(--p);border:2px solid #fff;box-shadow:0 0 0 2px var(--p)}
+.timeline-item h4{font-size:.88rem;color:var(--pd);margin-bottom:.2rem}
+.timeline-item p{font-size:.8rem}
+
+/* ═══════════════════════════════════════
+   DIAGRAM SECTION — ACCORDION UI
+═══════════════════════════════════════ */
+#diagrams{padding:0}
+.diag-hero{background:linear-gradient(135deg,#1a1033 0%,#2d1b69 100%);color:#fff;padding:2.5rem 2.5rem 2rem}
+.diag-hero h2{font-size:1.5rem;font-weight:700;margin-bottom:.4rem}
+.diag-hero p{font-size:.87rem;opacity:.7;max-width:680px;margin:0}
+
+/* Tab bar */
+.diag-tabs{display:flex;gap:0;background:#fff;border-bottom:2px solid var(--border);padding:0 2.5rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.diag-tab{padding:.75rem 1.3rem;font-size:.82rem;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .18s;display:flex;align-items:center;gap:.45rem;white-space:nowrap;user-select:none}
+.diag-tab:hover{color:var(--p)}
+.diag-tab.active{color:var(--p);border-bottom-color:var(--p)}
+.diag-tab .tab-icon{font-size:1rem}
+.diag-tab .tab-count{background:var(--p);color:#fff;border-radius:20px;padding:.05rem .4rem;font-size:.65rem;font-weight:700}
+
+/* Panel */
+.diag-panel{display:none;padding:2rem 2.5rem}
+.diag-panel.active{display:block}
+
+/* Accordion items */
+.acc-item{border:1px solid var(--border);border-radius:10px;margin-bottom:.7rem;overflow:hidden;background:var(--surf)}
+.acc-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;cursor:pointer;user-select:none;transition:background .15s}
+.acc-header:hover{background:#f5f3ff}
+.acc-header.open{background:#f5f3ff;border-bottom:1px solid var(--border)}
+.acc-header-left{display:flex;align-items:center;gap:.7rem}
+.acc-num{width:26px;height:26px;border-radius:50%;background:var(--p);color:#fff;font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.acc-title{font-size:.88rem;font-weight:600;color:var(--text)}
+.acc-subtitle{font-size:.74rem;color:var(--text2);margin-top:.08rem}
+.acc-chevron{color:var(--text2);font-size:.8rem;transition:transform .2s;flex-shrink:0}
+.acc-header.open .acc-chevron{transform:rotate(180deg)}
+.acc-body{display:none;padding:1rem 1.1rem}
+.acc-body.open{display:block}
+.mermaid-wrap{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:1.1rem;overflow-x:auto}
+
+/* ── PATTERNS ── */
+
+footer{text-align:center;padding:2rem;background:#1a1033;color:rgba(255,255,255,.5);font-size:.75rem}
+footer strong{color:rgba(255,255,255,.85)}
+
+@media(max-width:768px){
+  body{margin-left:0}
+  nav{position:relative;width:100%}
+  .arch-grid,.roles-grid,.db-grid{grid-template-columns:1fr}
+  .diag-tabs{overflow-x:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav>
+  <div class="logo">🗺️ TourGuide <span>PRD</span></div>
+  <ul>
+    <li class="nav-group">Tổng quan</li>
+    <li><a href="#overview">Kiến trúc</a></li>
+    <li><a href="#roles">Phân quyền</a></li>
+    <li><a href="#database">Database</a></li>
+    <li class="nav-group">Backend</li>
+    <li><a href="#api">API Endpoints</a></li>
+    <li><a href="#tts">TTS Pipeline</a></li>
+    <li><a href="#auth">Auth</a></li>
+    <li><a href="#geofence">Geofencing</a></li>
+    <li class="nav-group">Frontend</li>
+    <li><a href="#mobile">Mobile App</a></li>
+    <li><a href="#web">Web CMS</a></li>
+    <li class="nav-group">Diagrams</li>
+    <li><a href="#diagrams">Sơ đồ</a></li>
+    <li><a href="#patterns">Patterns</a></li>
+  </ul>
+</nav>
+
+<!-- ══ HERO ══ -->
+<div class="hero">
+  <h1>🗺️ TourGuide System</h1>
+  <p>Hệ thống thuyết minh du lịch tự động — Web CMS (ASP.NET Core 8 Razor Pages) + Mobile App (.NET MAUI Android), GPS Geofencing Haversine tự động phát TTS khi khách vào vùng POI, offline SQLite cache.</p>
+  <div class="badges">
+    <span class="badge">ASP.NET Core 8</span><span class="badge">Razor Pages CMS</span><span class="badge">Web API REST</span>
+    <span class="badge">.NET MAUI Android</span><span class="badge">SQL Server Express</span><span class="badge">EF Core</span>
+    <span class="badge">SQLite Offline</span><span class="badge">Leaflet.js</span><span class="badge">Web Speech API</span>
+    <span class="badge">Google Translate Free</span><span class="badge">OSRM Routing</span>
+  </div>
+</div>
+
+<!-- ══ STATS ══ -->
+<div class="stats-row">
+  <div class="stat-card"><div class="val">3</div><div class="lbl">Project .NET</div></div>
+  <div class="stat-card"><div class="val">3</div><div class="lbl">Vai trò RBAC</div></div>
+  <div class="stat-card"><div class="val">4</div><div class="lbl">Ngôn ngữ TTS</div></div>
+  <div class="stat-card"><div class="val">5</div><div class="lbl">Bảng SQL Server</div></div>
+  <div class="stat-card"><div class="val">25+</div><div class="lbl">API Endpoints</div></div>
+  <div class="stat-card"><div class="val">$0</div><div class="lbl">Chi phí API</div></div>
+  <div class="stat-card"><div class="val">17</div><div class="lbl">Sequence Diagrams</div></div>
+  <div class="stat-card"><div class="val">2</div><div class="lbl">State Diagrams</div></div>
+</div>
+
+<!-- ══ OVERVIEW ══ -->
+<section id="overview">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#ede9fe;color:var(--p)">🏗️</div>
+    <div><div class="sec-num">Chapter 00</div><h2>Kiến Trúc Tổng Quan</h2></div>
+  </div>
+  <p>3 project .NET chạy song song, giao tiếp qua REST API, dùng chung SQL Server Express. Web CMS dành cho Admin/Owner. Mobile App dành cho khách du lịch nghe TTS tự động qua GPS.</p>
+  <div class="arch-grid">
+    <div class="arch-mod"><div class="mi">🌐</div><div class="mn">GPSGuide.Web</div><div class="md">ASP.NET Core 8 Razor Pages<br/>Admin &amp; Owner CMS<br/>:5248</div></div>
+    <div class="arch-mod"><div class="mi">⚙️</div><div class="mn">TourGuideAPI</div><div class="md">ASP.NET Core Web API<br/>REST + CORS AllowAll<br/>:5266</div></div>
+    <div class="arch-mod"><div class="mi">📱</div><div class="mn">TourGuideApp</div><div class="md">.NET MAUI Android<br/>GPS Geofencing + TTS<br/>SQLite offline</div></div>
+    <div class="arch-mod"><div class="mi">🗄️</div><div class="mn">TourGuideDB</div><div class="md">SQL Server Express<br/>5 bảng</div></div>
+    <div class="arch-mod"><div class="mi">🔊</div><div class="mn">Web Speech API</div><div class="md">TTS native browser &amp; MAUI<br/>4 ngôn ngữ vi/en/ja/zh</div></div>
+    <div class="arch-mod"><div class="mi">📦</div><div class="mn">SQLite Local</div><div class="md">tourguide_local.db3<br/>Cache POI + History queue</div></div>
+  </div>
+  <div class="hl info"><strong>URL thực tế:</strong> Emulator → <code>http://10.0.2.2:5266/api/</code> · Thiết bị thật (LAN) → <code>http://192.168.1.127:5266/api/</code></div>
+</section>
+
+<!-- ══ ROLES ══ -->
+<section id="roles" class="alt"><div class="inner">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#fce7f3;color:#9d174d">👥</div>
+    <div><div class="sec-num">Chapter 01</div><h2>Phân Quyền (RBAC)</h2></div>
+  </div>
+  <div class="roles-grid">
+    <div class="role-card admin">
+      <div class="role-icon">🔴</div><div class="role-name">ADMIN</div>
+      <ul class="role-perms">
+        <li>Quản lý tất cả POI / Audio / Users</li>
+        <li>Phê duyệt / từ chối POI</li>
+        <li>Xóa hàng loạt POI bị từ chối</li>
+        <li>Xem lịch sử phát toàn hệ thống</li>
+        <li>Xem chi tiết User + POI của Owner</li>
+        <li>Dashboard thống kê tổng quan</li>
+        <li>Badge pending trên sidebar</li>
+        <li>Tạo user bất kỳ role</li>
+      </ul>
+    </div>
+    <div class="role-card owner">
+      <div class="role-icon">🟣</div><div class="role-name">OWNER</div>
+      <ul class="role-perms">
+        <li>Chỉ thấy POI có OwnerId = mình</li>
+        <li>Tạo POI → PENDING, chờ Admin duyệt</li>
+        <li>Sửa POI APPROVED → về PENDING lại</li>
+        <li>CRUD Audio (chỉ khi POI APPROVED)</li>
+        <li>Upload ảnh POI ≤ 5MB/file</li>
+        <li>Sửa thông tin cá nhân (/Profile)</li>
+        <li>Đăng ký → role=OWNER, vào luôn</li>
+      </ul>
+    </div>
+    <div class="role-card customer">
+      <div class="role-icon">🟢</div><div class="role-name">CUSTOMER</div>
+      <ul class="role-perms">
+        <li>Chỉ dùng Mobile App Android</li>
+        <li>Bị chặn đăng nhập Web CMS</li>
+        <li>GPS geofencing tự động phát TTS</li>
+        <li>Nghe 4 ngôn ngữ vi/en/ja/zh</li>
+        <li>Offline mode — SQLite + seed JSON</li>
+        <li>Sửa Name + Phone (AccountPage)</li>
+        <li>Lịch sử nghe cá nhân</li>
+      </ul>
+    </div>
+  </div>
+  <div class="hl warn"><strong>POI Workflow:</strong> Owner tạo → <code>PENDING</code> → Admin duyệt → <code>APPROVED</code> (hiện App). Từ chối → <code>REJECTED</code> + lý do. Owner sửa APPROVED → về PENDING. Header <code>X-Role: ADMIN/OWNER</code> phân biệt tại API.</div>
+</div></section>
+
+<!-- ══ DATABASE ══ -->
+<section id="database">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#ecfdf5;color:#065f46">🗃️</div>
+    <div><div class="sec-num">Chapter 02</div><h2>Database — SQL Server Express</h2></div>
+  </div>
+  <p>5 bảng. EF Core làm ORM. Schema tạo thủ công qua SQL script, không dùng migrations. Kiểm tra Role=CUSTOMER được xử lý ở tầng API (<code>HistoryController</code>) trước khi INSERT.</p>
+  <div class="db-grid">
+    <div class="db-card">
+      <div class="db-name">Users</div>
+      <div class="db-field"><span class="fn">Id</span><span class="ft">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fn">Username</span><span class="ft">NVARCHAR(100)</span></div>
+      <div class="db-field"><span class="fn">PasswordHash</span><span class="ft">NVARCHAR(255)</span><span class="fd">plaintext (chưa bcrypt)</span></div>
+      <div class="db-field"><span class="fn">Name / Email / Phone</span><span class="ft">NVARCHAR</span></div>
+      <div class="db-field"><span class="fn">Role</span><span class="ft">NVARCHAR(50)</span><span class="fd">CHECK ADMIN/OWNER/CUSTOMER</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-name">POI</div>
+      <div class="db-field"><span class="fn">Id</span><span class="ft">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fn">Name / Description / Address / Phone</span><span class="ft">NVARCHAR</span></div>
+      <div class="db-field"><span class="fn">Latitude / Longitude</span><span class="ft">FLOAT</span></div>
+      <div class="db-field"><span class="fn">Radius</span><span class="ft">INT</span><span class="fd">mét — geofence</span></div>
+      <div class="db-field"><span class="fn">OwnerId</span><span class="ft">INT FK→Users</span></div>
+      <div class="db-field"><span class="fn">Status</span><span class="ft">NVARCHAR(20)</span><span class="fd">PENDING/APPROVED/REJECTED (DEFAULT APPROVED)</span></div>
+      <div class="db-field"><span class="fn">RejectReason</span><span class="ft">NVARCHAR(500) NULL</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-name">Audio</div>
+      <div class="db-field"><span class="fn">Id</span><span class="ft">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fn">PoiId</span><span class="ft">INT FK→POI</span></div>
+      <div class="db-field"><span class="fn">vi / en / ja / zh</span><span class="ft">NVARCHAR(MAX)</span><span class="fd">4 script ngôn ngữ</span></div>
+      <div class="db-field"><span class="fn">Ràng buộc</span><span class="ft">—</span><span class="fd">1 record/POI, chỉ thêm khi APPROVED (API enforce)</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-name">History</div>
+      <div class="db-field"><span class="fn">Id</span><span class="ft">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fn">PoiId</span><span class="ft">INT FK→POI</span></div>
+      <div class="db-field"><span class="fn">UserId</span><span class="ft">INT FK→Users</span></div>
+      <div class="db-field"><span class="fn">PlayTime</span><span class="ft">DATETIME DEFAULT GETDATE()</span></div>
+    </div>
+    <div class="db-card">
+      <div class="db-name">POIImages</div>
+      <div class="db-field"><span class="fn">Id</span><span class="ft">INT PK IDENTITY</span></div>
+      <div class="db-field"><span class="fn">PoiId</span><span class="ft">INT NOT NULL FK→POI</span></div>
+      <div class="db-field"><span class="fn">ImageUrl</span><span class="ft">NVARCHAR(500)</span><span class="fd">/uploads/poi/...</span></div>
+      <div class="db-field"><span class="fn">IsThumbnail</span><span class="ft">BIT DEFAULT 0</span></div>
+      <div class="db-field"><span class="fn">CreatedAt</span><span class="ft">DATETIME DEFAULT GETDATE()</span></div>
+    </div>
+  </div>
+  <div class="hl"><strong>POIDto (trả cho App):</strong> <code>Id, Name, Description, Address, Phone, Lat, Lng, Radius, ScriptVi, ScriptEn, ScriptJa, ScriptZh, Images[]</code> — không có OwnerId, Status, PasswordHash.</div>
+</section>
+
+<!-- ══ API ══ -->
+<section id="api" class="alt"><div class="inner">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#dbeafe;color:#1e40af">⚙️</div>
+    <div><div class="sec-num">Chapter 03</div><h2>TourGuideAPI — REST Endpoints</h2></div>
+  </div>
+  <h3>📍 POI — <code>/api/poi</code></h3>
+  <div class="endpoints">
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi</span><span class="ep-desc">APPROVED + join Audio + Images → POIDto[]</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi/top</span><span class="ep-desc">Top 5 POI phát nhiều nhất (từ History)</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi/count</span><span class="ep-desc">Số POI APPROVED</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi/audio-count</span><span class="ep-desc">Tổng lịch sử phát</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi/all</span><span class="ep-desc">Tất cả mọi status</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi/owner/{id}</span><span class="ep-desc">POI của Owner</span><span class="ep-tag">WEB OWNER</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi/pending</span><span class="ep-desc">POI Status=PENDING (badge sidebar)</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi/{id}</span><span class="ep-desc">Chi tiết + Audio + Images</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/poi/{id}/images</span><span class="ep-desc">Danh sách ảnh POIImages</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m post">POST</span><span class="ep-path">/api/poi</span><span class="ep-desc">Tạo — Owner→PENDING, Admin→APPROVED (X-Role)</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m put">PUT</span><span class="ep-path">/api/poi/{id}</span><span class="ep-desc">Sửa — Owner→PENDING, Admin→thẳng (X-Role)</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m put">PUT</span><span class="ep-path">/api/poi/{id}/approve</span><span class="ep-desc">Duyệt → APPROVED</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m put">PUT</span><span class="ep-path">/api/poi/{id}/reject</span><span class="ep-desc">Từ chối → REJECTED + RejectReason</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m del">DEL</span><span class="ep-path">/api/poi/{id}</span><span class="ep-desc">Xóa + cascade Audio/History/Images</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m del">DEL</span><span class="ep-path">/api/poi/rejected</span><span class="ep-desc">Xóa tất cả REJECTED</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m post">POST</span><span class="ep-path">/api/poi/{id}/image</span><span class="ep-desc">Upload ảnh → wwwroot/uploads/poi/</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m put">PUT</span><span class="ep-path">/api/poi/image/{imageId}/thumbnail</span><span class="ep-desc">Đặt IsThumbnail=true</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m del">DEL</span><span class="ep-path">/api/poi/image/{imageId}</span><span class="ep-desc">Xóa ảnh DB + file vật lý</span><span class="ep-tag">WEB</span></div>
+  </div>
+  <h3>🎵 Audio — <code>/api/audio</code></h3>
+  <div class="endpoints">
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/audio</span><span class="ep-desc">Tất cả + PoiName</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/audio/{id}</span><span class="ep-desc">Chi tiết</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m post">POST</span><span class="ep-path">/api/audio</span><span class="ep-desc">Tạo — kiểm tra APPROVED + 1 record/POI</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m put">PUT</span><span class="ep-path">/api/audio/{id}</span><span class="ep-desc">Sửa 4 script vi/en/ja/zh</span><span class="ep-tag">WEB</span></div>
+    <div class="ep"><span class="ep-m del">DEL</span><span class="ep-path">/api/audio/{id}</span><span class="ep-desc">Xóa</span><span class="ep-tag">WEB</span></div>
+  </div>
+  <h3>📜 History — <code>/api/history</code></h3>
+  <div class="endpoints">
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/history</span><span class="ep-desc">Tất cả, LEFT JOIN Users+POI → UserLogin, PoiName</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m post">POST</span><span class="ep-path">/api/history</span><span class="ep-desc">Ghi — API kiểm tra UserId + Role=CUSTOMER</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/history/user/{id}</span><span class="ep-desc">Lịch sử cá nhân + PoiName/PoiImage</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m del">DEL</span><span class="ep-path">/api/history/{id}</span><span class="ep-desc">Xóa record</span><span class="ep-tag">WEB ADMIN</span></div>
+  </div>
+  <h3>👤 Users — <code>/api/users</code></h3>
+  <div class="endpoints">
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/users</span><span class="ep-desc">Tất cả users</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/users/owners</span><span class="ep-desc">Chỉ OWNER</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/users/customers</span><span class="ep-desc">Chỉ CUSTOMER</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m get">GET</span><span class="ep-path">/api/users/{id}</span><span class="ep-desc">Chi tiết user</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m post">POST</span><span class="ep-path">/api/users/login</span><span class="ep-desc">Login — chỉ CUSTOMER, trả UserDto</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m post">POST</span><span class="ep-path">/api/users/register</span><span class="ep-desc">Đăng ký, gán Role=CUSTOMER tự động</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m put">PUT</span><span class="ep-path">/api/users/customer/{id}</span><span class="ep-desc">Cập nhật Name + Phone</span><span class="ep-tag">APP</span></div>
+    <div class="ep"><span class="ep-m post">POST</span><span class="ep-path">/api/users</span><span class="ep-desc">Admin tạo user bất kỳ role</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m put">PUT</span><span class="ep-path">/api/users/{id}</span><span class="ep-desc">Sửa info + role + password</span><span class="ep-tag">WEB ADMIN</span></div>
+    <div class="ep"><span class="ep-m del">DEL</span><span class="ep-path">/api/users/{id}</span><span class="ep-desc">Xóa user</span><span class="ep-tag">WEB ADMIN</span></div>
+  </div>
+</div></section>
+
+<!-- ══ TTS ══ -->
+<section id="tts">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#f5f3ff;color:var(--p)">🎙️</div>
+    <div><div class="sec-num">Chapter 04</div><h2>Text-to-Speech Pipeline</h2></div>
+  </div>
+  <div class="flow">
+    <span class="flow-step">📝 Script vi</span><span class="flow-arrow">→</span>
+    <span class="flow-step acc">🌐 TranslateService</span><span class="flow-arrow">→</span>
+    <span class="flow-step yel">📄 Text dịch</span><span class="flow-arrow">→</span>
+    <span class="flow-step">🎤 ResolveLocaleAsync</span><span class="flow-arrow">→</span>
+    <span class="flow-step green">🔊 SpeakAsync</span>
+  </div>
+  <div class="card-grid">
+    <div class="card"><h3>📱 MAUI TextToSpeech</h3><p>LocalePriority fallback: vi→[Google Vietnamese, HoaiMy, vi-VN], en→[Aria, en-US], ja→[Nanami, ja-JP], zh→[Xiaoxiao, zh-CN]. Pause/Resume native Android. 7-bar waveform animation khi phát.</p></div>
+    <div class="card"><h3>🌐 Web Speech API</h3><p>AudioManager preview qua <code>window.speechSynthesis</code>. Auto-translate 3 ngôn ngữ còn lại. Google Translate free endpoint không cần key.</p></div>
+  </div>
+</section>
+
+<!-- ══ AUTH ══ -->
+<section id="auth" class="alt"><div class="inner">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#fef3c7;color:#92400e">🔐</div>
+    <div><div class="sec-num">Chapter 05</div><h2>Authentication</h2></div>
+  </div>
+  <div class="card-grid">
+    <div class="card"><h3>🌐 Web CMS — Session</h3><p><code>HttpContext.Session</code> lưu UserId, Username, Role. CUSTOMER bị chặn. Register → role=OWNER, vào luôn. So sánh password trực tiếp (plaintext).</p></div>
+    <div class="card"><h3>📱 Mobile — Preferences</h3><p><code>AuthService</code> static: lưu token GUID, user_id, username, name, email, phone. Guest mode: UserId=0, không ghi History. <code>SessionService.CurrentUser</code> in-memory.</p></div>
+  </div>
+  <div class="hl info"><strong>Bảo mật:</strong> Password lưu plaintext trong DB (chưa bcrypt). Chấp nhận được cho đồ án, cần cải thiện cho production.</div>
+</div></section>
+
+<!-- ══ GEOFENCE ══ -->
+<section id="geofence">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#e0f2f1;color:#00695c">📡</div>
+    <div><div class="sec-num">Chapter 06</div><h2>GPS Geofencing — Core Feature</h2></div>
+  </div>
+  <p>Haversine formula tính khoảng cách client-side (R=6,371,000m). Khi distance ≤ Radius → tự động phát TTS → ghi History. Loop 3 giây, không cần server roundtrip.</p>
+  <div class="timeline">
+    <div class="timeline-item"><h4>① Load POI</h4><p>Online: <code>GET /api/poi</code> → cache SQLite. Offline: <code>GetCachedPOIsAsync()</code>. Lần đầu: seed từ <code>seed_pois.json</code>.</p></div>
+    <div class="timeline-item"><h4>② GPS Tracking</h4><p><code>LocationService.GetCurrentLocationAsync(GeolocationAccuracy.Best, 5s)</code></p></div>
+    <div class="timeline-item"><h4>③ Haversine Check</h4><p><code>DistanceHelper.GetDistance(lat1,lon1,lat2,lon2)</code> → mét. Hiển thị "350m" hoặc "1.2km".</p></div>
+    <div class="timeline-item"><h4>④ TTS Playback</h4><p>GetScriptForLang → TranslateService nếu cần → SpeakAsync + waveform. OnTtsFinished → ghi History.</p></div>
+    <div class="timeline-item"><h4>⑤ Ghi History</h4><p>Online: <code>POST /api/history</code> — API kiểm tra Role=CUSTOMER. Offline: SQLite PendingHistory → sync khi online.</p></div>
+  </div>
+</section>
+
+<!-- ══ MOBILE ══ -->
+<section id="mobile" class="alt"><div class="inner">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#ecfdf5;color:#065f46">📱</div>
+    <div><div class="sec-num">Chapter 07</div><h2>Mobile App — .NET MAUI Android</h2></div>
+  </div>
+  <div class="flow">
+    <span class="flow-step">🏠 home</span><span class="flow-arrow">→</span>
+    <span class="flow-step acc">🗺️ map</span><span class="flow-arrow">→</span>
+    <span class="flow-step green">📜 history</span><span class="flow-arrow">→</span>
+    <span class="flow-step yel">⚙️ settings</span>
+  </div>
+  <div class="card-grid">
+    <div class="card"><h3>🏠 HomePage</h3><ul><li>POI list + khoảng cách real-time</li><li>Top POI (GET /api/poi/top)</li><li>Geocoding địa chỉ GPS hiện tại</li><li>HomeViewModel: GoToDetail, Play, Pause</li></ul></div>
+    <div class="card"><h3>🗺️ MapPage</h3><ul><li>Leaflet WebView + OSRM routing</li><li>3 màu marker: đỏ/cam/tím</li><li>Search POI + bottom sheet</li><li>Detail card → Play/Chi đường</li><li>MapViewModel + EvalJs bridge</li></ul></div>
+    <div class="card"><h3>📋 PlaceDetailPage</h3><ul><li>[QueryProperty] POI từ Shell nav</li><li>Play/Pause/Resume TTS</li><li>7-bar waveform animation</li><li>Sync script mới nhất từ API khi online</li><li>OnTtsFinished → ghi History</li></ul></div>
+    <div class="card"><h3>⚙️ SettingsPage</h3><ul><li>Chọn ngôn ngữ TTS vi/en/ja/zh</li><li>Avatar letter từ tên user</li><li>Tap → AccountPage</li><li>Đăng xuất (xác nhận)</li></ul></div>
+    <div class="card"><h3>📜 HistoryPage</h3><ul><li>HistoryViewModel + HistoryStore event</li><li>Real-time update khi có play mới</li><li>Unsubscribe OnDisappearing</li></ul></div>
+    <div class="card"><h3>🔐 LoginPage</h3><ul><li>Tab Login / Register</li><li>Guest offline (UserId=0)</li><li>ConnectivityService.CanReachApiAsync()</li></ul></div>
+    <div class="card"><h3>🧑 AccountPage</h3><ul><li>AccountViewModel: SaveProfileCommand</li><li>PUT /api/users/customer/{id}</li><li>Thông báo inline thành công/lỗi</li></ul></div>
+  </div>
+</div></section>
+
+<!-- ══ WEB ══ -->
+<section id="web">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#ede9fe;color:var(--p)">🌐</div>
+    <div><div class="sec-num">Chapter 08</div><h2>Web CMS — GPSGuide.Web</h2></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Trang</th><th>Route</th><th>ADMIN</th><th>OWNER</th></tr></thead>
+      <tbody>
+        <tr><td>🏠 Dashboard</td><td><code>/</code></td><td>✅ Thống kê + Top POI</td><td>✅ Thống kê POI mình</td></tr>
+        <tr><td>📍 Điểm thuyết minh</td><td><code>/Pois</code></td><td>✅ Tất cả + dropdown Owner</td><td>✅ POI OwnerId = mình</td></tr>
+        <tr><td>🎵 Audio</td><td><code>/AudioManager</code></td><td>✅ Tất cả</td><td>✅ Audio POI mình (APPROVED)</td></tr>
+        <tr><td>📜 Lịch sử phát</td><td><code>/HistoryPage</code></td><td>✅ Tất cả</td><td>✅ POI mình</td></tr>
+        <tr><td>👤 Người dùng</td><td><code>/Users</code></td><td>✅ Full CRUD</td><td>❌</td></tr>
+        <tr><td>🔍 Chi tiết User</td><td><code>/Userdetail</code></td><td>✅ Info + POI của Owner</td><td>❌</td></tr>
+        <tr><td>✅ Phê duyệt</td><td><code>/Approval</code></td><td>✅ Approve/Reject/Revoke</td><td>❌</td></tr>
+        <tr><td>🧑 Hồ sơ cá nhân</td><td><code>/Profile</code></td><td>❌</td><td>✅ Sửa info</td></tr>
+        <tr><td>🔐 Đăng nhập</td><td><code>/Auth</code></td><td colspan="2" style="text-align:center">✅ CUSTOMER bị từ chối</td></tr>
+        <tr><td>📝 Đăng ký</td><td><code>/Register</code></td><td colspan="2" style="text-align:center">✅ → role=OWNER, vào luôn</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="hl"><strong>PendingCountFilter:</strong> IAsyncPageFilter inject <code>ViewData["PendingCount"]</code> tự động — badge PENDING trên mọi trang. Img-proxy tránh mixed HTTPS/HTTP.</div>
+</section>
+
+<!-- ══════════════════════════════════════
+     DIAGRAMS — ACCORDION TAB UI
+══════════════════════════════════════ -->
+<div id="diagrams">
+  <div class="diag-hero">
+    <h2>📊 Sơ đồ hệ thống</h2>
+    <p>Chọn loại sơ đồ bên dưới. Bấm vào từng chức năng để xem chi tiết.</p>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="diag-tabs">
+    <div class="diag-tab active" onclick="switchTab('seq')" data-tab="seq">
+      <span class="tab-icon">🔄</span> Sequence <span class="tab-count">17</span>
+    </div>
+    <div class="diag-tab" onclick="switchTab('state')" data-tab="state">
+      <span class="tab-icon">🔀</span> State <span class="tab-count">2</span>
+    </div>
+    <div class="diag-tab" onclick="switchTab('class')" data-tab="class">
+      <span class="tab-icon">🧱</span> Class <span class="tab-count">1</span>
+    </div>
+    <div class="diag-tab" onclick="switchTab('activity')" data-tab="activity">
+      <span class="tab-icon">📋</span> Activity <span class="tab-count">2</span>
+    </div>
+  </div>
+
+  <!-- ═══ SEQUENCE PANEL ═══ -->
+  <div id="panel-seq" class="diag-panel active">
+
+    <p style="color:var(--text2);font-size:.83rem;margin-bottom:1.2rem">
+      <strong style="color:var(--text)">🔐 Auth (5)</strong> &nbsp;·&nbsp;
+      <strong style="color:var(--text)">📱 Mobile App (6)</strong> &nbsp;·&nbsp;
+      <strong style="color:var(--text)">🌐 Web CMS (6)</strong>
+    </p>
+
+    <!-- GROUP: AUTH -->
+    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);font-weight:700;margin:.4rem 0 .7rem;padding-left:.3rem">🔐 AUTH</div>
+
+    <!-- S01 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">1</div>
+          <div><div class="acc-title">CUSTOMER đăng nhập (Mobile)</div><div class="acc-subtitle">LoginPage → AuthService → POST /api/users/login → AppShell</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant LP as LoginPage
+    participant CON as ConnectivityService
+    participant AUTH as AuthService
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+    participant SHELL as AppShell
+
+    C->>LP: Nhap username + password, bam Dang nhap
+    LP->>LP: Validate khong trong
+    LP->>CON: CanReachApiAsync()
+    CON-->>LP: true
+    LP->>AUTH: LoginAsync(username, password)
+    AUTH->>API: POST /api/users/login
+    API->>DB: SELECT WHERE Username=? AND PasswordHash=?
+    DB-->>API: User record
+    API->>API: Kiem tra Role = CUSTOMER
+    alt Role khac CUSTOMER
+        API-->>AUTH: 401 Unauthorized
+        AUTH-->>LP: false
+        LP-->>C: Hien loi
+    else Role = CUSTOMER
+        API-->>AUTH: 200 UserDto (Id, Username, Name, Email, Phone, Role)
+        AUTH->>AUTH: Luu Preferences (token, user_id, username, name, email, phone)
+        AUTH-->>LP: true
+        LP->>SHELL: Application.Current.MainPage = new AppShell()
+        SHELL-->>C: Vao TabBar Trang chu
+    end
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S02 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">2</div>
+          <div><div class="acc-title">CUSTOMER đăng ký (Mobile)</div><div class="acc-subtitle">RegisterAsync → POST /api/users/register → Role=CUSTOMER tự động</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant LP as LoginPage
+    participant AUTH as AuthService
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+    participant SHELL as AppShell
+
+    C->>LP: Bam tab Dang ky, nhap thong tin
+    LP->>LP: Validate username, name, email, pw >= 6, pw == confirm
+    LP->>API: (qua AuthService) POST /api/users/register
+    API->>DB: Kiem tra username ton tai
+    alt Ton tai
+        DB-->>API: co record
+        API-->>LP: 400 Username da ton tai
+        LP-->>C: Hien loi
+    else Hop le
+        API->>DB: INSERT Users (Role=CUSTOMER)
+        DB-->>API: UserDto moi
+        API-->>AUTH: 200 UserDto
+        AUTH->>AUTH: Luu Preferences
+        AUTH-->>LP: true
+        LP->>SHELL: new AppShell()
+        SHELL-->>C: Vao TabBar
+    end
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S03 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">3</div>
+          <div><div class="acc-title">Đăng nhập khách offline (Guest Mode)</div><div class="acc-subtitle">LoginOfflineAsGuest → UserId=0 → không ghi History</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant LP as LoginPage
+    participant AUTH as AuthService
+    participant PREF as Preferences
+    participant SHELL as AppShell
+    participant LDB as LocalDbService
+
+    C->>LP: Bam Vao xem khong can dang nhap
+    LP->>AUTH: LoginOfflineAsGuest()
+    AUTH->>PREF: Set user_id=0, username=guest
+    AUTH-->>LP: void
+    LP->>SHELL: new AppShell()
+    SHELL-->>C: Vao TabBar
+
+    Note over C,LDB: Load POI offline
+    SHELL->>LDB: GetCachedPOIsAsync()
+    LDB-->>SHELL: POI tu SQLite cache
+    SHELL-->>C: Hien danh sach POI
+
+    Note over C,LDB: TTS phat xong - HistoryStore.AddAsync kiem tra userId<=0 - skip
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S04 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">4</div>
+          <div><div class="acc-title">Đăng xuất (Mobile)</div><div class="acc-subtitle">SettingsPage → AuthService.Logout → xóa Preferences + HistoryStore</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant SP as SettingsPage
+    participant AUTH as AuthService
+    participant PREF as Preferences
+    participant HS as HistoryStore
+
+    C->>SP: Bam Dang xuat
+    SP->>SP: DisplayAlert xac nhan
+    alt Chon Co
+        SP->>AUTH: Logout()
+        AUTH->>PREF: Remove token, user_id, username, name, email, phone
+        AUTH->>HS: Clear()
+        SP->>SP: Application.Current.MainPage = new NavigationPage(new LoginPage())
+        SP-->>C: Ve man hinh Login
+    else Chon Khong
+        SP-->>C: Giu nguyen
+    end
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S05 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">5</div>
+          <div><div class="acc-title">Owner đăng ký / đăng nhập Web CMS</div><div class="acc-subtitle">Register.cshtml → POST /api/users (Role=OWNER) → Session → Dashboard</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant O as Owner (Browser)
+    participant REG as Register.cshtml
+    participant AUTH as Auth.cshtml
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+    participant SES as HttpContext.Session
+
+    Note over O,SES: Dang ky Owner moi
+    O->>REG: POST /Register (username, password, confirmPassword)
+    REG->>REG: Validate pw>=6, pw==confirm
+    REG->>API: GET /api/users kiem tra username
+    DB-->>API: Users list
+    alt Ton tai
+        REG-->>O: Loi ten da ton tai
+    else Chua co
+        REG->>API: POST /api/users (Role=OWNER)
+        API->>DB: INSERT Users
+        DB-->>API: UserDto
+        REG->>SES: Set UserId, Username, Role=OWNER
+        REG-->>O: Redirect /Index (vao luon)
+    end
+
+    Note over O,SES: Dang nhap lai
+    O->>AUTH: POST /Auth (username, password)
+    AUTH->>API: GET /api/users
+    AUTH->>AUTH: Tim khop username+password
+    alt Role = CUSTOMER
+        AUTH-->>O: Loi chi dung mobile
+    else ADMIN hoac OWNER
+        AUTH->>SES: Set UserId, Username, Role
+        AUTH-->>O: Redirect /Index
+    end
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- GROUP: MOBILE -->
+    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);font-weight:700;margin:1.2rem 0 .7rem;padding-left:.3rem">📱 MOBILE APP</div>
+
+    <!-- S06 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">6</div>
+          <div><div class="acc-title">GPS Geofencing tự động phát TTS</div><div class="acc-subtitle">TrackUserLocation loop 3s → Haversine → TTS → ghi History</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant VM as MapViewModel
+    participant LOC as LocationService
+    participant DH as DistanceHelper
+    participant TTS as TextToSpeechService
+    participant TR as TranslateService
+    participant HS as HistoryStore
+    participant API as TourGuideAPI
+    participant LDB as LocalDbService
+
+    Note over VM,API: Khoi dong: InitAsync load POI - online thi GET /api/poi va cache SQLite, offline dung cache hoac seed_pois.json
+    VM->>VM: TrackUserLocationAsync loop 3s
+    VM->>LOC: GetCurrentLocationAsync(Best, 5s)
+    LOC-->>VM: Location (lat, lng)
+    VM->>VM: RefreshNearbyOrder - sap xep POI
+
+    loop foreach POI
+        VM->>DH: GetDistance(userLat, userLng, poi.Lat, poi.Lng)
+        DH-->>VM: distance (Haversine, met)
+        alt distance <= poi.Radius AND chua auto-play AND khong dang phat
+            VM->>VM: autoPlayedIds.Add(poi.Id)
+            alt Online
+                VM->>API: GET /api/poi/{id} - script moi nhat
+                API-->>VM: POIDto voi scripts
+            end
+            alt Language = vi
+                VM->>TTS: LoadText(ScriptVi)
+            else Language khac
+                VM->>TR: TranslateAsync(ScriptVi, lang)
+                TR-->>VM: translatedText
+                VM->>TTS: LoadText(translatedText)
+            end
+            VM->>TTS: SpeakAsync(token)
+            TTS-->>VM: Phat audio native Android
+            TTS->>VM: OnFinished callback
+            VM->>HS: AddAsync(poi)
+            HS->>API: POST /api/history (poiId, userId)
+            API-->>HS: OK
+        else distance > poi.Radius*2
+            VM->>VM: autoPlayedIds.Remove - reset
+        end
+    end
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S07 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">7</div>
+          <div><div class="acc-title">Xem chi tiết POI + Play/Pause/Resume TTS</div><div class="acc-subtitle">PlaceDetailPage → sync script → TTS play/pause/resume → ghi History</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant HP as HomePage
+    participant PD as PlaceDetailPage
+    participant TTS as TextToSpeechService
+    participant API as TourGuideAPI
+    participant HS as HistoryStore
+
+    C->>HP: Bam vao POI
+    HP->>PD: Shell.GoToAsync(placeDetail, poi)
+    PD->>PD: QueryProperty set Poi -> StopPlayback, reset
+
+    C->>PD: Bam Play
+    alt Online
+        PD->>API: GET /api/poi/{id} - script moi nhat
+        API-->>PD: POIDto moi cap nhat
+    end
+    PD->>PD: GetScriptForLang(poi, language)
+    PD->>TTS: LoadText + SpeakAsync
+    TTS-->>C: Phat audio + 7-bar waveform
+    PD-->>C: lblStatus = Dang phat am thanh
+
+    C->>PD: Bam Pause
+    PD->>PD: ttsToken.Cancel, _isPaused=true
+    PD-->>C: Waveform dung
+
+    C->>PD: Bam Play (Resume)
+    alt Cung ngon ngu
+        PD->>TTS: SpeakAsync (tiep tuc tu vi tri cu)
+    else Doi ngon ngu
+        PD->>TTS: LoadText moi + SpeakAsync tu dau
+    end
+
+    TTS->>PD: OnFinished
+    PD->>HS: AddAsync(poi)
+    HS->>API: POST /api/history
+    PD-->>C: lblStatus = Nghe lai
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S08 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">8</div>
+          <div><div class="acc-title">Bản đồ Leaflet: xem + tìm kiếm + chỉ đường</div><div class="acc-subtitle">MapPage → Leaflet WebView → tap marker → OSRM routing</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant MP as MapPage
+    participant WV as Leaflet WebView
+    participant VM as MapViewModel
+    participant API as TourGuideAPI
+    participant OSRM as OSRM Router
+
+    MP->>MP: OnAppearing - poll map ready (3s x 30)
+    WV-->>MP: typeof map != undefined = 1
+    MP->>VM: PushMapDataAsync
+    VM->>WV: EvalJs setUserLocation(lat, lon)
+    VM->>WV: EvalJs setPOIs(json)
+    WV-->>C: Ban do + markers (do/tim)
+
+    Note over C,OSRM: Tap marker
+    C->>WV: Tap marker
+    WV->>MP: URL scheme tourguide://poi/{id}
+    MP->>VM: NearbyPOI.Find(id)
+    MP->>MP: ShowDetailCard(poi)
+    MP-->>C: Detail Card hien len
+
+    Note over C,OSRM: Tim kiem
+    C->>MP: Bam thanh search, nhap ten
+    MP->>VM: SearchPOI(query)
+    VM-->>MP: List khop (theo khoang cach)
+    MP-->>C: Hien ket qua
+
+    Note over C,OSRM: Chi duong OSRM
+    C->>MP: Chon Chi duong
+    MP->>VM: GetCurrentLocationFastAsync
+    VM-->>MP: userLat, userLon
+    MP->>OSRM: GET /route/v1/driving/{coords}
+    OSRM-->>MP: GeoJSON route
+    MP->>WV: EvalJs drawRoute(latlngs)
+    WV-->>C: Polyline xanh + fitBounds
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S09 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">9</div>
+          <div><div class="acc-title">Xem lịch sử nghe (HistoryPage)</div><div class="acc-subtitle">HistoryViewModel → HistoryStore.LoadFromApi → real-time update event</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant HP as HistoryPage
+    participant VM as HistoryViewModel
+    participant HS as HistoryStore
+    participant API as TourGuideAPI
+
+    C->>HP: Chuyen sang tab Lich su
+    HP->>HP: OnAppearing - new HistoryViewModel
+    VM->>HS: LoadFromApiAsync
+    HS->>API: GET /api/history/user/{userId}
+    API-->>HS: HistoryDto list (PoiName, PoiImage, PlayTime)
+    HS->>HS: Cap nhat _items in-memory
+    VM->>VM: HistoryItems = HS.GetAll
+    VM-->>HP: Bind du lieu
+    HP-->>C: Danh sach POI da nghe
+
+    Note over C,API: Real-time khi co play moi
+    HS->>VM: OnItemAdded event
+    VM->>VM: MainThread: HistoryItems.Insert(0, item)
+    HP-->>C: Item moi o dau danh sach
+
+    C->>HP: Roi trang (OnDisappearing)
+    HP->>HS: Unsubscribe OnItemAdded (tranh memory leak)
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S10 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">10</div>
+          <div><div class="acc-title">Cập nhật hồ sơ cá nhân (AccountPage - Mobile)</div><div class="acc-subtitle">SettingsPage → AccountPage → SaveProfile → PUT /api/users/customer/{id}</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant SP as SettingsPage
+    participant ACC as AccountPage
+    participant VM as AccountViewModel
+    participant AUTH as AuthService
+    participant API as TourGuideAPI
+
+    C->>SP: Tap avatar hoac Profile
+    SP->>ACC: Navigation.PushAsync(AccountPage)
+    ACC->>VM: new AccountViewModel()
+    VM->>AUTH: doc Username, Name, Email, Phone tu Preferences
+    ACC-->>C: Hien form hien tai
+
+    C->>ACC: Sua Name, Phone, bam Luu
+    ACC->>VM: SaveProfileCommand.Execute
+    VM->>VM: Validate Name khong trong
+    alt Name hop le
+        VM->>AUTH: UpdateProfileAsync(Name, Phone)
+        AUTH->>API: PUT /api/users/customer/{id}
+        API-->>AUTH: 200 OK
+        AUTH->>AUTH: Cap nhat Preferences
+        VM-->>ACC: StatusMessage = Da luu thanh cong
+        ACC-->>C: DisplayAlert thanh cong
+    else Name rong
+        VM-->>ACC: StatusMessage = Ho ten khong de trong
+        ACC-->>C: Hien loi inline
+    end
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S11 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">11</div>
+          <div><div class="acc-title">Chọn ngôn ngữ TTS (SettingsPage)</div><div class="acc-subtitle">DisplayActionSheet → SettingService.Language → Preferences</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant SP as SettingsPage
+    participant SS as SettingService
+
+    C->>SP: Tap o Ngon ngu
+    SP->>SP: DisplayActionSheet(vi / en / ja / zh)
+    SP-->>C: Hien action sheet
+
+    C->>SP: Chon ngon ngu (vi du: English)
+    SP->>SS: Instance.Language = en
+    SS->>SS: Preferences.Set language = en
+    SS-->>SP: void
+    SP-->>C: Dong action sheet
+
+    Note over C,SS: Lan play TTS tiep theo
+    Note over C,SS: GetScriptForLang(poi, en) -> poi.ScriptEn
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- GROUP: WEB -->
+    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--p);font-weight:700;margin:1.2rem 0 .7rem;padding-left:.3rem">🌐 WEB CMS</div>
+
+    <!-- S12 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">12</div>
+          <div><div class="acc-title">Tạo / sửa / xóa POI + upload ảnh (Web CMS)</div><div class="acc-subtitle">Pois.cshtml → X-Role header → PENDING/APPROVED → cascade delete</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant U as Owner/Admin (Browser)
+    participant PG as Pois.cshtml
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+
+    U->>PG: GET /Pois
+    PG->>API: GET /api/poi/owner/{id} hoac /api/poi/all
+    API->>DB: SELECT theo role
+    PG->>API: GET /api/poi/{id}/images (foreach)
+    API-->>PG: POI + Images
+    PG-->>U: Bang POI
+
+    Note over U,DB: Tao moi
+    U->>PG: Nhap form + chon toa do tren Leaflet + upload anh
+    PG->>PG: Owner -> Status=PENDING, Admin -> Status=APPROVED
+    PG->>API: POST /api/poi (X-Role)
+    API->>DB: INSERT POI
+    DB-->>API: POI.Id = X
+    loop moi file
+        PG->>API: POST /api/poi/{X}/image (<=5MB, jpg/png/webp)
+        API->>DB: INSERT POIImages (IsThumbnail=true neu la anh dau)
+    end
+    PG-->>U: Owner: cho duyet / Admin: xong
+
+    Note over U,DB: Sua
+    PG->>API: PUT /api/poi/{id} (X-Role)
+    API->>DB: UPDATE, Owner->PENDING, Admin->thang
+    PG-->>U: Da cap nhat
+
+    Note over U,DB: Xoa
+    PG->>API: DELETE /api/poi/{id}
+    API->>DB: DELETE cascade Audio + History + POIImages + file vat ly
+    PG-->>U: Da xoa
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S12 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">13</div>
+          <div><div class="acc-title">Phê duyệt / từ chối / rút duyệt / xóa hàng loạt</div><div class="acc-subtitle">Approval.cshtml → Admin only → approve/reject/revoke/delete-rejected</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant A as Admin (Browser)
+    participant AP as Approval.cshtml
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+    participant APP as Mobile App
+
+    A->>AP: GET /Approval
+    AP->>API: GET /api/poi/all
+    AP-->>A: 3 tab: Cho duyet / Da duyet / Tu choi
+
+    Note over A,APP: Duyet
+    A->>AP: POST Duyet (PoiId)
+    AP->>API: PUT /api/poi/{id}/approve
+    API->>DB: UPDATE Status=APPROVED, RejectReason=NULL
+    AP-->>A: Da duyet
+    APP->>API: GET /api/poi (next refresh)
+    API-->>APP: Co POI moi Status=APPROVED
+
+    Note over A,APP: Tu choi
+    A->>AP: POST TuChoi (PoiId, Reason)
+    AP->>API: PUT /api/poi/{id}/reject
+    API->>DB: UPDATE Status=REJECTED, RejectReason=?
+    AP-->>A: Da tu choi
+
+    Note over A,APP: Rut duyet
+    A->>AP: POST RutDuyet (PoiId)
+    AP->>API: PUT /api/poi/{id}/reject (Reason=Admin rut duyet)
+    API->>DB: UPDATE Status=REJECTED
+    AP-->>A: Da rut duyet
+
+    Note over A,APP: Xoa hang loat
+    A->>AP: POST XoaTatCaTuChoi
+    AP->>API: DELETE /api/poi/rejected
+    API->>DB: DELETE tat ca Status=REJECTED
+    AP-->>A: Da xoa N POI
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S12 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">14</div>
+          <div><div class="acc-title">Quản lý Audio (tạo / sửa / xóa + preview TTS)</div><div class="acc-subtitle">AudioManager.cshtml → 4 script vi/en/ja/zh → Web Speech API preview</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant U as Admin/Owner (Browser)
+    participant AM as AudioManager.cshtml
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+    participant TTS as Web Speech API
+
+    U->>AM: GET /AudioManager
+    AM->>API: GET /api/audio + /api/poi/...
+    AM->>AM: Tinh PoisWithoutAudio (APPROVED + chua co audio)
+    AM-->>U: Bang audio + dropdown POI chua co
+
+    Note over U,TTS: Tao moi
+    U->>AM: Chon POI, nhap script vi
+    U->>AM: Bam Auto-translate
+    AM->>TTS: fetch translate.googleapis.com (sl=vi, tl=en/ja/zh)
+    TTS-->>AM: 3 ban dich dien tu dong
+    U->>AM: Bam Preview
+    AM->>TTS: window.speechSynthesis.speak(text)
+    TTS-->>U: Phat giong trong browser
+    U->>AM: Bam Luu
+    AM->>API: POST /api/audio (PoiId, vi, en, ja, zh)
+    API->>DB: Kiem tra POI APPROVED + chua co audio
+    API->>DB: INSERT Audio
+    AM-->>U: Them thanh cong
+
+    Note over U,TTS: Sua / Xoa
+    AM->>API: PUT /api/audio/{id} hoac DELETE /api/audio/{id}
+    API->>DB: UPDATE hoac DELETE
+    AM-->>U: Cap nhat
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S12 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">15</div>
+          <div><div class="acc-title">Quản lý Users: tạo / đổi role / xóa (Admin)</div><div class="acc-subtitle">Users.cshtml → POST/PUT/DELETE /api/users → ADMIN only</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant A as Admin (Browser)
+    participant UP as Users.cshtml
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+
+    A->>UP: GET /Users
+    UP->>API: GET /api/users
+    API->>DB: SELECT tat ca
+    UP-->>A: Bang users (Id, Username, Role, Name, Email, Phone)
+
+    Note over A,DB: Tao moi
+    A->>UP: Nhap Username, Password, Role
+    UP->>API: POST /api/users (bat ky role: ADMIN/OWNER/CUSTOMER)
+    API->>DB: INSERT Users
+    UP-->>A: Tao thanh cong
+
+    Note over A,DB: Doi role
+    A->>UP: Chon role moi tu dropdown, bam Luu
+    UP->>API: GET /api/users/{id}
+    API-->>UP: du lieu hien tai
+    UP->>API: PUT /api/users/{id} (cap nhat Role)
+    API->>DB: UPDATE Role=?
+    UP-->>A: Da doi role
+
+    Note over A,DB: Xoa
+    A->>UP: Bam Xoa, xac nhan
+    UP->>API: DELETE /api/users/{id}
+    API->>DB: DELETE Users
+    UP-->>A: Da xoa
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S12 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">16</div>
+          <div><div class="acc-title">Owner cập nhật hồ sơ cá nhân (Profile - Web)</div><div class="acc-subtitle">Profile.cshtml → GET /api/users/{id} → PUT /api/users/{id}</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant O as Owner (Browser)
+    participant PP as Profile.cshtml
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+    participant SES as HttpContext.Session
+
+    O->>PP: GET /Profile
+    PP->>API: GET /api/users/{MyId}
+    API->>DB: SELECT WHERE Id=?
+    DB-->>API: UserInfo
+    PP-->>O: Form voi thong tin hien tai
+
+    O->>PP: Sua Username, Password (optional), Name, Email, Phone
+    O->>PP: POST /Profile
+    PP->>API: GET /api/users/{MyId} - lay du lieu cu
+    PP->>PP: Neu Password trong thi giu cu, Role giu nguyen
+    PP->>API: PUT /api/users/{MyId}
+    API->>DB: UPDATE Users SET ...
+    DB-->>API: OK
+    PP->>SES: SetString Username moi
+    PP-->>O: Da cap nhat thanh cong
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- S12 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">17</div>
+          <div><div class="acc-title">Dashboard thống kê tổng quan (Admin)</div><div class="acc-subtitle">Index.cshtml → GET /api/poi/all + /audio + /history + /users → thống kê tổng hợp</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant A as Admin (Browser)
+    participant IDX as Index.cshtml (Dashboard)
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+
+    A->>IDX: GET /Index
+    IDX->>API: GET /api/poi/all
+    IDX->>API: GET /api/audio
+    IDX->>API: GET /api/history
+    IDX->>API: GET /api/users
+    API->>DB: Cac query tuong ung
+    DB-->>API: So lieu
+    IDX-->>A: TotalPoi, TotalAudio, TotalHistory, TotalUsers, RecentHistory, TopPoi
+        </pre></div>
+      </div>
+    </div>
+
+  </div><!-- end panel-seq -->
+
+  <!-- ═══ STATE PANEL ═══ -->
+  <div id="panel-state" class="diag-panel">
+
+    <!-- ST1 -->
+    <div class="acc-item">
+      <div class="acc-header open" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#059669">ST1</div>
+          <div><div class="acc-title">Trạng thái POI</div><div class="acc-subtitle">PENDING → APPROVED / REJECTED — vòng đời quản lý nội dung</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body open">
+        <div class="mermaid-wrap"><pre class="mermaid">
+stateDiagram-v2
+    [*] --> PENDING : Owner tao POI moi
+
+    PENDING --> APPROVED : Admin duyet
+
+    PENDING --> REJECTED : Admin tu choi + ly do
+
+    APPROVED --> PENDING : Owner sua POI
+
+    APPROVED --> REJECTED : Admin rut duyet
+
+    REJECTED --> APPROVED : Admin duyet lai
+
+    REJECTED --> [*] : Admin xoa hang loat
+
+    note right of APPROVED
+        App chi tra APPROVED
+        Hien tren ban do Mobile
+        Moi co the them Audio
+    end note
+
+    note right of PENDING
+        An tren Mobile App
+        Badge so tren sidebar (PendingCountFilter)
+        Owner biet dang cho duyet
+    end note
+
+    note right of REJECTED
+        An tren App
+        Owner thay ly do tu choi
+        Admin co the duyet lai
+    end note
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- ST2 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#059669">ST2</div>
+          <div><div class="acc-title">Trạng thái phát Audio (Mobile App)</div><div class="acc-subtitle">Idle → Translating → Playing → Paused → ghi History</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+stateDiagram-v2
+    [*] --> Idle : App khoi dong, POI da load
+
+    Idle --> Translating : Geofence hoac Play thu cong, Language khac vi
+
+    Idle --> Playing : Geofence hoac Play thu cong, Language = vi
+
+    state Translating {
+        [*] --> CallingGoogleTranslate
+        CallingGoogleTranslate --> TranslateSuccess : 200 OK
+        CallingGoogleTranslate --> TranslateFailed : Network error
+        TranslateFailed --> UsingOriginalVi : Fallback ScriptVi
+        TranslateSuccess --> [*]
+        UsingOriginalVi --> [*]
+    }
+
+    Translating --> Playing : Co text (dich hoac goc)
+
+    state Playing {
+        [*] --> ResolveLocale : Chon giong LocalePriority
+        ResolveLocale --> SpeakingNative : Android TTS SpeakAsync
+        SpeakingNative --> [*] : OnFinished callback
+    }
+
+    Playing --> Paused : User bam Pause
+
+    Paused --> Playing : User bam Resume tu vi tri cu
+
+    Playing --> Idle : TTS ket thuc, OnFinished ghi History
+
+    Playing --> Idle : User bam Stop hoac navigate away
+
+    Paused --> Idle : User bam Stop
+
+    state "Ghi History" as GH {
+        [*] --> CheckOnline
+        CheckOnline --> PostAPI : IsConnected = true
+        CheckOnline --> SaveSQLite : IsConnected = false
+        PostAPI --> APIOK : API kiem tra Role=CUSTOMER
+        APIOK --> [*]
+        SaveSQLite --> [*] : PendingHistory queue
+    }
+
+    Idle --> GH : OnTtsFinished
+    GH --> Idle : Hoan tat
+        </pre></div>
+      </div>
+    </div>
+
+  </div><!-- end panel-state -->
+
+  <!-- ═══ CLASS PANEL ═══ -->
+  <div id="panel-class" class="diag-panel">
+    <div class="acc-item">
+      <div class="acc-header open" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#0ea5e9">CD</div>
+          <div><div class="acc-title">Class Diagram — Toàn hệ thống TourGuide</div><div class="acc-subtitle">Models, Services, ViewModels và quan hệ giữa các layer</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body open">
+        <div class="mermaid-wrap"><pre class="mermaid">
+classDiagram
+    class User {
+        +int Id
+        +string Username
+        +string PasswordHash
+        +string Role
+        +string Name
+        +string Email
+        +string Phone
+    }
+    class POI {
+        +int Id
+        +string Name
+        +string Description
+        +string Address
+        +double Latitude
+        +double Longitude
+        +int Radius
+        +int OwnerId
+        +string Status
+        +string RejectReason
+    }
+    class Audio {
+        +int Id
+        +int PoiId
+        +string vi
+        +string en
+        +string ja
+        +string zh
+    }
+    class History {
+        +int Id
+        +int PoiId
+        +int UserId
+        +DateTime PlayTime
+    }
+    class POIImage {
+        +int Id
+        +int PoiId
+        +string ImageUrl
+        +bool IsThumbnail
+        +DateTime CreatedAt
+    }
+    class POIDto {
+        +int Id
+        +string Name
+        +double Latitude
+        +double Longitude
+        +int Radius
+        +string ScriptVi
+        +string ScriptEn
+        +string ScriptJa
+        +string ScriptZh
+        +List~string~ Images
+    }
+    class AppDbContext {
+        +DbSet~POI~ POI
+        +DbSet~Audio~ Audio
+        +DbSet~History~ History
+        +DbSet~User~ Users
+        +DbSet~POIImage~ POIImages
+    }
+    class TextToSpeechService {
+        +bool IsFinished
+        +bool IsPaused
+        +event OnFinished
+        +event OnProgress
+        +LoadText(text)
+        +SpeakAsync(token)
+    }
+    class ApiService {
+        +GetPOI() Task~List~POIDto~~
+        +GetPOIById(id) Task~POIDto~
+        +GetTopPOI() Task~List~POIDto~~
+        +SaveHistory(poiId, userId)
+        +GetHistory(userId)
+        +Login(username, password)
+        +Register(username, name, email, pwd)
+        +UpdateProfile(userId, name, phone)
+    }
+    class LocalDbService {
+        +SavePOIsAsync(pois)
+        +GetCachedPOIsAsync()
+        +AddPendingHistoryAsync(poiId, userId)
+        +SyncPendingHistoriesAsync()
+    }
+    class AuthService {
+        +IsLoggedIn bool$
+        +Username string$
+        +Name string$
+        +LoginAsync(u, p) Task~bool~$
+        +RegisterAsync(u,n,e,p) Task~bool~$
+        +UpdateProfileAsync(n, ph) Task~bool~$
+        +LoginOfflineAsGuest()$
+        +Logout()$
+    }
+    class HistoryStore {
+        +event OnItemAdded
+        +AddAsync(poi)$
+        +LoadFromApiAsync()$
+        +GetAll() List$
+        +Clear()$
+    }
+    class AccountViewModel {
+        +string Name
+        +string Phone
+        +string StatusMessage
+        +SaveProfileCommand
+    }
+    class MapViewModel {
+        +ObservableCollection~POI~ NearbyPOI
+        +Command PlayAudioCommand
+        +Command SelectRouteDestCommand
+        +SearchPOI(query) List
+        +PushMapDataAsync()
+    }
+
+    User "1" --> "many" POI : OwnerId FK
+    POI "1" --> "0..1" Audio : 1 per POI
+    POI "1" --> "many" POIImage
+    User "1" --> "many" History
+    POI "1" --> "many" History
+    POI ..> POIDto : APPROVED only
+    AppDbContext --> POI
+    AppDbContext --> Audio
+    AppDbContext --> History
+    AppDbContext --> User
+    AppDbContext --> POIImage
+    ApiService --> LocalDbService : cache
+    TextToSpeechService --> TranslateService : translate
+    AuthService --> ApiService : login/register
+    HistoryStore --> ApiService : POST history
+    AccountViewModel --> AuthService
+    MapViewModel --> ApiService
+    MapViewModel --> HistoryStore
+        </pre></div>
+      </div>
+    </div>
+  </div><!-- end panel-class -->
+
+  <!-- ═══ ACTIVITY PANEL ═══ -->
+  <div id="panel-activity" class="diag-panel">
+
+    <!-- ACT1 -->
+    <div class="acc-item">
+      <div class="acc-header open" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">AC1</div>
+          <div><div class="acc-title">Quy trình nghiệp vụ Web CMS</div><div class="acc-subtitle">Login → Dashboard → POI/Audio/Approval/Users/Profile</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body open">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    A([Mo Web CMS]) --> B{Co Session?}
+    B -- Khong --> C[GET /Auth]
+    C --> D{Xac thuc OK?}
+    D -- Sai hoac CUSTOMER --> C
+    D -- ADMIN hoac OWNER --> E[Set Session, Redirect /Index]
+    B -- Co --> E
+
+    E --> G{Chon chuc nang}
+
+    G -- Quan ly POI --> H[GET /Pois]
+    H --> I{Hanh dong?}
+    I -- Tao moi --> J[Form modal + Leaflet picker + upload anh]
+    J --> K{Role?}
+    K -- Admin --> L[Status=APPROVED]
+    K -- Owner --> M[Status=PENDING, cho duyet]
+    I -- Sua --> N[PUT /api/poi, Owner->PENDING]
+    I -- Xoa --> O[DELETE /api/poi cascade]
+
+    G -- Phe duyet POI --> P[GET /Approval, 3 tab]
+    P --> Q{Hanh dong?}
+    Q -- Duyet --> R[PUT /approve]
+    Q -- Tu choi --> S[PUT /reject + ly do]
+    Q -- Rut duyet --> T[PUT /reject]
+    Q -- Xoa hang loat --> U[DELETE /poi/rejected]
+
+    G -- Quan ly Audio --> V[GET /AudioManager]
+    V --> W[Nhap script, auto-translate, preview TTS]
+    W --> X{Luu?}
+    X -- Co --> Y[POST /api/audio]
+    X -- Sua --> Z[PUT /api/audio/id]
+
+    G -- Quan ly Users --> AA[GET /Users, tao/doi role/xoa]
+    G -- Ho so ca nhan --> AC[GET /Profile, PUT /api/users/id]
+    G -- Dang xuat --> AD[Session.Clear -> /Auth]
+
+    style L fill:#dcfce7,stroke:#059669
+    style M fill:#fef3c7,stroke:#d97706
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- ACT2 -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">AC2</div>
+          <div><div class="acc-title">Quy trình sử dụng Mobile App (CUSTOMER)</div><div class="acc-subtitle">Login/Guest → TabBar → Geofencing → TTS → History → Account</div></div>
+        </div>
+        <span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    A([Mo TourGuideApp]) --> B{Da dang nhap?}
+    B -- Chua --> C[LoginPage]
+    C --> D{Chon}
+    D -- Dang nhap --> E[POST /api/users/login, chi CUSTOMER]
+    D -- Dang ky --> F[POST /api/users/register, Role=CUSTOMER]
+    D -- Khach offline --> G[LoginOfflineAsGuest, UserId=0]
+    E --> H[Luu Preferences + SessionService]
+    F --> H
+    G --> H
+    H --> K[AppShell TabBar]
+    B -- Roi --> K
+
+    K --> L{Tab}
+
+    L -- Trang chu --> M[HomePage: POI + Top POI + khoang cach GPS]
+    M --> N{Bam POI?}
+    N -- Co --> O[PlaceDetailPage]
+    O --> P[Play/Pause/Resume TTS, waveform]
+    P --> Q[OnTtsFinished, ghi History]
+
+    L -- Ban do --> R[MapPage: Leaflet WebView]
+    R --> S{Tuong tac?}
+    S -- Tap marker --> T[Detail Card, Play/Chi duong]
+    T --> U[drawRoute OSRM polyline]
+    S -- Tim kiem --> V[SearchPOI MapViewModel]
+
+    L -- Lich su --> W[GET /api/history/user/id, real-time update]
+
+    L -- Cai dat --> X[Chon ngon ngu, tap avatar]
+    X --> Y[AccountPage: sua Name + Phone]
+
+    K --> Z{GPS Geofencing loop 3s}
+    Z --> ZA[GetCurrentLocation]
+    ZA --> ZB{dist <= Radius?}
+    ZB -- Khong --> Z
+    ZB -- Co --> ZC[Translate neu can]
+    ZC --> ZD[SpeakAsync TTS]
+    ZD --> ZE[Ghi History hoac SQLite queue]
+    ZE --> Z
+
+    style Q fill:#dcfce7,stroke:#059669
+    style ZE fill:#dcfce7,stroke:#059669
+        </pre></div>
+      </div>
+    </div>
+
+  </div><!-- end panel-activity -->
+
+</div><!-- end #diagrams -->
+
+<!-- ══ PATTERNS ══ -->
+<section id="patterns" class="alt"><div class="inner">
+  <div class="sec-hdr">
+    <div class="icon" style="background:#ede9fe;color:#4527a0">⚡</div>
+    <div><div class="sec-num">Summary</div><h2>Design Patterns &amp; Key Decisions</h2></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Pattern</th><th>Thực tế trong code</th><th>Lý do</th></tr></thead>
+      <tbody>
+        <tr><td><strong>3-Project Solution</strong></td><td>Web :5248 + API :5266 + MAUI Android</td><td>API dùng chung, tách biệt hoàn toàn</td></tr>
+        <tr><td><strong>X-Role Header</strong></td><td><code>X-Role: ADMIN/OWNER</code> qua HttpClient</td><td>Phân biệt role không cần JWT</td></tr>
+        <tr><td><strong>POI Approval Workflow</strong></td><td>PENDING→APPROVED/REJECTED; Owner sửa→PENDING</td><td>Kiểm soát chất lượng nội dung</td></tr>
+        <tr><td><strong>DTO Pattern</strong></td><td>POIDto bỏ OwnerId, Status, PasswordHash</td><td>Bảo vệ thông tin nhạy cảm khỏi App</td></tr>
+        <tr><td><strong>SQLite Offline Cache</strong></td><td>tourguide_local.db3 + PendingHistory queue + seed_pois.json</td><td>App dùng không cần mạng</td></tr>
+        <tr><td><strong>Haversine Client-side</strong></td><td><code>DistanceHelper.GetDistance()</code> trong MAUI</td><td>Không cần server roundtrip mỗi GPS update</td></tr>
+        <tr><td><strong>Static AuthService</strong></td><td>Static class + Preferences; SessionService.CurrentUser in-memory</td><td>Truy cập global không cần DI</td></tr>
+        <tr><td><strong>img-proxy Endpoint</strong></td><td>Web proxy <code>/img-proxy?url=</code></td><td>Tránh mixed content HTTPS/HTTP</td></tr>
+        <tr><td><strong>PendingCountFilter</strong></td><td>IAsyncPageFilter inject ViewData tự động</td><td>Badge pending mọi trang, không lặp code</td></tr>
+        <tr><td><strong>1 Audio per POI</strong></td><td>AnyAsync check trước Create, 4 cột vi/en/ja/zh</td><td>Đơn giản hóa cấu trúc</td></tr>
+        <tr><td><strong>3 màu Marker Leaflet</strong></td><td>Đỏ (thường) / Cam (chọn) / Tím (gần nhất auto)</td><td>UX rõ ràng trực quan</td></tr>
+        <tr><td><strong>Zero-Cost TTS</strong></td><td>Web Speech API + Google Translate free</td><td>$0/tháng, không cần API key</td></tr>
+        <tr><td><strong>OSRM Routing</strong></td><td>router.project-osrm.org, polyline Leaflet</td><td>Free, không cần key</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="hl success" style="margin-top:1.2rem">
+    <strong>Tóm tắt:</strong> TourGuide — 3 project .NET, 5 bảng SQL Server, GPS Geofencing Haversine, TTS 4 ngôn ngữ $0/tháng, offline SQLite cache, POI approval workflow, OSRM routing.
+  </div>
+</div></section>
+
+<footer>
+  <strong>TourGuide System — PRD</strong><br/>
+  ASP.NET Core 8 · .NET MAUI Android · SQL Server Express · EF Core · SQLite<br/>
+  <span style="opacity:.4;margin-top:.3rem;display:block">Web Speech API · Google Translate Free · Leaflet.js · OSRM · GPS Haversine · Session Auth</span>
+</footer>
+
+<!-- Mermaid -->
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'loose',
+  sequence: { mirrorActors: false, messageMargin: 28, actorFontWeight: 'bold' }
+});
+
+// Render mermaid only in open acc-body
+function renderVisible() {
+  document.querySelectorAll('.acc-body.open .mermaid:not([data-rendered])').forEach(el => {
+    el.setAttribute('data-rendered', '1');
+    const id = 'mg' + Math.random().toString(36).slice(2);
+    const code = el.textContent.trim();
+    mermaid.render(id, code)
+      .then(({ svg }) => { el.innerHTML = svg; })
+      .catch(e => { el.textContent = 'Lỗi render: ' + e; });
+  });
+}
+
+window.toggleAcc = function(header) {
+  const body = header.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+  if (!isOpen) renderVisible();
+};
+
+window.switchTab = function(tab) {
+  document.querySelectorAll('.diag-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.diag-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+  renderVisible();
+};
+
+// Initial render
+renderVisible();
+</script>
+
+<!-- Nav active highlight -->
+<script>
+var sections = document.querySelectorAll('section[id], div[id]');
+window.addEventListener('scroll', function() {
+  var y = window.pageYOffset;
+  sections.forEach(s => {
+    var top = s.offsetTop - 90, id = s.getAttribute('id');
+    var lnk = document.querySelector('nav a[href="#' + id + '"]');
+    if (lnk) {
+      if (y >= top && y < top + s.offsetHeight) lnk.classList.add('active');
+      else lnk.classList.remove('active');
+    }
+  });
+});
+document.querySelectorAll('nav a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 using TourGuideApp.Models;
 using TourGuideApp.Services;
 using TourGuideApp.ViewModels;
+using TourGuideApp.Utils;
 
 namespace TourGuideApp.Pages;
 
@@ -9,11 +10,9 @@ public partial class PlaceDetailPage : ContentPage
 {
     // ── Services ──────────────────────────────────────────────────────────────
     readonly TextToSpeechService ttsService = new();
-    readonly TranslateService translateService = new();
 
     // ── TTS state ─────────────────────────────────────────────────────────────
-    CancellationTokenSource? ttsToken;
-    bool isPlaying = false;
+    // Logic đã chuyển sang AudioPlaybackService
     bool _isPaused = false;
 
     // Ngôn ngữ đang được load trong ttsService
@@ -46,26 +45,33 @@ public partial class PlaceDetailPage : ContentPage
     {
         InitializeComponent();
         _bars = new[] { bar0, bar1, bar2, bar3, bar4, bar5, bar6 };
-
-        // Lắng nghe sự kiện phát xong từ TTS service → ghi lịch sử
-        ttsService.OnFinished += OnTtsFinished;
-        ttsService.OnProgress += OnTtsProgress;
+        
+        // Cập nhật UI animation dựa trên trạng thái phát từ Service
+        AudioPlaybackService.Instance.PlaybackStateChanged += OnPlaybackStateChanged;
     }
 
-    void OnTtsProgress(int current, int total)
+    private void OnPlaybackStateChanged()
     {
-        if (_currentPoi == null || total == 0) return;
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            _currentPoi.AudioProgress = (double)current / total;
-            _currentPoi.AudioDuration = $"{current}/{total} chữ";
+            if (_currentPoi != null)
+            {
+                bool playing = _currentPoi.IsPlaying;
+                UpdateUI(playing);
+                if (playing) StartWaveAnimation();
+                else StopWaveAnimation();
+            }
         });
     }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // Logic OnTtsProgress đã chuyển sang AudioPlaybackService
 
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        StopPlayback();
+        // Không dừng hẳn, chỉ tháo event để tránh leak
+        AudioPlaybackService.Instance.PlaybackStateChanged -= OnPlaybackStateChanged;
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -76,175 +82,45 @@ public partial class PlaceDetailPage : ContentPage
         await Shell.Current.GoToAsync("..");
     }
 
-    // ── Nút Tạm dừng ──────────────────────────────────────────────────────────
+    // ── Audio controls ────────────────────────────────────────────────────────
 
     private void OnPauseTapped(object sender, EventArgs e)
     {
-        if (isPlaying)
-        {
-            ttsToken?.Cancel();
-            isPlaying = false;
-            _isPaused = true;
-            UpdateUI(playing: false);
-            StopWaveAnimation();
-        }
+        AudioPlaybackService.Instance.Pause();
     }
 
     private void OnStopTapped(object sender, EventArgs e)
     {
-        StopPlayback();
+        AudioPlaybackService.Instance.Stop();
     }
-
-    // ── Play button handler (Chỉ Play/Resume) ─────────────────────────────────
 
     private async void OnPlayTapped(object sender, EventArgs e)
     {
         if (BindingContext is not POI poi) return;
-
-        // --- LUÔN SYNC KHI ONLINE: Ưu tiên lấy kịch bản từ API nếu có mạng ---
-        if (ConnectivityService.IsConnected)
-        {
-            var apiService = new ApiService();
-            var freshPoi = await apiService.GetPOIById(poi.Id);
-            if (freshPoi != null)
-            {
-                // Cập nhật dữ liệu mới nhất vào object hiện tại
-                poi.ScriptVi = freshPoi.ScriptVi;
-                poi.ScriptEn = freshPoi.ScriptEn;
-                poi.ScriptJa = freshPoi.ScriptJa;
-                poi.ScriptZh = freshPoi.ScriptZh;
-                System.Diagnostics.Debug.WriteLine($"[PlaceDetail] Đã tải kịch bản mới nhất từ API cho POI {poi.Id}");
-            }
-        }
-
-        // Nếu đang phát thì không làm gì
-        if (isPlaying) return;
-
-        string langNow = SettingService.Instance.Language;
-
-        // ── RESUME: đã pause cùng ngôn ngữ → tiếp tục từ câu đang dừng ──────
-        if (_isPaused && langNow == _currentLoadedLang)
-        {
-            _isPaused = false;
-            isPlaying = true;
-            UpdateUI(playing: true);
-            StartWaveAnimation();
-
-            ttsToken = new CancellationTokenSource();
-            try
-            {
-                // Không LoadText → giữ nguyên _sentenceIndex (tiếp tục)
-                await ttsService.SpeakAsync(ttsToken.Token);
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[PlaceDetail] RESUME ERROR: {ex.Message}");
-            }
-
-            isPlaying = false;
-            UpdateUI(playing: false);
-            StopWaveAnimation();
-            return;
-        }
-
-        // ── PLAY MỚI hoặc đổi ngôn ngữ sau pause ────────────────────────────
-        _isPaused = false;
-
-        if (langNow != _currentLoadedLang || string.IsNullOrEmpty(_currentLoadedLang))
-        {
-            string freshText = GetScriptForLang(poi, langNow);
-            ttsService.LoadText(freshText);
-            _currentLoadedLang = langNow;
-        }
-        else
-        {
-            // Cùng ngôn ngữ, bấm play lại sau khi đã phát xong → replay từ đầu
-            ttsService.LoadText(GetScriptForLang(poi, langNow));
-        }
-
-        isPlaying = true;
-        UpdateUI(playing: true);
-        StartWaveAnimation();
-
-        ttsToken = new CancellationTokenSource();
-        try
-        {
-            await ttsService.SpeakAsync(ttsToken.Token);
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[PlaceDetail] TTS ERROR: {ex.Message}");
-        }
-
-        isPlaying = false;
-        UpdateUI(playing: false);
-        StopWaveAnimation();
+        await AudioPlaybackService.Instance.PlayAsync(poi);
     }
 
-    // ── Ghi lịch sử khi phát xong ────────────────────────────────────────────
-
-    /// Được gọi từ TextToSpeechService.OnFinished (có thể từ background thread)
-    void OnTtsFinished()
-    {
-        if (_currentPoi == null) return;
-
-        System.Diagnostics.Debug.WriteLine($"[PlaceDetail] TTS finished → saving history for {_currentPoi.Name}");
-
-        // Ghi vào local history store (hàm này sẽ tự động gọi API)
-        _ = HistoryStore.AddAsync(_currentPoi);
-
-        // Cập nhật UI trên main thread
-        MainThread.BeginInvokeOnMainThread(() =>
-        {
-            UpdateUI(playing: false);
-            StopWaveAnimation();
-        });
-    }
+    // ── TTS callbacks ─────────────────────────────────────────────────────────
+    // Logic đã chuyển sang AudioPlaybackService
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     void StopPlayback()
     {
-        ttsToken?.Cancel();
-        isPlaying = false;
-        _isPaused = false;
-        ttsService.LoadText(""); // reset sentence index khi stop hẳn
-        UpdateUI(playing: false);
-        StopWaveAnimation();
+        AudioPlaybackService.Instance.Stop();
     }
 
     void UpdateUI(bool playing)
     {
-        if (_currentPoi != null) _currentPoi.IsPlaying = playing;
+        if (_currentPoi == null) return;
+        _currentPoi.IsPlaying = playing;
 
-        // Nếu TTS vừa kết thúc tự nhiên (IsFinished) → icon play, label "Nghe lại"
-        if (!playing && ttsService.IsFinished)
-        {
+        if (!playing && _currentPoi.AudioProgress >= 0.99)
             lblAudioStatus.Text = "Nghe lại";
-        }
         else
-        {
             lblAudioStatus.Text = playing ? "Đang phát âm thanh..." : "Nghe thuyết minh";
-        }
     }
 
-    private string GetScriptForLang(POI poi, string lang)
-    {
-        string? script = lang switch
-        {
-            "en" => poi.ScriptEn,
-            "ja" => poi.ScriptJa,
-            "zh" => poi.ScriptZh,
-            _ => poi.ScriptVi
-        };
-
-        if (string.IsNullOrWhiteSpace(script)) 
-            return "Không có dữ liệu thuyết minh";
-            
-        return script;
-    }
 
     // ── Waveform animation ────────────────────────────────────────────────────
 

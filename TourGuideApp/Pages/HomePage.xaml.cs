@@ -4,6 +4,7 @@ using Microsoft.Maui.ApplicationModel;
 using TourGuideApp.Pages;
 using TourGuideApp.Services;
 using TourGuideApp.Models;
+using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.Pages;
 
