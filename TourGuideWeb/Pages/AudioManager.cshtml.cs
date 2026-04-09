@@ -8,13 +8,7 @@ namespace GPSGuide.Web.Pages;
 public class AudioManagerModel : PageModel
 {
     private readonly IHttpClientFactory _http;
-    private readonly IConfiguration _config;
-
-    public AudioManagerModel(IHttpClientFactory http, IConfiguration config)
-    {
-        _http = http;
-        _config = config;
-    }
+    public AudioManagerModel(IHttpClientFactory http) => _http = http;
 
     public List<Audio> Audios { get; set; } = [];
     public List<POI> Pois { get; set; } = [];
@@ -36,9 +30,6 @@ public class AudioManagerModel : PageModel
 
     public async Task OnGetAsync()
     {
-        // Truyền API base URL xuống JS để fetch đúng port
-        ViewData["ApiBaseUrl"] = _config["ApiUrl"] ?? "http://localhost:5266/api/";
-
         try
         {
             var allAudios = await Api.GetFromJsonAsync<List<Audio>>("audio") ?? [];
@@ -55,6 +46,8 @@ public class AudioManagerModel : PageModel
             }
 
             var existingAudioPoiIds = Audios.Select(a => a.PoiId).ToHashSet();
+
+            // FIX: chỉ hiện POI đã APPROVED và chưa có audio
             PoisWithoutAudio = Pois
                 .Where(p => p.Status == "APPROVED" && !existingAudioPoiIds.Contains(p.Id))
                 .ToList();
