@@ -31,7 +31,8 @@ namespace TourGuideAPI.Controllers
                     UserLogin = u != null ? u.Username : "unknown",
                     UserFullName = u != null ? u.Name : "Unknown",
                     UserRole = u != null ? u.Role : null,
-                    h.PlayTime
+                    h.PlayTime,
+                    h.ListenDuration
                 }
             ).ToListAsync();
             return Ok(list);
@@ -77,7 +78,8 @@ namespace TourGuideAPI.Controllers
                     h.PoiId,
                     PoiName = h.POI != null ? h.POI.Name : null,
                     PoiImage = h.POI != null ? h.POI.ImageUrl : null,
-                    h.PlayTime
+                    h.PlayTime,
+                    h.ListenDuration
                 })
                 .ToListAsync();
             return Ok(list);

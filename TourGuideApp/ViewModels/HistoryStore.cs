@@ -11,6 +11,7 @@ namespace TourGuideApp.ViewModels
     {
         public POI Poi { get; init; } = null!;
         public DateTime ListenedAt { get; init; }
+        public int ListenDuration { get; init; }
 
         // Forwarded properties for XAML binding
         public string Name => Poi?.Name ?? "";
@@ -29,7 +30,7 @@ namespace TourGuideApp.ViewModels
         /// Raised trên bất kỳ thread nào khi có mục mới được thêm vào
         public static event Action<HistoryItem>? OnItemAdded;
 
-        public static async Task AddAsync(POI poi)
+        public static async Task AddAsync(POI poi, int listenDuration)
         {
             if (poi == null) return;
 
@@ -43,14 +44,15 @@ namespace TourGuideApp.ViewModels
             var item = new HistoryItem
             {
                 Poi = poi,
-                ListenedAt = DateTime.Now
+                ListenedAt = DateTime.Now,
+                ListenDuration = listenDuration
             };
 
             lock (_lock) { _items.Insert(0, item); }
 
             OnItemAdded?.Invoke(item);
 
-            await new ApiService().SaveHistory(poi.Id, userId);
+            await new ApiService().SaveHistory(poi.Id, userId, listenDuration);
         }
 
         public static async Task LoadFromApiAsync()
@@ -75,7 +77,8 @@ namespace TourGuideApp.ViewModels
                             Name = item.PoiName ?? "",
                             Images = !string.IsNullOrEmpty(item.PoiImage) ? new List<string> { item.PoiImage } : new()
                         },
-                        ListenedAt = item.PlayTime
+                        ListenedAt = item.PlayTime,
+                        ListenDuration = item.ListenDuration
                     });
                 }
             }

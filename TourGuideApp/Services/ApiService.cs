@@ -13,7 +13,7 @@ public class ApiService
     {
         public static string BaseUrl => DeviceInfo.DeviceType == DeviceType.Virtual 
             ? "http://10.0.2.2:5266/api/" 
-            : "http://192.168.1.166:5266/api/";
+            : "http://192.168.1.5:5266/api/";
     }
 
     // ── POI ──────────────────────────────────────────────────────────────────
@@ -119,13 +119,13 @@ public class ApiService
     /// - Online: gửi API ngay + sync queue offline.
     /// - Offline: lưu vào SQLite pending queue.
     /// </summary>
-    public async Task SaveHistory(int poiId, int userId)
+    public async Task SaveHistory(int poiId, int userId, int listenDuration)
     {
         if (ConnectivityService.IsConnected)
         {
             try
             {
-                var json = JsonSerializer.Serialize(new { poiId, userId });
+                var json = JsonSerializer.Serialize(new { poiId, userId, listenDuration });
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 await client.PostAsync($"{ApiConfig.BaseUrl}history", content);
                 _ = SyncPendingHistoriesAsync(userId);
@@ -138,7 +138,7 @@ public class ApiService
         }
 
         System.Diagnostics.Debug.WriteLine($"[API] SaveHistory → queued offline (poi={poiId})");
-        await LocalDbService.Instance.AddPendingHistoryAsync(poiId, userId);
+        await LocalDbService.Instance.AddPendingHistoryAsync(poiId, userId, listenDuration);
     }
 
     public async Task<List<HistoryDto>> GetHistory(int userId)
@@ -171,7 +171,11 @@ public class ApiService
         {
             try
             {
-                var json = JsonSerializer.Serialize(new { poiId = item.PoiId, userId = item.UserId });
+                var json = JsonSerializer.Serialize(new { 
+                    poiId = item.PoiId, 
+                    userId = item.UserId,
+                    listenDuration = item.ListenDuration
+                });
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync($"{ApiConfig.BaseUrl}history", content);
 

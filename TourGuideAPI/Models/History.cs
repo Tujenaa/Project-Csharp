@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace TourGuideAPI.Models
 {
@@ -8,6 +8,7 @@ namespace TourGuideAPI.Models
         public int PoiId { get; set; }
         public int UserId { get; set; }
         public DateTime PlayTime { get; set; }
+        public int ListenDuration { get; set; }
 
         [JsonIgnore] // tránh FK conflict khi POST
         public POI? POI { get; set; }

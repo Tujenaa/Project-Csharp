@@ -175,17 +175,18 @@ public class LocalDbService
     // ── Pending History (offline queue) ──────────────────────────────────────
 
     /// <summary>Thêm history vào hàng đợi local khi chưa sync được.</summary>
-    public async Task AddPendingHistoryAsync(int poiId, int userId)
+    public async Task AddPendingHistoryAsync(int poiId, int userId, int listenDuration)
     {
         await InitAsync();
         await _db!.InsertAsync(new PendingHistory
         {
-            PoiId     = poiId,
-            UserId    = userId,
-            PlayTime  = DateTime.UtcNow,
-            Synced    = false
+            PoiId          = poiId,
+            UserId         = userId,
+            PlayTime       = DateTime.UtcNow,
+            ListenDuration = listenDuration,
+            Synced         = false
         });
-        System.Diagnostics.Debug.WriteLine($"[LocalDB] Queued pending history: poi={poiId}");
+        System.Diagnostics.Debug.WriteLine($"[LocalDB] Queued pending history: poi={poiId}, duration={listenDuration}s");
     }
 
     /// <summary>Lấy tất cả history chưa được sync.</summary>
@@ -246,8 +247,9 @@ public class PendingHistory
     [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 
-    public int      PoiId    { get; set; }
-    public int      UserId   { get; set; }
-    public DateTime PlayTime { get; set; }
-    public bool     Synced   { get; set; }
+    public int      PoiId          { get; set; }
+    public int      UserId         { get; set; }
+    public DateTime PlayTime       { get; set; }
+    public int      ListenDuration { get; set; }
+    public bool     Synced         { get; set; }
 }

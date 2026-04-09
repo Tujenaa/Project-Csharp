@@ -7,5 +7,6 @@ namespace TourGuideApp.Models
         public string? PoiName { get; set; }
         public string? PoiImage { get; set; }
         public DateTime PlayTime { get; set; }
+        public int ListenDuration { get; set; }
     }
 }

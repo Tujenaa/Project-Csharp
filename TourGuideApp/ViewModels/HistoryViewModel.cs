@@ -93,7 +93,7 @@ namespace TourGuideApp.ViewModels
             }
 
             TotalListened = allItems.Count;
-            TotalDuration = allItems.Count * 3;
+            TotalDuration = allItems.Sum(i => i.ListenDuration) / 60; // Chuyển sang phút
             IsHistoryEmpty = allItems.Count == 0;
             
             OnPropertyChanged(nameof(IsLoggedIn));

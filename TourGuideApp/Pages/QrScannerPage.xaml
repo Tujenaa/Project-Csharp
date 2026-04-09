@@ -137,15 +137,20 @@
                     </Border>
                 </Grid>
 
-                <!-- ── Progress bar ── -->
-                <Slider Grid.Row="1"
-                        Minimum="0" Maximum="1"
-                        Value="{Binding ScannedPoi.AudioProgress}"
-                        MinimumTrackColor="#9B7FEA"
-                        MaximumTrackColor="#E8E3F5"
-                        ThumbColor="#512BD4"
-                        IsEnabled="False"
-                        Margin="0,0,0,12"/>
+                <!-- ── Progress bar + Duration ── -->
+                <VerticalStackLayout Grid.Row="1" Margin="0,0,0,12" Spacing="2">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <Label Text="Tiến độ nghe" FontSize="11" TextColor="#64748B" VerticalOptions="Center"/>
+                        <Label Grid.Column="1" Text="{Binding ScannedPoi.AudioDuration}" 
+                               FontSize="11" FontAttributes="Bold" TextColor="#512BD4" VerticalOptions="Center"/>
+                    </Grid>
+                    <Slider Minimum="0" Maximum="1"
+                            Value="{Binding ScannedPoi.AudioProgress}"
+                            MinimumTrackColor="#9B7FEA"
+                            MaximumTrackColor="#E8E3F5"
+                            ThumbColor="#512BD4"
+                            IsEnabled="False"/>
+                </VerticalStackLayout>
 
                 <!-- ── Audio controls + Nút xem chi tiết ──────────────────────
                      IsPlaying=False → Play HIỆN, Pause+Stop ẨN

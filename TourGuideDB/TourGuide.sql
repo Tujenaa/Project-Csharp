@@ -198,12 +198,3 @@ VALUES
 (1, N'images/oc_oanh_2.jpg', 0),
 (2, N'images/oc_thao_1.jpg', 1),
 (3, N'images/oc_nho_1.jpg', 1);
-
-CREATE TABLE AudioExtra (
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    AudioId INT NOT NULL,
-    LangCode NVARCHAR(10) NOT NULL,
-    LangName NVARCHAR(50) NOT NULL,
-    Script NVARCHAR(MAX) NULL,
-    FOREIGN KEY (AudioId) REFERENCES Audio(Id)
-);
