@@ -1,13 +1,14 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
 using TourGuideApp.Utils;
-using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.ViewModels;
 
-public class MapViewModel
+public class MapViewModel : INotifyPropertyChanged
 {
     // ── Services ──────────────────────────────────────────────────────────────
     readonly MapService mapService = new();
@@ -17,6 +18,24 @@ public class MapViewModel
     // ── State ─────────────────────────────────────────────────────────────────
     readonly List<POI> allPOIs = new();
     public ObservableCollection<POI> NearbyPOI { get; } = new();
+
+    // Tour filtering
+    public ObservableCollection<Tour> AllTours { get; } = new();
+    private Tour? _activeTour;
+    public Tour? ActiveTour
+    {
+        get => _activeTour;
+        set 
+        { 
+            _activeTour = value; 
+            OnPropertyChanged(nameof(ActiveTour));
+            OnPropertyChanged(nameof(IsTourSelected));
+            ActiveTourChanged?.Invoke(); 
+        }
+    }
+    public bool IsTourSelected => ActiveTour != null;
+    public event Action? ActiveTourChanged;
+    public event Action<Tour?>? TourSelected;
 
     double? userLat;
     double? userLon;
@@ -37,6 +56,8 @@ public class MapViewModel
     public Command<POI> PauseAudioCommand { get; }
     public Command<POI> GoToDetailCommand { get; }
     public Command<POI> SelectRouteDestCommand { get; set; }
+    public Command<Tour?> SelectTourCommand { get; }
+    public Command StartTourCommand { get; }
 
     public Func<string, Task<string?>>? EvalJs { get; set; }
 
@@ -56,8 +77,59 @@ public class MapViewModel
 
         SelectRouteDestCommand = new Command<POI>(_ => { });
 
+        SelectTourCommand = new Command<Tour?>(async (tour) =>
+        {
+            ActiveTour = tour;
+            TourSelected?.Invoke(tour);
+
+            // Refill NearbyPOI based on the new selection
+            RefreshNearbyOrder();
+
+            if (EvalJs == null) return;
+
+            if (tour == null)
+            {
+                // Hiện tất cả POI
+                await EvalJs($"setPOIs({BuildPOIJson(NearbyPOI)})");
+            }
+            else
+            {
+                // Chỉ hiện POI trong tour
+                var tourPois = tour.POIs ?? new List<POI>();
+                await EvalJs($"setPOIs({BuildPOIJson(tourPois)})");
+
+                // Fly tới POI đầu tiên của tour
+                var first = tourPois.FirstOrDefault();
+                if (first != null)
+                {
+                    var lat = first.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    var lon = first.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    await EvalJs($"flyTo({lat},{lon},15)");
+                }
+            }
+        });
+
+        StartTourCommand = new Command(() =>
+        {
+            if (ActiveTour == null) return;
+            
+            // Thông báo bắt đầu tour (có thể dùng event để View hiện Toast)
+            MainThread.BeginInvokeOnMainThread(async () => {
+                await Application.Current.MainPage.DisplayAlert("Bắt đầu tham quan", 
+                    $"Chào mừng bạn đến với tour: {ActiveTour.Name}. GPS sẽ tự động thuyết minh các địa điểm trong hành trình này.", "OK");
+            });
+
+            // Tự động cuộn danh sách lên đầu và highlight điểm đầu tiên nếu cần
+            RefreshNearbyOrder();
+        });
+
         _ = InitAsync();
     }
+
+    // ── Property Changed ──────────────────────────────────────────────────────
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     // ── TTS callbacks ─────────────────────────────────────────────────────────
     // Logic đã chuyển sang AudioPlaybackService
@@ -73,10 +145,12 @@ public class MapViewModel
 
         var locationTask = locationService.GetCurrentLocationAsync();
         var poisTask = apiService.GetPOI();
-        await Task.WhenAll(locationTask, poisTask);
+        var toursTask = apiService.GetTours();
+        await Task.WhenAll(locationTask, poisTask, toursTask);
 
         var location = locationTask.Result;
         var pois = poisTask.Result;
+        var tours = toursTask.Result;
 
         if (location != null)
         {
@@ -88,6 +162,12 @@ public class MapViewModel
 
         allPOIs.Clear();
         allPOIs.AddRange(pois);
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            AllTours.Clear();
+            foreach (var t in tours) AllTours.Add(t);
+        });
 
         RefreshNearbyOrder();
 
@@ -114,18 +194,29 @@ public class MapViewModel
 
     private void RefreshNearbyOrder()
     {
-        if (allPOIs.Count == 0) return;
+        // Chọn nguồn dữ liệu: Nếu có tour thì lấy POI tour, không thì lấy tất cả
+        var sourceList = ActiveTour != null ? (ActiveTour.POIs ?? new List<POI>()) : allPOIs;
+        
+        if (sourceList.Count == 0)
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                NearbyPOI.Clear();
+                POIUpdated?.Invoke();
+            });
+            return;
+        }
 
         List<POI> sorted;
         if (userLat.HasValue && userLon.HasValue)
         {
-            sorted = allPOIs
+            sorted = sourceList
                 .OrderBy(p => DistanceUtils.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude))
                 .ToList();
         }
         else
         {
-            sorted = allPOIs.ToList();
+            sorted = sourceList.ToList();
         }
 
         // Cập nhật khoảng cách & IndexLabel
@@ -314,5 +405,25 @@ public class MapViewModel
         userLat = loc.Latitude;
         userLon = loc.Longitude;
         return (loc.Latitude, loc.Longitude);
+    }
+
+    /// <summary>Áp dụng tour đã chọn từ HomePage vào bản đồ.</summary>
+    public async Task ApplyTourAsync(Tour tour)
+    {
+        ActiveTour = tour;
+        RefreshNearbyOrder();
+
+        if (EvalJs == null) return;
+
+        var tourPois = tour.POIs ?? new List<POI>();
+        await EvalJs($"setPOIs({BuildPOIJson(tourPois)})");
+
+        var first = tourPois.FirstOrDefault();
+        if (first != null)
+        {
+            var lat = first.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var lon = first.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            await EvalJs($"flyTo({lat},{lon},15)");
+        }
     }
 }

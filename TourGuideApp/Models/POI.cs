@@ -27,7 +27,7 @@ public class POI : INotifyPropertyChanged
             if (Images == null || Images.Count == 0) 
                 return new List<string> { "place_placeholder.png" };
             
-            return Images.Select(img => img.StartsWith("http") ? img : baseUrl + img).ToList();
+            return Images.Select(img => img.StartsWith("http") ? img : baseUrl + "/" + img).ToList();
         }
     }
 

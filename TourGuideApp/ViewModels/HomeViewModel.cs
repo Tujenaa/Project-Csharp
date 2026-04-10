@@ -3,22 +3,30 @@ using System.ComponentModel;
 using System.Windows.Input;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
-using TourGuideApp.ViewModels;
 using TourGuideApp.Utils;
 
 namespace TourGuideApp.ViewModels;
 
 public class HomeViewModel : INotifyPropertyChanged
 {
-    private readonly ApiService _poiService = new();
+    private readonly ApiService _apiService = new();
+
     public ObservableCollection<POI> TopPOIs { get; set; } = new();
     public ObservableCollection<POI> AllPOIs { get; set; } = new();
+    public ObservableCollection<Tour> FeaturedTours { get; set; } = new();
 
     public ICommand GoToDetailCommand { get; }
     public Command<POI> PlayAudioCommand { get; }
     public Command<POI> PauseAudioCommand { get; }
-    
-    // ── GPS & Distance ────────────────────────────────────────────────────────
+    public Command<Tour> GoToTourMapCommand { get; }
+
+    private int _tourCount;
+    public int TourCount
+    {
+        get => _tourCount;
+        set { _tourCount = value; OnPropertyChanged(nameof(TourCount)); }
+    }
+
     private string _nearestPoiName = "Đang tìm...";
     public string NearestPoiName
     {
@@ -38,10 +46,7 @@ public class HomeViewModel : INotifyPropertyChanged
         GoToDetailCommand = new Command<POI>(async (poi) =>
         {
             if (poi == null) return;
-            await Shell.Current.GoToAsync("placeDetail", new Dictionary<string, object>
-            {
-                { "poi", poi }
-            });
+            await Shell.Current.GoToAsync("placeDetail", new Dictionary<string, object> { { "poi", poi } });
         });
 
         PlayAudioCommand = new Command<POI>(async (poi) =>
@@ -54,52 +59,50 @@ public class HomeViewModel : INotifyPropertyChanged
             AudioPlaybackService.Instance.Pause();
         });
 
-        System.Diagnostics.Debug.WriteLine($"HomeViewModel created. Language: {SettingService.Instance.Language}");
-    }
-
-    private int _poiCount;
-    public int PoiCount
-    {
-        get => _poiCount;
-        set { _poiCount = value; OnPropertyChanged(nameof(PoiCount)); }
-    }
-
-    private int _audioCount;
-    public int AudioCount
-    {
-        get => _audioCount;
-        set { _audioCount = value; OnPropertyChanged(nameof(AudioCount)); }
+        GoToTourMapCommand = new Command<Tour>(async (tour) =>
+        {
+            if (tour == null) return;
+            MapTourState.SelectedTour = tour;
+            await Shell.Current.GoToAsync("//map");
+        });
     }
 
     public async Task LoadData()
     {
-        var top = await _poiService.GetTopPOI();
-        var all = await _poiService.GetPOI();
+        var topTask = _apiService.GetTopPOI();
+        var allTask = _apiService.GetPOI();
+        var toursTask = _apiService.GetTours();
+        await Task.WhenAll(topTask, allTask, toursTask);
 
-        PoiCount = await _poiService.GetPoiCount();
-        AudioCount = await _poiService.GetAudioCount();
+        var top = topTask.Result;
+        var all = allTask.Result;
+        var tours = toursTask.Result;
 
-        // Lấy vị trí GPS để tính khoảng cách
+        TourCount = tours.Count;
+
         Location? myLoc = null;
-        try {
-            myLoc = await Geolocation.GetLastKnownLocationAsync() 
+        try
+        {
+            myLoc = await Geolocation.GetLastKnownLocationAsync()
                     ?? await Geolocation.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(5)));
-        } catch { }
+        }
+        catch { }
 
+        // Top 2 POI nổi bật
         TopPOIs.Clear();
-        foreach (var item in top) 
+        foreach (var item in top.Take(2))
         {
             if (myLoc != null) DistanceUtils.UpdatePoiDistance(item, myLoc.Latitude, myLoc.Longitude);
             TopPOIs.Add(item);
         }
 
+        // Tính nearest từ all POIs
         AllPOIs.Clear();
         POI? nearest = null;
         double minDist = double.MaxValue;
-
-        foreach (var item in all) 
+        foreach (var item in all)
         {
-            if (myLoc != null) 
+            if (myLoc != null)
             {
                 var d = DistanceUtils.UpdatePoiDistance(item, myLoc.Latitude, myLoc.Longitude);
                 if (d < minDist) { minDist = d; nearest = item; }
@@ -113,7 +116,15 @@ public class HomeViewModel : INotifyPropertyChanged
             NearestPoiDist = nearest.DistanceText;
         }
 
-        System.Diagnostics.Debug.WriteLine($"Loaded {TopPOIs.Count} top POIs and {AllPOIs.Count} all POIs. Nearest: {NearestPoiName}");
+        // Top 2 tour nổi bật
+        FeaturedTours.Clear();
+        foreach (var tour in tours.Take(2))
+        {
+            if (myLoc != null && tour.POIs != null)
+                foreach (var poi in tour.POIs)
+                    DistanceUtils.UpdatePoiDistance(poi, myLoc.Latitude, myLoc.Longitude);
+            FeaturedTours.Add(tour);
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -223,4 +223,62 @@ public class ApiService
             new { Name = name, Phone = phone });
         return response.IsSuccessStatusCode;
     }
+
+    // ── Tours ─────────────────────────────────────────────────────────────────
+
+    public async Task<List<TourGuideApp.Models.Tour>> GetTours()
+    {
+        if (ConnectivityService.IsConnected)
+        {
+            try
+            {
+                var tours = await client.GetFromJsonAsync<List<TourGuideApp.Models.Tour>>(
+                    $"{ApiConfig.BaseUrl}tours")
+                    ?? new List<TourGuideApp.Models.Tour>();
+                
+                if (tours.Count > 0)
+                {
+                    _ = LocalDbService.Instance.SaveToursAsync(tours);
+                    return tours;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetTours failed: {ex.Message}");
+            }
+        }
+
+        System.Diagnostics.Debug.WriteLine("[API] GetTours → using offline cache");
+        return await LocalDbService.Instance.GetCachedToursAsync();
+    }
+
+    public async Task<List<TourGuideApp.Models.Tour>> GetTopTours(int count = 2)
+    {
+        var all = await GetTours();
+        return all.Take(count).ToList();
+    }
+
+    public async Task<TourGuideApp.Models.Tour?> GetTourById(int id)
+    {
+        if (ConnectivityService.IsConnected)
+        {
+            try
+            {
+                return await client.GetFromJsonAsync<TourGuideApp.Models.Tour>(
+                    $"{ApiConfig.BaseUrl}tours/{id}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetTourById failed: {ex.Message}");
+            }
+        }
+        return null;
+    }
+
+    public async Task<int> GetTourCount()
+    {
+        var all = await GetTours();
+        return all.Count;
+    }
 }
+// Thêm ở cuối class - nhưng cần thêm vào trong class body

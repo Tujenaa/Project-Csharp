@@ -286,26 +286,51 @@
                 <Shadow Brush="#40000000" Offset="0,-4" Radius="20"/>
             </Border.Shadow>
 
-            <Grid RowSpacing="0" HeightRequest="360">
+            <Grid RowSpacing="0" HeightRequest="400">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Padding="20,14,20,10">
+                <!-- Header -->
+                <Grid Grid.Row="0" Padding="20,14,20,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+                    
                     <VerticalStackLayout Grid.Column="0" Spacing="2">
                         <BoxView BackgroundColor="#DDD6F3" WidthRequest="36" HeightRequest="4"
                                  CornerRadius="2" HorizontalOptions="Start"/>
-                        <Label Text="Địa điểm tham quan"
-                               FontSize="17" FontAttributes="Bold"
-                               TextColor="#1A1035" Margin="0,8,0,0"/>
-                        <Label x:Name="lblPoiCount" Text="Đang tải..."
-                               FontSize="12" TextColor="#94A3B8"/>
+                        
+                        <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10" Margin="0,8,10,0">
+                            <VerticalStackLayout Grid.Column="0" Spacing="0">
+                                <Label x:Name="lblBottomSheetTitle" Text="Địa điểm tham quan"
+                                       FontSize="17" FontAttributes="Bold"
+                                       TextColor="#1A1035"/>
+                                <Label x:Name="lblPoiCount" Text="Đang tải..."
+                                       FontSize="12" TextColor="#94A3B8"/>
+                            </VerticalStackLayout>
+
+                            <!-- Nút Bắt đầu tham quan (chỉ hiện khi chọn tour) -->
+                            <Border Grid.Column="1" 
+                                    BackgroundColor="#512BD4" 
+                                    Stroke="Transparent" 
+                                    Padding="12,6"
+                                    VerticalOptions="Center"
+                                    IsVisible="{Binding IsTourSelected}">
+                                <Border.StrokeShape>
+                                    <RoundRectangle CornerRadius="12"/>
+                                </Border.StrokeShape>
+                                <Label Text="Bắt đầu" FontSize="12" FontAttributes="Bold" TextColor="White"/>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding StartTourCommand}"/>
+                                </Border.GestureRecognizers>
+                            </Border>
+                        </Grid>
                     </VerticalStackLayout>
+
                     <Border Grid.Column="1" BackgroundColor="#F4F2FB"
                             Stroke="Transparent" StrokeThickness="0"
                             WidthRequest="34" HeightRequest="34" VerticalOptions="Center">
@@ -320,7 +345,52 @@
                     </Border>
                 </Grid>
 
-                <CollectionView Grid.Row="1" x:Name="poiCollectionView"
+                <!-- Tour selector -->
+                <ScrollView Grid.Row="1" Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Never"
+                            Margin="16,0,16,10">
+                    <HorizontalStackLayout x:Name="tourChipPanel" Spacing="8">
+
+                        <!-- Chip "Tất cả" -->
+                        <Border x:Name="chipAll"
+                                BackgroundColor="#512BD4"
+                                Stroke="Transparent" StrokeThickness="0"
+                                Padding="14,7">
+                            <Border.StrokeShape>
+                                <RoundRectangle CornerRadius="16"/>
+                            </Border.StrokeShape>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnTourChipAllTapped"/>
+                            </Border.GestureRecognizers>
+                            <Label Text="Tất cả" FontSize="12" FontAttributes="Bold" TextColor="White"/>
+                        </Border>
+
+                        <!-- Tour chips — populated from code-behind using BindableLayout -->
+                        <HorizontalStackLayout x:Name="tourChipsContainer" Spacing="8"
+                                               BindableLayout.ItemsSource="{Binding AllTours}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BackgroundColor="#F4F2FB"
+                                            Stroke="#DDD6F3" StrokeThickness="1"
+                                            Padding="14,7">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="16"/>
+                                        </Border.StrokeShape>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectTourCommand}"
+                                                CommandParameter="{Binding .}"/>
+                                        </Border.GestureRecognizers>
+                                        <Label Text="{Binding Name}" FontSize="12" TextColor="#512BD4"
+                                               LineBreakMode="TailTruncation" MaximumWidthRequest="130"/>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </HorizontalStackLayout>
+                    </HorizontalStackLayout>
+                </ScrollView>
+
+                <CollectionView Grid.Row="2" x:Name="poiCollectionView"
                                 ItemsSource="{Binding NearbyPOI}"
                                 Margin="16,0,16,16">
                     <CollectionView.ItemsLayout>

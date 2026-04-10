@@ -10,12 +10,16 @@ namespace TourGuideAPI.Data
         public DbSet<History> History { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<POIImage> POIImages { get; set; }
+        public DbSet<Tour> Tours { get; set; }
+        public DbSet<TourPOI> TourPOI { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<POI>().ToTable("POI");
             modelBuilder.Entity<Audio>().ToTable("Audio");
             modelBuilder.Entity<History>().ToTable("History");
             modelBuilder.Entity<User>().ToTable("Users");
+            modelBuilder.Entity<Tour>().ToTable("Tours");
+            modelBuilder.Entity<TourPOI>().ToTable("TourPOI");
             modelBuilder.Entity<POI>().Ignore(p => p.OwnerName);
             modelBuilder.Entity<POI>().Ignore(p => p.ImageUrl);
             modelBuilder.Entity<Audio>()

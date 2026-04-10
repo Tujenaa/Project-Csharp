@@ -79,9 +79,9 @@ public partial class TextToSpeechService
         private readonly TextToSpeechService _parent;
         public TtsProgressListener(TextToSpeechService parent) => _parent = parent;
 
-        public override void OnStart(string utteranceId) { }
+        public override void OnStart(string? utteranceId) { }
         
-        public override void OnDone(string utteranceId)
+        public override void OnDone(string? utteranceId)
         {
             if (!_parent._isPaused)
             {
@@ -91,10 +91,11 @@ public partial class TextToSpeechService
             _parent._speechTcs?.TrySetResult(true);
         }
 
-        public override void OnError(string utteranceId) => _parent._speechTcs?.TrySetResult(false);
+        [System.Obsolete]
+        public override void OnError(string? utteranceId) => _parent._speechTcs?.TrySetResult(false);
 
         // API 26+ hỗ trợ lấy vị trí đang đọc
-        public override void OnRangeStart(string utteranceId, int start, int end, int frame)
+        public override void OnRangeStart(string? utteranceId, int start, int end, int frame)
         {
             // Cập nhật vị trí ký tự tuyệt đối trong _currentText
             _parent._charIndex = _parent._startCharOffset + start;

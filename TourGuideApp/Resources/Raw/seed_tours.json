@@ -1,0 +1,36 @@
+[
+  {
+    "id": 1,
+    "name": "Khám phá ẩm thực Vĩnh Khánh",
+    "description": "Tour trải nghiệm các quán ốc nổi tiếng",
+    "status": "PUBLISHED",
+    "POIs": [
+      { "id": 1, "name": "Ốc Oanh Vĩnh Khánh", "latitude": 10.761009, "longitude": 106.702436, "radius": 50 },
+      { "id": 3, "name": "Ốc Nho Vĩnh Khánh", "latitude": 10.760472, "longitude": 106.703425, "radius": 50 },
+      { "id": 4, "name": "Hải sản 63 Vĩnh Khánh", "latitude": 10.760408, "longitude": 106.703725, "radius": 50 },
+      { "id": 6, "name": "Ốc Đào Vĩnh Khánh", "latitude": 10.760522, "longitude": 106.707003, "radius": 50 }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Top ốc bình dân",
+    "description": "Những quán ốc giá rẻ, chất lượng tốt cho sinh viên",
+    "status": "PUBLISHED",
+    "POIs": [
+      { "id": 2, "name": "Ốc Thảo Vĩnh Khánh", "latitude": 10.761103, "longitude": 106.703445, "radius": 50 },
+      { "id": 8, "name": "Ốc 30K Vĩnh Khánh", "latitude": 10.760872, "longitude": 106.704454, "radius": 50 },
+      { "id": 9, "name": "Quán Nhậu Vĩnh Khánh", "latitude": 10.761009, "longitude": 106.705764, "radius": 50 }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Ốc cay và đặc sản",
+    "description": "Dành cho những ai thích đồ ăn cay và đậm vị",
+    "status": "PUBLISHED",
+    "POIs": [
+      { "id": 7, "name": "Ốc Xào Me 109", "latitude": 10.760588, "longitude": 106.705034, "radius": 50 },
+      { "id": 10, "name": "Ốc Cay Vĩnh Khánh", "latitude": 10.760798, "longitude": 106.706954, "radius": 50 },
+      { "id": 5, "name": "Ốc Tô Vĩnh Khánh", "latitude": 10.761199, "longitude": 106.704948, "radius": 50 }
+    ]
+  }
+]

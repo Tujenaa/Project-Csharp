@@ -1,6 +1,5 @@
 using System.Linq;
 using Microsoft.Maui.ApplicationModel;
-
 using TourGuideApp.Pages;
 using TourGuideApp.Services;
 using TourGuideApp.Models;
@@ -30,7 +29,6 @@ public partial class HomePage : ContentPage
         }
     }
 
-
     private async void OnMapButtonClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("//map");
@@ -41,22 +39,13 @@ public partial class HomePage : ContentPage
         await Navigation.PushAsync(new QrScannerPage());
     }
 
-    public Command<POI> GoToDetailCommand { get; }
-
-
-    private void OnPlaceSelected(object sender, SelectionChangedEventArgs e)
+    private async void OnViewAllToursTapped(object sender, EventArgs e)
     {
-        if (e.CurrentSelection.Count == 0)
-            return;
-
-        // Chỉ reset selection, không lưu history ở đây (tránh duplicate với TTS)
-        if (sender is CollectionView cv)
-        {
-            cv.SelectedItem = null;
-        }
+        // Mở bản đồ không chọn tour cụ thể (xem tất cả)
+        MapTourState.SelectedTour = null;
+        await Shell.Current.GoToAsync("//map");
     }
 
-    // Lấy vị trí hiện tại và hiển thị địa chỉ
     async Task LoadLocation()
     {
         if (DeviceInfo.Platform != DevicePlatform.Android &&
@@ -66,7 +55,6 @@ public partial class HomePage : ContentPage
         try
         {
             var status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
-
             if (status != PermissionStatus.Granted)
             {
                 LocationLabel.Text = "Chưa cấp quyền";
@@ -84,9 +72,9 @@ public partial class HomePage : ContentPage
                 if (place != null)
                 {
                     string street = place.Thoroughfare ?? "";
-                    string ward = place.SubLocality ?? ""; // Phường/Xã
-                    string city = place.Locality ?? "";     // Quận/Huyện/Thành phố
-                    
+                    string ward = place.SubLocality ?? "";
+                    string city = place.Locality ?? "";
+
                     var parts = new List<string> { street, ward, city }
                         .Where(s => !string.IsNullOrWhiteSpace(s));
 
@@ -99,5 +87,4 @@ public partial class HomePage : ContentPage
             LocationLabel.Text = "Lỗi GPS";
         }
     }
-
 }

@@ -28,6 +28,7 @@ public class LocalDbService
             SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.Create | SQLiteOpenFlags.SharedCache);
 
         await _db.CreateTableAsync<CachedPOI>();
+        await _db.CreateTableAsync<CachedTour>();
         await _db.CreateTableAsync<PendingHistory>();
 
         // Tự động seed dữ liệu JSON nếu bảng POI trống (Cung cấp sẵn cho Offline Mode)
@@ -35,6 +36,12 @@ public class LocalDbService
         if (count == 0)
         {
             await SeedDataFromJsonAsync();
+        }
+
+        var tourCount = await _db.Table<CachedTour>().CountAsync();
+        if (tourCount == 0)
+        {
+            await SeedToursFromJsonAsync();
         }
 
         System.Diagnostics.Debug.WriteLine($"[LocalDB] Initialized at: {DbPath}");
@@ -78,6 +85,28 @@ public class LocalDbService
             System.Diagnostics.Debug.WriteLine($"[LocalDB] Lỗi không thể đọc file seed_pois.json: {ex.Message}");
         }
     }
+
+    private async Task SeedToursFromJsonAsync()
+    {
+        try
+        {
+            using var stream = await FileSystem.OpenAppPackageFileAsync("seed_tours.json");
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            var tours = JsonSerializer.Deserialize<List<Tour>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            
+            if (tours != null && tours.Count > 0)
+            {
+                await SaveToursAsync(tours);
+                System.Diagnostics.Debug.WriteLine($"[LocalDB] Mồi thành công {tours.Count} dữ liệu Tour từ file seed_tours.json");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[LocalDB] Lỗi không thể đọc file seed_tours.json: {ex.Message}");
+        }
+    }
+
 
     // ── POI Cache ─────────────────────────────────────────────────────────────
 
@@ -155,6 +184,43 @@ public class LocalDbService
             ScriptJa    = c.ScriptJa,
             ScriptZh    = c.ScriptZh,
             Images      = string.IsNullOrEmpty(c.ImagesJson) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(c.ImagesJson) ?? new List<string>()
+        }).ToList();
+    }
+
+    // ── Tour Cache ────────────────────────────────────────────────────────────
+
+    public async Task SaveToursAsync(List<Tour> tours)
+    {
+        await InitAsync();
+        var cached = tours.Select(t => new CachedTour
+        {
+            Id           = t.Id,
+            Name         = t.Name ?? "",
+            Description  = t.Description ?? "",
+            ThumbnailUrl = t.ThumbnailUrl ?? "",
+            Status       = t.Status ?? "PUBLISHED",
+            PoisJson     = JsonSerializer.Serialize(t.POIs),
+            CachedAt     = DateTime.UtcNow
+        }).ToList();
+
+        await _db!.DeleteAllAsync<CachedTour>();
+        await _db.InsertAllAsync(cached);
+        System.Diagnostics.Debug.WriteLine($"[LocalDB] Saved {cached.Count} Tours");
+    }
+
+    public async Task<List<Tour>> GetCachedToursAsync()
+    {
+        await InitAsync();
+        var cached = await _db!.Table<CachedTour>().ToListAsync();
+
+        return cached.Select(c => new Tour
+        {
+            Id           = c.Id,
+            Name         = c.Name,
+            Description  = c.Description,
+            ThumbnailUrl = c.ThumbnailUrl,
+            Status       = c.Status,
+            POIs         = string.IsNullOrEmpty(c.PoisJson) ? new List<POI>() : JsonSerializer.Deserialize<List<POI>>(c.PoisJson) ?? new List<POI>()
         }).ToList();
     }
 
@@ -252,4 +318,17 @@ public class PendingHistory
     public DateTime PlayTime       { get; set; }
     public int      ListenDuration { get; set; }
     public bool     Synced         { get; set; }
+}
+
+[Table("TourCache")]
+public class CachedTour
+{
+    [PrimaryKey]
+    public int Id { get; set; }
+    public string Name         { get; set; } = "";
+    public string Description  { get; set; } = "";
+    public string ThumbnailUrl { get; set; } = "";
+    public string Status       { get; set; } = "PUBLISHED";
+    public string PoisJson     { get; set; } = "[]";
+    public DateTime CachedAt   { get; set; }
 }

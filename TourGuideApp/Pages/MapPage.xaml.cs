@@ -22,18 +22,18 @@ public partial class MapPage : ContentPage
         mapWebView.Source = new HtmlWebViewSource { Html = viewModel.MapHtml };
 
         viewModel.POIUpdated += OnPOIUpdated;
+        viewModel.ActiveTourChanged += OnActiveTourChanged;
+        viewModel.TourSelected += OnTourSelected;
 
-        // Khi SelectRouteDestCommand được execute (từ search hoặc list) → vẽ đường
         viewModel.SelectRouteDestCommand = new Command<POI>(poi => _ = OnRouteDestSelectedAsync(poi));
     }
 
-    // ── WebView: bắt URL scheme ───────────────────────────────────────────────
+    // ── WebView ───────────────────────────────────────────────────────────────
 
     private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
     {
         if (!e.Url.StartsWith("tourguide://poi/")) return;
         e.Cancel = true;
-
         if (int.TryParse(e.Url.Replace("tourguide://poi/", ""), out int poiId))
         {
             var poi = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == poiId);
@@ -54,8 +54,7 @@ public partial class MapPage : ContentPage
                 await Task.Delay(100);
                 try
                 {
-                    var r = await mapWebView.EvaluateJavaScriptAsync(
-                        "typeof map !== 'undefined' ? '1' : '0'");
+                    var r = await mapWebView.EvaluateJavaScriptAsync("typeof map !== 'undefined' ? '1' : '0'");
                     if (r == "1") { mapReady = true; break; }
                 }
                 catch { }
@@ -64,34 +63,95 @@ public partial class MapPage : ContentPage
             await viewModel.PushMapDataAsync();
             UpdatePOICountLabel();
         }
+
+        // Nếu có tour được chọn từ HomePage
+        if (MapTourState.SelectedTour != null)
+        {
+            var tour = MapTourState.SelectedTour;
+            MapTourState.SelectedTour = null;
+            await Task.Delay(300);
+            await viewModel.ApplyTourAsync(tour);
+            poiListVisible = true;
+            poiBottomSheet.IsVisible = true;
+            UpdatePOICountLabel();
+            UpdateTourChipHighlight(tour);
+        }
     }
 
-    // ── Thanh lộ trình: bấm vào → mở/đóng panel tìm kiếm ────────────────────
+    // ── Tour chip ─────────────────────────────────────────────────────────────
+
+    private void OnTourChipAllTapped(object sender, EventArgs e)
+    {
+        // Sử dụng command chính để reset về trang thái "Tất cả"
+        viewModel.SelectTourCommand.Execute(null);
+
+        UpdateTourChipHighlight(null);
+        UpdatePOICountLabel();
+    }
+
+    string GetAllPOIsJson()
+    {
+        var pois = viewModel.NearbyPOI;
+        var json = System.Text.Json.JsonSerializer.Serialize(pois.Select(p => new
+        {
+            id = p.Id,
+            name = p.Name,
+            latitude = p.Latitude,
+            longitude = p.Longitude
+        }));
+        return json;
+    }
+
+    void OnActiveTourChanged()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            var tour = viewModel.ActiveTour;
+            lblBottomSheetTitle.Text = tour != null ? tour.Name ?? "Tour" : "Địa điểm tham quan";
+            UpdatePOICountLabel();
+        });
+    }
+
+    void OnTourSelected(Tour? tour)
+    {
+        MainThread.BeginInvokeOnMainThread(() => UpdateTourChipHighlight(tour));
+    }
+
+    void UpdateTourChipHighlight(Tour? selectedTour)
+    {
+        // Reset chip "Tất cả"
+        chipAll.BackgroundColor = selectedTour == null
+            ? Color.FromArgb("#512BD4")
+            : Color.FromArgb("#F4F2FB");
+
+        if (chipAll.Content is Label chipAllLabel)
+            chipAllLabel.TextColor = selectedTour == null
+                ? Colors.White
+                : Color.FromArgb("#512BD4");
+
+        chipAll.Stroke = selectedTour == null ? Colors.Transparent : Color.FromArgb("#DDD6F3");
+    }
+
+    // ── Route bar ─────────────────────────────────────────────────────────────
 
     private void OnRouteBarTapped(object sender, EventArgs e)
     {
-        // Nếu đang hiện detail card → đóng trước
         if (poiDetailCard.IsVisible)
         {
             poiDetailCard.IsVisible = false;
             currentDetailPoi = null;
             HighlightNearestIfNoSelection();
         }
-        // Đóng bottom sheet nếu mở
         if (poiListVisible)
         {
             poiListVisible = false;
             poiBottomSheet.IsVisible = false;
         }
-
         searchPanelVisible = !searchPanelVisible;
         searchPanel.IsVisible = searchPanelVisible;
-
         if (searchPanelVisible)
         {
-            // Focus ô tìm kiếm ngay
             searchEntry.Focus();
-            // Hiện toàn bộ danh sách khi chưa gõ gì
             searchResultList.IsVisible = false;
         }
         else
@@ -100,13 +160,12 @@ public partial class MapPage : ContentPage
         }
     }
 
-    // ── Tìm kiếm ─────────────────────────────────────────────────────────────
+    // ── Search ────────────────────────────────────────────────────────────────
 
     private void OnSearchTextChanged(object sender, TextChangedEventArgs e)
     {
         var query = e.NewTextValue?.Trim() ?? "";
         btnClearSearch.IsVisible = query.Length > 0;
-
         if (query.Length == 0)
         {
             searchResultList.IsVisible = false;
@@ -114,7 +173,6 @@ public partial class MapPage : ContentPage
             fullPoiList.IsVisible = true;
             return;
         }
-
         var results = viewModel.SearchPOI(query);
         searchResultList.ItemsSource = results;
         searchResultList.IsVisible = results.Count > 0;
@@ -131,25 +189,17 @@ public partial class MapPage : ContentPage
         fullPoiList.IsVisible = true;
     }
 
-    // ── Chọn điểm đến lộ trình (từ search dropdown hoặc danh sách) ───────────
+    // ── Route dest ────────────────────────────────────────────────────────────
 
     async Task OnRouteDestSelectedAsync(POI poi)
     {
         if (poi == null) return;
-
-        // 1. Cập nhật thanh lộ trình
         lblRouteDestination.Text = poi.Name;
         lblRouteDestination.TextColor = Color.FromArgb("#1A1035");
         btnClearRoute.IsVisible = true;
-
-        // 2. Đóng panel search
         CloseSearchPanel();
-
-        // 3. Highlight marker POI (đã được gọi trong ShowDetailCard, giữ nguyên cũng được)
         if (viewModel.EvalJs != null)
             await viewModel.EvalJs($"highlightPOI({poi.Id})");
-
-        // 4. Lấy vị trí user và vẽ đường
         var loc = await viewModel.GetCurrentLocationFastAsync();
         if (loc != null && viewModel.EvalJs != null)
         {
@@ -160,8 +210,6 @@ public partial class MapPage : ContentPage
             var lon2 = poi.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
             await viewModel.EvalJs($"drawRoute({lat1},{lon1},{lat2},{lon2})");
         }
-
-        // 5. Hiện detail card
         ShowDetailCard(poi);
     }
 
@@ -175,34 +223,27 @@ public partial class MapPage : ContentPage
         searchEntry.Unfocus();
     }
 
-    // ── Xóa lộ trình ─────────────────────────────────────────────────────────
+    // ── Clear route ───────────────────────────────────────────────────────────
 
     private async void OnClearRouteTapped(object sender, EventArgs e)
     {
         lblRouteDestination.Text = "Chọn điểm đến...";
         lblRouteDestination.TextColor = Color.FromArgb("#94A3B8");
         btnClearRoute.IsVisible = false;
-
         if (viewModel.EvalJs != null)
-        {
             await viewModel.EvalJs("if(typeof routeLine !== 'undefined' && routeLine) { map.removeLayer(routeLine); routeLine = null; }");
-        }
-
         poiDetailCard.IsVisible = false;
         currentDetailPoi = null;
         HighlightNearestIfNoSelection();
     }
 
-    // ── Toggle danh sách POI ──────────────────────────────────────────────────
+    // ── Toggle POI list ───────────────────────────────────────────────────────
 
     private void OnTogglePOIListTapped(object sender, EventArgs e)
     {
-        // Đóng search panel nếu đang mở
         if (searchPanelVisible) CloseSearchPanel();
-
         poiListVisible = !poiListVisible;
         poiBottomSheet.IsVisible = poiListVisible;
-
         if (poiListVisible)
         {
             poiDetailCard.IsVisible = false;
@@ -211,7 +252,7 @@ public partial class MapPage : ContentPage
         }
     }
 
-    // ── Nút "vị trí của tôi" ─────────────────────────────────────────────────
+    // ── Current location ──────────────────────────────────────────────────────
 
     private async void OnCurrentLocationTapped(object sender, EventArgs e)
     {
@@ -219,14 +260,10 @@ public partial class MapPage : ContentPage
         {
             var pos = await viewModel.GetCurrentLocationFastAsync();
             if (pos == null) return;
-
             var (lat, lon) = pos.Value;
             var latStr = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var lonStr = lon.ToString(System.Globalization.CultureInfo.InvariantCulture);
-
-            await mapWebView.EvaluateJavaScriptAsync(
-                $"setUserLocation({latStr},{lonStr}); flyTo({latStr},{lonStr},15);");
-
+            await mapWebView.EvaluateJavaScriptAsync($"setUserLocation({latStr},{lonStr}); flyTo({latStr},{lonStr},15);");
             viewModel.RefreshDistances();
         }
         catch (Exception ex)
@@ -240,19 +277,15 @@ public partial class MapPage : ContentPage
     void ShowDetailCard(POI poi)
     {
         currentDetailPoi = poi;
-
         lblCardName.Text = poi.Name;
         lblCardDistance.Text = poi.DistanceText;
         lblCardDesc.Text = string.IsNullOrWhiteSpace(poi.Description)
             ? "Nhấn \"Xem chi tiết\" để biết thêm về địa điểm này."
             : poi.Description;
-
         UpdateCardPlayButton(poi.IsPlaying);
         poiDetailCard.IsVisible = true;
-
         if (viewModel.EvalJs != null)
             _ = viewModel.EvalJs($"highlightPOI({poi.Id})");
-
         if (poiListVisible)
         {
             poiListVisible = false;
@@ -303,9 +336,13 @@ public partial class MapPage : ContentPage
     void UpdatePOICountLabel()
     {
         int count = viewModel.NearbyPOI.Count;
-        lblPoiCount.Text = count > 0
-            ? $"{count} địa điểm · sắp xếp từ gần nhất"
-            : "Không có địa điểm nào";
+        var tour = viewModel.ActiveTour;
+        if (tour != null)
+            lblPoiCount.Text = count > 0 ? $"{count} địa điểm trong tour" : "Không có địa điểm";
+        else
+            lblPoiCount.Text = count > 0
+                ? $"{count} địa điểm · sắp xếp từ gần nhất"
+                : "Không có địa điểm nào";
     }
 
     void OnPOIUpdated()
