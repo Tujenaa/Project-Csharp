@@ -124,6 +124,9 @@
                 <a href="/AudioManager" class="nav-item @(ViewData["Active"]?.ToString() == "audio" ? "active" : "")">
                     <i class="bi bi-music-note-beamed"></i><span>Quản lý Audio</span>
                 </a>
+                <a href="/TourManager" class="nav-item @(ViewData["Active"]?.ToString() == "tours" ? "active" : "")">
+                    <i class="bi bi-map"></i><span>Quản lý Tour</span>
+                </a>
                 <div class="nav-section">DỮ LIỆU</div>
                 <a href="/HistoryPage" class="nav-item @(ViewData["Active"]?.ToString() == "history" ? "active" : "")">
                     <i class="bi bi-clock-history"></i><span>Lịch sử phát</span>
@@ -149,6 +152,7 @@
                 <a href="/Profile" class="nav-item @(ViewData["Active"]?.ToString() == "profile" ? "active" : "")">
                     <i class="bi bi-person-circle"></i><span>Thông tin cá nhân</span>
                 </a>
+
             </nav>
             <div class="sidebar-footer">
                 <span>API: <code>:5266</code></span>

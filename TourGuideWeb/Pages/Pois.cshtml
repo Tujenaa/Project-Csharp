@@ -141,6 +141,14 @@
                             <i class="bi bi-trash"></i> Xoá
                         </button>
                     </div>
+
+                    <!-- TOURS CỦA POI NÀY -->
+                    <div id="poiToursPanel" style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;display:none">
+                        <div style="font-size:11px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">
+                            <i class="bi bi-map"></i> Tour có điểm này
+                        </div>
+                        <div id="poiToursList"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -201,7 +209,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Bán kính (m) <span class="req">*</span></label>
-                            <input type="number" name="Radius" id="fRadius" class="form-control" min="5" max="5000" value="80" required />
+                            <input type="number" name="Radius" id="fRadius" class="form-control" min="1" max="5000" value="5" required />
                             <div class="form-hint">Vùng kích hoạt thuyết minh</div>
                         </div>
                         <div class="form-group">
@@ -288,7 +296,6 @@
 
     function toAbsUrl(url) {
         if (!url) return '';
-        // Proxy qua Web để tránh mixed content HTTPS/HTTP
         return '/img-proxy?url=' + encodeURIComponent(url);
     }
 
@@ -400,10 +407,47 @@
         document.getElementById('detailLng').textContent = poi.lng.toFixed(6);
         document.getElementById('detailR').textContent = poi.radius + ' m';
         document.getElementById('detailOwner').textContent = poi.owner;
+        loadPoiTours(poi.id);
     }
 
     function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg,p.img); }
     function deleteCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) confirmDelete(p.id,p.name); }
+
+    // ── TOUR PANEL ────────────────────────────────────────────────────
+    async function loadPoiTours(poiId) {
+        const panel = document.getElementById('poiToursPanel');
+        const list  = document.getElementById('poiToursList');
+        panel.style.display = 'none';
+        list.innerHTML = '';
+        try {
+            const res = await fetch(`${API_BASE}/api/tours/by-poi/${poiId}`);
+            if (!res.ok) return;
+            const tours = await res.json();
+            if (!tours || tours.length === 0) return;
+            panel.style.display = 'block';
+            list.innerHTML = tours.map(t => {
+                const pois = t.pOIs || t.POIs || [];
+                return `
+                <div style="background:#f9f8ff;border:1px solid #ede9fe;border-radius:8px;padding:10px 12px;margin-bottom:8px">
+                    <div style="font-weight:600;font-size:13px;color:#4c1d95;margin-bottom:4px">
+                        <i class="bi bi-signpost-2"></i> ${t.name}
+                    </div>
+                    ${t.description ? `<div style="font-size:12px;color:#6b7280;margin-bottom:6px">${t.description}</div>` : ''}
+                    <div style="display:flex;flex-wrap:wrap;gap:4px">
+                        ${pois.map(p => `
+                            <span style="background:${p.id === poiId ? '#6d28d9' : '#ede9fe'};
+                                         color:${p.id === poiId ? '#fff' : '#5b21b6'};
+                                         font-size:11px;padding:2px 8px;border-radius:8px;
+                                         cursor:${p.id === poiId ? 'default' : 'pointer'};font-weight:500"
+                                  ${p.id !== poiId ? `onclick="selectPoiById(${p.id})"` : ''}>
+                                ${p.name}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }).join('');
+        } catch (e) { console.error('loadPoiTours:', e); }
+    }
 
     function removeDiacritics(str){
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
@@ -439,8 +483,8 @@
         _pm=L.map('pickMap').setView([lat,lng],15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_pm);
         placeMarker(lat,lng,r);
-        _pm.on('click',e=>placeMarker(e.latlng.lat,e.latlng.lng,parseFloat(document.getElementById('fRadius').value)||80));
-        document.getElementById('fRadius').addEventListener('input',function(){if(_pmk){const ll=_pmk.getLatLng();drawCircle(ll.lat,ll.lng,parseFloat(this.value)||80);}});
+        _pm.on('click',e=>placeMarker(e.latlng.lat,e.latlng.lng,parseFloat(document.getElementById('fRadius').value)||5));
+        document.getElementById('fRadius').addEventListener('input',function(){if(_pmk){const ll=_pmk.getLatLng();drawCircle(ll.lat,ll.lng,parseFloat(this.value)||5);}});
     }
     function placeMarker(lat,lng,r){
         if(_pmk)_pm.removeLayer(_pmk);
@@ -448,18 +492,18 @@
         _pmk=L.marker([lat,lng],{draggable:true}).addTo(_pm);
         document.getElementById('fLat').value=lat.toFixed(6);
         document.getElementById('fLng').value=lng.toFixed(6);
-        _pmk.on('dragend',e=>{const p=e.target.getLatLng();document.getElementById('fLat').value=p.lat.toFixed(6);document.getElementById('fLng').value=p.lng.toFixed(6);drawCircle(p.lat,p.lng,parseFloat(document.getElementById('fRadius').value)||80);});
+        _pmk.on('dragend',e=>{const p=e.target.getLatLng();document.getElementById('fLat').value=p.lat.toFixed(6);document.getElementById('fLng').value=p.lng.toFixed(6);drawCircle(p.lat,p.lng,parseFloat(document.getElementById('fRadius').value)||5);});
     }
     function drawCircle(lat,lng,r){if(_pmc)_pm.removeLayer(_pmc);_pmc=L.circle([lat,lng],{radius:r,color:'#e94560',fillColor:'#e94560',fillOpacity:.2}).addTo(_pm);}
     function getMyLocation(){
         if(!navigator.geolocation){alert('Không hỗ trợ định vị.');return;}
-        navigator.geolocation.getCurrentPosition(pos=>{const r=parseFloat(document.getElementById('fRadius').value)||80;placeMarker(pos.coords.latitude,pos.coords.longitude,r);_pm.setView([pos.coords.latitude,pos.coords.longitude],16);showTab('tab-loc','btnTabLoc');},err=>alert('Lỗi: '+err.message));
+        navigator.geolocation.getCurrentPosition(pos=>{const r=parseFloat(document.getElementById('fRadius').value)||5;placeMarker(pos.coords.latitude,pos.coords.longitude,r);_pm.setView([pos.coords.latitude,pos.coords.longitude],16);showTab('tab-loc','btnTabLoc');},err=>alert('Lỗi: '+err.message));
     }
 
     function openModal(){
         document.getElementById('poiForm').reset();
         document.getElementById('fId').value='0';
-        document.getElementById('fRadius').value=80;
+        document.getElementById('fRadius').value=5;
         document.getElementById('modalTitle').textContent='Thêm điểm thuyết minh';
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Lưu';
         _selectedFiles = new DataTransfer();
@@ -470,7 +514,7 @@
         document.getElementById('currentImagesGrid').innerHTML = '';
         showTab('tab-basic','btnTabBasic');
         document.getElementById('poiModal').style.display='flex';
-        setTimeout(()=>initPickMap(10.7769,106.7009,80),150);
+        setTimeout(()=>initPickMap(10.7769,106.7009,5),150);
     }
     function closeModal(){document.getElementById('poiModal').style.display='none';}
 

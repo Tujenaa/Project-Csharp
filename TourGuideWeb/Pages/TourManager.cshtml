@@ -1,0 +1,243 @@
+﻿@page
+@model GPSGuide.Web.Pages.TourManagerModel
+@{
+    ViewData["Title"] = "Quản lý Tour"; ViewData["Active"] = "tours";
+}
+
+@if (!string.IsNullOrEmpty(Model.Msg))
+{
+    <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
+}
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
+}
+
+<div class="page-header">
+    <div><h2>Quản lý Tour</h2></div>
+    <button class="btn btn-primary" onclick="openModal()">
+        <i class="bi bi-plus-lg"></i> Thêm Tour
+    </button>
+</div>
+
+<div class="card">
+    @if (!Model.Tours.Any())
+    {
+        <div style="padding:40px;text-align:center;color:#9ca3af">
+            <i class="bi bi-map" style="font-size:40px;display:block;margin-bottom:12px"></i>
+            Chưa có tour nào. <a href="#" onclick="openModal();return false">Thêm tour đầu tiên</a>
+        </div>
+    }
+    else
+    {
+        <table class="tg-table">
+            <thead>
+                <tr>
+                    <th>Tên tour</th>
+                    <th>Mô tả</th>
+                    <th>Trạng thái</th>
+                    <th>Số điểm</th>
+                    <th>Điểm trong tour</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model.Tours)
+                {
+                    <tr>
+                        <td style="font-weight:600">@t.Name</td>
+                        <td style="color:#6b7280;max-width:200px">@t.Description</td>
+                        <td>
+                            @if (t.Status == "PUBLISHED")
+                            {
+                                <span style="background:#dcfce7;color:#065f46;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">✅ Công khai</span>
+                            }
+                            else if (t.Status == "DRAFT")
+                            {
+                                <span style="background:#fef3c7;color:#92400e;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">📝 Nháp</span>
+                            }
+                            else
+                            {
+                                <span style="background:#f3f4f6;color:#6b7280;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">🗄️ Lưu trữ</span>
+                            }
+                        </td>
+                        <td style="text-align:center;font-weight:600;color:var(--accent)">@t.POIs.Count</td>
+                        <td>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px">
+                                @foreach (var p in t.POIs.Take(4))
+                                {
+                                    <span style="background:#ede9fe;color:#5b21b6;font-size:11px;padding:1px 7px;border-radius:8px">@p.Name</span>
+                                }
+                                @if (t.POIs.Count > 4)
+                                {
+                                    <span style="color:#9ca3af;font-size:11px">+@(t.POIs.Count - 4) khác</span>
+                                }
+                            </div>
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                <button class="btn btn-ghost btn-sm btn-icon" title="Sửa"
+                                        onclick='editTour(@t.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(t.Name)), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(t.Description ?? "")), "@t.Status", [@string.Join(",", t.POIs.Select(p => p.Id))])'>
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xóa"
+                                        onclick="confirmDelete(@t.Id, '@t.Name')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<!-- MODAL THÊM / SỬA -->
+<div id="tourModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box" style="max-width:680px" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4 id="modalTitle">Thêm Tour</h4>
+            <button class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="fId" value="0" />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Tên tour <span style="color:#dc3545">*</span></label>
+                    <input type="text" name="Name" id="fName" class="form-control" required maxlength="255" placeholder="VD: Khám phá ẩm thực Vĩnh Khánh" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mô tả</label>
+                    <textarea name="Description" id="fDesc" class="form-control" rows="2" placeholder="Mô tả ngắn về tour..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Trạng thái</label>
+                    <select name="Status" id="fStatus" class="form-control">
+                        <option value="PUBLISHED">✅ Công khai</option>
+                        <option value="DRAFT">📝 Nháp</option>
+                        <option value="ARCHIVED">🗄️ Lưu trữ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Điểm thuyết minh trong tour</label>
+                    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+                        <div style="padding:8px 12px;background:#f8f9fa;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px">
+                            <i class="bi bi-search" style="color:#9ca3af;font-size:13px"></i>
+                            <input type="text" id="poiSearch" placeholder="Tìm điểm..."
+                                   oninput="filterPoiList(this.value)"
+                                   style="border:none;outline:none;background:transparent;flex:1;font-size:13px" />
+                        </div>
+                        <div style="max-height:220px;overflow-y:auto;padding:8px">
+                            @foreach (var p in Model.AllPois)
+                            {
+                                <label id="poi-item-@p.Id" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .15s"
+                                       onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background=''">
+                                    <input type="checkbox" name="PoiIds" value="@p.Id" class="poi-check"
+                                           style="width:15px;height:15px;accent-color:var(--accent)" />
+                                    <div>
+                                        <div style="font-size:13px;font-weight:500">@p.Name</div>
+                                        <div style="font-size:11px;color:#9ca3af">@p.Address</div>
+                                    </div>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                    <div style="margin-top:6px;font-size:12px;color:#6b7280">
+                        Đã chọn: <span id="selectedCount" style="font-weight:600;color:var(--accent)">0</span> điểm
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn"><i class="bi bi-check-lg"></i> Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL XÓA -->
+<div id="deleteModal" class="modal-backdrop" style="display:none" onclick="closeDelete()">
+    <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4>Xác nhận xóa</h4>
+            <button class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+            <p>Xóa tour <strong id="delName"></strong>?</p>
+            <p style="font-size:13px;color:#6b7280;margin-top:6px">Các điểm thuyết minh không bị xóa, chỉ xóa tour này.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
+            <form method="post" asp-page-handler="Delete" style="display:inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="DeleteId" id="fDelId" />
+                <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Xóa</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Cập nhật đếm số POI đã chọn
+    document.querySelectorAll('.poi-check').forEach(cb => {
+        cb.addEventListener('change', updateCount);
+    });
+
+    function updateCount() {
+        const n = document.querySelectorAll('.poi-check:checked').length;
+        document.getElementById('selectedCount').textContent = n;
+    }
+
+    function filterPoiList(q) {
+        const nq = q.trim().toLowerCase();
+        document.querySelectorAll('[id^="poi-item-"]').forEach(el => {
+            const name = el.querySelector('div > div:first-child').textContent.toLowerCase();
+            el.style.display = (!nq || name.includes(nq)) ? '' : 'none';
+        });
+    }
+
+    function openModal() {
+        document.getElementById('fId').value = '0';
+        document.getElementById('fName').value = '';
+        document.getElementById('fDesc').value = '';
+        document.getElementById('fStatus').value = 'PUBLISHED';
+        document.querySelectorAll('.poi-check').forEach(cb => cb.checked = false);
+        document.getElementById('poiSearch').value = '';
+        filterPoiList('');
+        updateCount();
+        document.getElementById('modalTitle').textContent = 'Thêm Tour';
+        document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Lưu';
+        document.getElementById('tourModal').style.display = 'flex';
+    }
+
+    function editTour(id, name, desc, status, poiIds) {
+        document.getElementById('fId').value = id;
+        document.getElementById('fName').value = name;
+        document.getElementById('fDesc').value = desc;
+        document.getElementById('fStatus').value = status;
+        document.getElementById('poiSearch').value = '';
+        filterPoiList('');
+        document.querySelectorAll('.poi-check').forEach(cb => {
+            cb.checked = poiIds.includes(parseInt(cb.value));
+        });
+        updateCount();
+        document.getElementById('modalTitle').textContent = 'Sửa Tour: ' + name;
+        document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Cập nhật';
+        document.getElementById('tourModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('tourModal').style.display = 'none'; }
+
+    function confirmDelete(id, name) {
+        document.getElementById('fDelId').value = id;
+        document.getElementById('delName').textContent = name;
+        document.getElementById('deleteModal').style.display = 'flex';
+    }
+    function closeDelete() { document.getElementById('deleteModal').style.display = 'none'; }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeModal(); closeDelete(); }
+    });
+</script>
