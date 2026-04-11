@@ -13,98 +13,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
     <link href="~/css/site.css?v=15" rel="stylesheet" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
-    <style>
-        input, select, textarea,
-        input.form-control, select.form-control, textarea.form-control {
-            color: #1e1b4b !important;
-            background-color: #fff !important;
-            font-family: 'Times New Roman', Times, serif !important;
-        }
-
-            input::placeholder, textarea::placeholder {
-                color: #9ca3af !important;
-                opacity: 1 !important;
-            }
-
-            input:-webkit-autofill, input:-webkit-autofill:focus {
-                -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
-                -webkit-text-fill-color: #1e1b4b !important;
-            }
-
-        * {
-            font-family: 'Times New Roman', Times, serif;
-        }
-
-        .stat-value, code, pre, .mono, .coord, .time-chip, .rank-badge, .play-badge {
-            font-family: 'Space Mono', monospace !important;
-        }
-
-        .user-chip {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-            .user-chip .u-name {
-                color: #1e1b4b;
-                font-weight: 600;
-            }
-
-            .user-chip .u-role {
-                font-size: 10px;
-                padding: 2px 7px;
-                border-radius: 20px;
-                font-family: 'Space Mono', monospace;
-            }
-
-        .role-admin {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .role-owner {
-            background: #ede9fe;
-            color: #5b21b6;
-        }
-
-        .btn-logout {
-            background: transparent;
-            border: 1px solid #e5e7eb;
-            color: #6b7280;
-            padding: 5px 10px;
-            border-radius: 7px;
-            cursor: pointer;
-            font-size: 12px;
-            font-family: 'Times New Roman', Times, serif;
-            transition: all .15s;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-            .btn-logout:hover {
-                border-color: #dc2626;
-                color: #dc2626;
-            }
-        /* Badge số pending */
-        .nav-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 18px;
-            height: 18px;
-            padding: 0 5px;
-            background: #dc2626;
-            color: #fff;
-            border-radius: 20px;
-            font-size: 10px;
-            font-family: 'Space Mono', monospace;
-            margin-left: auto;
-            font-weight: 700;
-        }
-    </style>
 </head>
 <body>
     <div class="app-shell">
@@ -117,23 +25,30 @@
                 <a href="/" class="nav-item @(ViewData["Active"]?.ToString() == "home" ? "active" : "")">
                     <i class="bi bi-speedometer2"></i><span>Trang chủ</span>
                 </a>
-                <div class="nav-section">NỘI DUNG</div>
+
+                <div class="nav-section">ĐỊA ĐIỂM & TOUR</div>
                 <a href="/Pois" class="nav-item @(ViewData["Active"]?.ToString() == "pois" ? "active" : "")">
                     <i class="bi bi-geo-alt"></i><span>Điểm thuyết minh</span>
                 </a>
+                @if (isAdmin)
+                {
+                    <a href="/TourManager" class="nav-item @(ViewData["Active"]?.ToString() == "tours" ? "active" : "")">
+                        <i class="bi bi-map"></i><span>Quản lý Tour</span>
+                    </a>
+                }
+
+                <div class="nav-section">NỘI DUNG AUDIO</div>
                 <a href="/AudioManager" class="nav-item @(ViewData["Active"]?.ToString() == "audio" ? "active" : "")">
                     <i class="bi bi-music-note-beamed"></i><span>Quản lý Audio</span>
                 </a>
-                <a href="/TourManager" class="nav-item @(ViewData["Active"]?.ToString() == "tours" ? "active" : "")">
-                    <i class="bi bi-map"></i><span>Quản lý Tour</span>
-                </a>
                 @if (isAdmin)
                 {
-                    <a href="/LanguageManager" class="nav-item ...">
+                    <a href="/LanguageManager" class="nav-item @(ViewData["Active"]?.ToString() == "languages" ? "active" : "")">
                         <i class="bi bi-translate"></i><span>Ngôn ngữ</span>
                     </a>
                 }
-                <div class="nav-section">DỮ LIỆU</div>
+
+                <div class="nav-section">QUẢN TRỊ</div>
                 <a href="/HistoryPage" class="nav-item @(ViewData["Active"]?.ToString() == "history" ? "active" : "")">
                     <i class="bi bi-clock-history"></i><span>Lịch sử phát</span>
                 </a>
@@ -144,7 +59,7 @@
                     </a>
                     <a href="/Approval" class="nav-item @(ViewData["Active"]?.ToString() == "approval" ? "active" : "")">
                         <i class="bi bi-clipboard-check"></i>
-                        <span>Phê duyệt POI</span>
+                        <span>Phê duyệt</span>
                         @{
                             var pendingCount = ViewData["PendingCount"] as int? ?? 0;
                         }
@@ -153,12 +68,10 @@
                             <span class="nav-badge">@pendingCount</span>
                         }
                     </a>
-                    
                 }
                 <a href="/Profile" class="nav-item @(ViewData["Active"]?.ToString() == "profile" ? "active" : "")">
                     <i class="bi bi-person-circle"></i><span>Thông tin cá nhân</span>
                 </a>
-
             </nav>
             <div class="sidebar-footer">
                 <span>API: <code>:5266</code></span>
