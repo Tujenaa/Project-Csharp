@@ -1,0 +1,188 @@
+﻿@page
+@model GPSGuide.Web.Pages.LanguageManagerModel
+@{
+    ViewData["Title"] = "Quản lý Ngôn ngữ"; ViewData["Active"] = "languages";
+}
+
+@if (!string.IsNullOrEmpty(Model.Msg))
+{
+    <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
+}
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> @Model.Error</div>
+}
+
+<div class="page-header">
+    <div><h2>Quản lý Ngôn ngữ</h2></div>
+    <button class="btn btn-primary" onclick="openModal()">
+        <i class="bi bi-plus-lg"></i> Thêm ngôn ngữ
+    </button>
+</div>
+
+<div class="card">
+    <table class="tg-table">
+        <thead>
+            <tr>
+                <th style="width:60px">STT</th>
+                <th style="width:100px">Mã</th>
+                <th>Tên ngôn ngữ</th>
+                <th style="width:120px">Trạng thái</th>
+                <th style="width:100px">Thứ tự</th>
+                <th style="width:120px">Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Languages.Any())
+            {
+                <tr><td colspan="6" class="empty-state">Chưa có ngôn ngữ nào.</td></tr>
+            }
+            @foreach (var l in Model.Languages.OrderBy(x => x.OrderIndex))
+            {
+                <tr>
+                    <td class="text-muted">#@l.OrderIndex</td>
+                    <td>
+                        <span style="background:#ede9fe;color:#5b21b6;font-family:monospace;font-size:13px;font-weight:700;padding:2px 10px;border-radius:8px">
+                            @l.Code.ToUpper()
+                        </span>
+                    </td>
+                    <td style="font-weight:600">@l.Name</td>
+                    <td>
+                        @if (l.IsActive)
+                        {
+                            <span style="background:#dcfce7;color:#065f46;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">✅ Hoạt động</span>
+                        }
+                        else
+                        {
+                            <span style="background:#f3f4f6;color:#6b7280;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600">⏸ Tạm dừng</span>
+                        }
+                    </td>
+                    <td class="text-muted" style="text-align:center">@l.OrderIndex</td>
+                    <td>
+                        <div class="action-group">
+                            <button class="btn btn-ghost btn-sm btn-icon" title="Sửa"
+                                    onclick="editLang(@l.Id, '@l.Code', '@l.Name', @l.IsActive.ToString().ToLower(), @l.OrderIndex)">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-ghost btn-sm btn-icon text-danger" title="Xóa"
+                                    onclick="confirmDelete(@l.Id, '@l.Name')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL THÊM / SỬA -->
+<div id="langModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4 id="modalTitle">Thêm ngôn ngữ</h4>
+            <button class="btn btn-ghost btn-icon" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <form method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="fId" value="0" />
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Mã ngôn ngữ <span style="color:#dc3545">*</span></label>
+                    <input type="text" name="Code" id="fCode" class="form-control"
+                           placeholder="VD: vi, en, ko, fr" maxlength="10" required
+                           style="font-family:monospace;font-weight:700;text-transform:lowercase" />
+                    <div class="form-hint">Mã ISO 639-1, viết thường (vi, en, ja, zh, ko...)</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tên ngôn ngữ <span style="color:#dc3545">*</span></label>
+                    <input type="text" name="Name" id="fName" class="form-control"
+                           placeholder="VD: Tiếng Việt, English, 한국어" required />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Thứ tự hiển thị</label>
+                        <input type="number" name="OrderIndex" id="fOrder" class="form-control" min="1" value="1" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Trạng thái</label>
+                        <select name="IsActive" id="fActive" class="form-control">
+                            <option value="true">✅ Hoạt động</option>
+                            <option value="false">⏸ Tạm dừng</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="bi bi-check-lg"></i> Lưu
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL XÓA -->
+<div id="deleteModal" class="modal-backdrop" style="display:none" onclick="closeDelete()">
+    <div class="modal-box modal-sm" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4>Xác nhận xóa</h4>
+            <button class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="modal-body">
+            <p>Xóa ngôn ngữ <strong id="delName"></strong>?</p>
+            <p style="font-size:13px;color:#dc2626;margin-top:6px">
+                <i class="bi bi-exclamation-triangle"></i>
+                Không thể xóa nếu còn audio đang dùng ngôn ngữ này.
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
+            <form method="post" asp-page-handler="Delete" style="display:inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="DeleteId" id="fDelId" />
+                <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Xóa</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModal() {
+        document.getElementById('fId').value = '0';
+        document.getElementById('fCode').value = '';
+        document.getElementById('fCode').disabled = false;
+        document.getElementById('fName').value = '';
+        document.getElementById('fOrder').value = @(Model.Languages.Any() ? Model.Languages.Max(l => l.OrderIndex) + 1 : 1);
+        document.getElementById('fActive').value = 'true';
+        document.getElementById('modalTitle').textContent = 'Thêm ngôn ngữ';
+        document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Lưu';
+        document.getElementById('langModal').style.display = 'flex';
+    }
+
+    function editLang(id, code, name, isActive, order) {
+        document.getElementById('fId').value = id;
+        document.getElementById('fCode').value = code;
+        document.getElementById('fCode').disabled = false;
+        document.getElementById('fName').value = name;
+        document.getElementById('fOrder').value = order;
+        document.getElementById('fActive').value = isActive ? 'true' : 'false';
+        document.getElementById('modalTitle').textContent = 'Sửa: ' + name;
+        document.getElementById('submitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Cập nhật';
+        document.getElementById('langModal').style.display = 'flex';
+    }
+
+    function closeModal() { document.getElementById('langModal').style.display = 'none'; }
+
+    function confirmDelete(id, name) {
+        document.getElementById('fDelId').value = id;
+        document.getElementById('delName').textContent = name;
+        document.getElementById('deleteModal').style.display = 'flex';
+    }
+    function closeDelete() { document.getElementById('deleteModal').style.display = 'none'; }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeModal(); closeDelete(); }
+    });
+</script>

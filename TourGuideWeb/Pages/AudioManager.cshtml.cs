@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using GPSGuide.Web.Models;
 using System.Net.Http.Json;
 
 namespace GPSGuide.Web.Pages;
@@ -8,78 +7,110 @@ namespace GPSGuide.Web.Pages;
 public class AudioManagerModel : PageModel
 {
     private readonly IHttpClientFactory _http;
-    public AudioManagerModel(IHttpClientFactory http) => _http = http;
+    private readonly IConfiguration _config;
+    public AudioManagerModel(IHttpClientFactory http, IConfiguration config)
+    {
+        _http = http; _config = config;
+    }
 
-    public List<Audio> Audios { get; set; } = [];
-    public List<POI> Pois { get; set; } = [];
-    public List<POI> PoisWithoutAudio { get; set; } = [];
     [TempData] public string Msg { get; set; } = "";
+    [TempData] public string Error { get; set; } = "";
+
+    public List<AudioItem> Audios { get; set; } = new();
+    public List<PoiOption> Pois { get; set; } = new();
+    public List<PoiOption> PoisForAdd { get; set; } = new(); // POI còn có thể thêm audio
+    public List<LangOption> Languages { get; set; } = new();
+    public bool AllCovered { get; set; } = false; // tất cả POI đã có đủ audio mọi ngôn ngữ
+    public string ApiBaseUrl => _config["ApiBaseUrl"] ?? "http://localhost:5266";
 
     [BindProperty] public int Id { get; set; }
     [BindProperty] public int PoiId { get; set; }
-    [BindProperty] public string? vi { get; set; }
-    [BindProperty] public string? en { get; set; }
-    [BindProperty] public string? ja { get; set; }
-    [BindProperty] public string? zh { get; set; }
+    [BindProperty] public int LanguageId { get; set; }
+    [BindProperty] public string Script { get; set; } = "";
     [BindProperty] public int DeleteId { get; set; }
 
     private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
     public bool IsAdmin => Role == "ADMIN";
     private int? MyId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
-    private HttpClient Api => _http.CreateClient("API");
+    private HttpClient Api()
+    {
+        var c = _http.CreateClient("API");
+        c.DefaultRequestHeaders.Remove("X-Role");
+        c.DefaultRequestHeaders.Add("X-Role", Role);
+        return c;
+    }
 
     public async Task OnGetAsync()
     {
         try
         {
-            var allAudios = await Api.GetFromJsonAsync<List<Audio>>("audio") ?? [];
+            var api = Api();
+            Languages = await api.GetFromJsonAsync<List<LangOption>>("languages/active") ?? new();
+            var allAudios = await api.GetFromJsonAsync<List<AudioItem>>("audio") ?? new();
+
             if (IsAdmin)
             {
                 Audios = allAudios;
-                Pois = await Api.GetFromJsonAsync<List<POI>>("poi/all") ?? [];
+                Pois = (await api.GetFromJsonAsync<List<PoiOption>>("poi/all") ?? new())
+                    .Where(p => p.Status == "APPROVED").ToList();
             }
             else
             {
-                Pois = await Api.GetFromJsonAsync<List<POI>>($"poi/owner/{MyId}") ?? [];
-                var myPoiIds = Pois.Select(p => p.Id).ToHashSet();
+                var myPois = (await api.GetFromJsonAsync<List<PoiOption>>($"poi/owner/{MyId}") ?? new())
+                    .Where(p => p.Status == "APPROVED").ToList();
+                var myPoiIds = myPois.Select(p => p.Id).ToHashSet();
                 Audios = allAudios.Where(a => myPoiIds.Contains(a.PoiId)).ToList();
+                Pois = myPois;
             }
 
-            var existingAudioPoiIds = Audios.Select(a => a.PoiId).ToHashSet();
+            // Tính POI còn có thể thêm audio (còn ngôn ngữ chưa có)
+            var langCount = Languages.Count;
+            PoisForAdd = Pois.Where(p => {
+                var audioCountForPoi = Audios.Count(a => a.PoiId == p.Id);
+                return audioCountForPoi < langCount;
+            }).ToList();
 
-            // FIX: chỉ hiện POI đã APPROVED và chưa có audio
-            PoisWithoutAudio = Pois
-                .Where(p => p.Status == "APPROVED" && !existingAudioPoiIds.Contains(p.Id))
-                .ToList();
+            AllCovered = !PoisForAdd.Any();
         }
-        catch { Audios = []; Pois = []; PoisWithoutAudio = []; }
+        catch (Exception ex) { Error = "Lỗi kết nối: " + ex.Message; }
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var payload = new { PoiId, vi, en, ja, zh };
-        HttpResponseMessage res;
-        if (Id == 0)
+        try
         {
-            res = await Api.PostAsJsonAsync("audio", payload);
-            Msg = res.IsSuccessStatusCode
-                ? "Đã thêm audio thành công."
-                : "Thêm thất bại: " + await res.Content.ReadAsStringAsync();
+            var api = Api();
+            HttpResponseMessage res;
+            if (Id == 0)
+            {
+                var body = new { PoiId, LanguageId, Script };
+                res = await api.PostAsJsonAsync("audio", body);
+                Msg = res.IsSuccessStatusCode ? "Đã thêm audio thành công." : await res.Content.ReadAsStringAsync();
+            }
+            else
+            {
+                var body = new { Script };
+                res = await api.PutAsJsonAsync($"audio/{Id}", body);
+                Msg = res.IsSuccessStatusCode ? "Đã cập nhật audio." : await res.Content.ReadAsStringAsync();
+            }
+            if (!res.IsSuccessStatusCode) { Error = Msg; Msg = ""; }
         }
-        else
-        {
-            res = await Api.PutAsJsonAsync($"audio/{Id}", payload);
-            Msg = res.IsSuccessStatusCode
-                ? "Đã cập nhật audio."
-                : "Cập nhật thất bại: " + await res.Content.ReadAsStringAsync();
-        }
+        catch (Exception ex) { Error = ex.Message; }
         return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostDeleteAsync()
     {
-        await Api.DeleteAsync($"audio/{DeleteId}");
-        Msg = "Đã xoá audio.";
+        try
+        {
+            var res = await Api().DeleteAsync($"audio/{DeleteId}");
+            Msg = res.IsSuccessStatusCode ? "Đã xóa audio." : "Xóa thất bại.";
+        }
+        catch (Exception ex) { Error = ex.Message; }
         return RedirectToPage();
     }
+
+    public record AudioItem(int Id, int PoiId, string? PoiName, int LanguageId, string? LanguageCode, string? LanguageName, string Script);
+    public record PoiOption(int Id, string Name, string? Address, string Status);
+    public record LangOption(int Id, string Code, string Name, bool IsActive, int OrderIndex);
 }
