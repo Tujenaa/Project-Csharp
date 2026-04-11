@@ -28,7 +28,7 @@ public class PoisModel : PageModel
     [BindProperty] public string? Address { get; set; }
     [BindProperty] public double Latitude { get; set; }
     [BindProperty] public double Longitude { get; set; }
-    [BindProperty] public int Radius { get; set; } = 80;
+    [BindProperty] public int Radius { get; set; } = 5;
     [BindProperty] public int? OwnerId { get; set; }
     [BindProperty] public int DeleteId { get; set; }
     [BindProperty] public int ImageIdToDelete { get; set; }

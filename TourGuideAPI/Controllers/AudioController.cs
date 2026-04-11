@@ -31,6 +31,26 @@ namespace TourGuideAPI.Controllers
             return Ok(list);
         }
 
+        // GET /api/audio/poi/{poiId} — tất cả audio của 1 POI
+        [HttpGet("poi/{poiId}")]
+        public async Task<IActionResult> GetByPoi(int poiId)
+        {
+            var list = await _context.Audio
+                .Include(a => a.Language)
+                .Where(a => a.PoiId == poiId)
+                .Select(a => new {
+                    a.Id,
+                    a.PoiId,
+                    a.LanguageId,
+                    LanguageCode = a.Language != null ? a.Language.Code : null,
+                    LanguageName = a.Language != null ? a.Language.Name : null,
+                    a.Script
+                })
+                .OrderBy(a => a.LanguageId)
+                .ToListAsync();
+            return Ok(list);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -42,39 +62,49 @@ namespace TourGuideAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] Audio audio)
+        public async Task<IActionResult> Create([FromBody] AudioCreateRequest req)
         {
-            // Kiểm tra POI đã được APPROVED chưa
-            var poi = await _context.POI.FindAsync(audio.PoiId);
+            var poi = await _context.POI.FindAsync(req.PoiId);
             if (poi == null) return BadRequest("POI không tồn tại.");
-            
-            // Kiểm tra ngôn ngữ tồn tại
-            var lang = await _context.Languages.FindAsync(audio.LanguageId);
-            if (lang == null) return BadRequest("Ngôn ngữ không tồn tại.");
 
-            // Kiểm tra xem POI này đã có audio của ngôn ngữ này chưa
-            var exists = await _context.Audio.AnyAsync(a => a.PoiId == audio.PoiId && a.LanguageId == audio.LanguageId);
+            var lang = await _context.Languages.FindAsync(req.LanguageId);
+            if (lang == null) return BadRequest("Ngôn ngữ không tồn tại.");
+            if (!lang.IsActive) return BadRequest("Ngôn ngữ này đã bị vô hiệu hóa.");
+
+            var exists = await _context.Audio.AnyAsync(a => a.PoiId == req.PoiId && a.LanguageId == req.LanguageId);
             if (exists) return BadRequest("POI này đã có Audio cho ngôn ngữ này rồi.");
 
-            audio.POI = null;
-            audio.Language = null;
+            var audio = new Audio
+            {
+                PoiId = req.PoiId,
+                LanguageId = req.LanguageId,
+                Script = req.Script ?? ""
+            };
             _context.Audio.Add(audio);
             await _context.SaveChangesAsync();
             return Ok(audio);
         }
 
+        public class AudioCreateRequest
+        {
+            public int PoiId { get; set; }
+            public int LanguageId { get; set; }
+            public string? Script { get; set; }
+        }
+
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] Audio audio)
+        public async Task<IActionResult> Update(int id, [FromBody] AudioUpdateRequest req)
         {
             var existing = await _context.Audio.FindAsync(id);
             if (existing == null) return NotFound();
-            
-            existing.PoiId = audio.PoiId;
-            existing.LanguageId = audio.LanguageId;
-            existing.Script = audio.Script;
-            
+            existing.Script = req.Script ?? existing.Script;
             await _context.SaveChangesAsync();
             return Ok(existing);
+        }
+
+        public class AudioUpdateRequest
+        {
+            public string? Script { get; set; }
         }
 
         [HttpDelete("{id}")]
