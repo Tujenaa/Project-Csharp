@@ -1,4 +1,5 @@
 using TourGuideApp.Models;
+using TourGuideApp.Services;
 using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.Pages;
@@ -26,6 +27,29 @@ public partial class MapPage : ContentPage
         viewModel.TourSelected += OnTourSelected;
 
         viewModel.SelectRouteDestCommand = new Command<POI>(poi => _ = OnRouteDestSelectedAsync(poi));
+
+        AudioPlaybackService.Instance.PlaybackStateChanged += OnPlaybackStateChanged;
+    }
+
+    // ── Playback state ────────────────────────────────────────────────────────
+
+    void OnPlaybackStateChanged()
+    {
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            if (currentDetailPoi == null || !poiDetailCard.IsVisible) return;
+
+            var svc = AudioPlaybackService.Instance;
+            bool isCurrentPoi = svc.CurrentPlayingPoi?.Id == currentDetailPoi.Id;
+            bool isPlaying = isCurrentPoi && svc.IsPlaying;
+            UpdateCardPlayButton(isPlaying);
+        });
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+        AudioPlaybackService.Instance.PlaybackStateChanged -= OnPlaybackStateChanged;
     }
 
     // ── WebView ───────────────────────────────────────────────────────────────
@@ -282,7 +306,11 @@ public partial class MapPage : ContentPage
         lblCardDesc.Text = string.IsNullOrWhiteSpace(poi.Description)
             ? "Nhấn \"Xem chi tiết\" để biết thêm về địa điểm này."
             : poi.Description;
-        UpdateCardPlayButton(poi.IsPlaying);
+
+        var svc = AudioPlaybackService.Instance;
+        bool isPlaying = svc.CurrentPlayingPoi?.Id == poi.Id && svc.IsPlaying;
+        UpdateCardPlayButton(isPlaying);
+
         poiDetailCard.IsVisible = true;
         if (viewModel.EvalJs != null)
             _ = viewModel.EvalJs($"highlightPOI({poi.Id})");

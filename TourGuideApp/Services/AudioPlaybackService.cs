@@ -35,6 +35,12 @@ public class AudioPlaybackService
     private const int PauseTimeoutSeconds = 120;
 
     /// <summary>
+    /// Đánh dấu người dùng đã nghe đủ ngưỡng tối thiểu (HistoryThresholdSeconds).
+    /// Lịch sử chỉ được ghi khi dừng hẳn hoặc nghe xong, KHÔNG ghi ngay tại đây.
+    /// </summary>
+    private bool _listenThresholdReached = false;
+
+    /// <summary>
     /// Flag tránh ghi lịch sử trùng cho cùng 1 POI trong 1 phiên nghe.
     /// Reset về false khi chuyển sang POI khác hoặc Play lại từ đầu.
     /// </summary>
@@ -105,13 +111,14 @@ public class AudioPlaybackService
         }
 
         // ── PLAY MỚI hoặc đổi ngôn ngữ ─────────────────────────────────────
-        Stop();
+        await StopAsync();
 
         CurrentPlayingPoi = poi;
 
         // Reset bộ đếm thời gian và flag lịch sử cho POI mới
         _listenStopwatch.Reset();
         _historyRecorded = false;
+        _listenThresholdReached = false;
 
         // --- ĐỒNG BỘ DỮ LIỆU TỪ API (Nếu online) ---
         if (ConnectivityService.IsConnected)
@@ -166,21 +173,21 @@ public class AudioPlaybackService
         StartPauseTimeout();
     }
 
-    public void Stop()
+    public async Task StopAsync()
     {
         // 1. Hủy bộ đếm timeout nếu có
         _pauseTimeoutCts?.Cancel();
         _pauseTimeoutCts = null;
 
-        // 2. Chốt lịch sử nếu phiên nghe hiện tại chưa được ghi nhận
-        // (Ví dụ: nghe được 5s rồi dừng, hoặc nghe 30s giữa chừng rồi tắt/chuyển POI)
+        // 2. Chốt lịch sử nếu chưa ghi và đã nghe > 0s (kể cả chưa đạt ngưỡng 5s)
+        // Lấy thời gian thực tế tại thời điểm dừng hẳn (pause timeout hoặc chuyển POI)
         if (CurrentPlayingPoi != null && !_historyRecorded && ListenSeconds > 0)
         {
-             _historyRecorded = true;
-             var poiToRecord = CurrentPlayingPoi;
-             var duration = ListenSeconds;
-             Debug.WriteLine($"[AudioService] Stopping session -> Finalizing history for '{poiToRecord.Name}' ({duration}s)");
-             _ = HistoryStore.AddAsync(poiToRecord, duration);
+            _historyRecorded = true;
+            var poiToRecord = CurrentPlayingPoi;
+            var duration = ListenSeconds;
+            Debug.WriteLine($"[AudioService] Stopping session -> Recording history for '{poiToRecord.Name}' ({duration}s)");
+            await HistoryStore.AddAsync(poiToRecord, duration); // await đúng cách, không fire-and-forget
         }
 
         // Dừng và reset bộ đếm khi stop hẳn
@@ -202,8 +209,12 @@ public class AudioPlaybackService
         IsPlaying = false;
         CurrentPlayingPoi = null;
         _historyRecorded = false;
+        _listenThresholdReached = false;
         PlaybackStateChanged?.Invoke();
     }
+
+    // Giữ lại Stop() synchronous cho các nơi gọi không async, nhưng delegate sang StopAsync
+    public void Stop() => _ = StopAsync();
 
     private async Task StartSpeakingAsync(POI poi)
     {
@@ -241,15 +252,20 @@ public class AudioPlaybackService
     {
         if (CurrentPlayingPoi == null || total == 0) return;
 
+        // Capture trước khi vào lambda để tránh race condition
+        // (CurrentPlayingPoi có thể bị StopAsync() set null trên thread khác)
+        var poi = CurrentPlayingPoi;
+
         MainThread.BeginInvokeOnMainThread(() =>
         {
-            CurrentPlayingPoi.AudioProgress = (double)current / total;
-            
+            if (poi == null) return; // double-check sau khi lên main thread
+            poi.AudioProgress = (double)current / total;
+
             // Định dạng thời gian nghe: mm:ss
             int seconds = ListenSeconds;
             int mins = seconds / 60;
             int secs = seconds % 60;
-            CurrentPlayingPoi.AudioDuration = $"{mins:D2}:{secs:D2}";
+            poi.AudioDuration = $"{mins:D2}:{secs:D2}";
         });
     }
 
@@ -263,12 +279,14 @@ public class AudioPlaybackService
 
         Debug.WriteLine($"[AudioService] Finished. Total listen time: {_listenStopwatch.Elapsed.TotalSeconds:F1}s");
 
-        // Ghi lịch sử nếu chưa ghi (phòng trường hợp script rất ngắn < 10s)
+        // Ghi lịch sử nếu chưa ghi.
+        // Nghe xong hoàn toàn -> luôn ghi với thời gian thực tế, kể cả script rất ngắn < ngưỡng
         if (!_historyRecorded)
         {
             _historyRecorded = true;
-            Debug.WriteLine($"[AudioService] Finished before threshold -> Recording history for '{poi.Name}' ({ListenSeconds}s)");
-            await HistoryStore.AddAsync(poi, ListenSeconds);
+            var duration = ListenSeconds; // thời gian thực tế đã nghe hết
+            Debug.WriteLine($"[AudioService] Finished -> Recording history for '{poi.Name}' ({duration}s)");
+            await HistoryStore.AddAsync(poi, duration);
         }
 
         IsPlaying = false;
@@ -279,19 +297,17 @@ public class AudioPlaybackService
     // ── Ghi lịch sử khi đủ 10s ───────────────────────────────────────────────
 
     /// <summary>
-    /// Kiểm tra thời gian nghe tích lũy. Nếu đủ ngưỡng và chưa ghi thì ghi lịch sử.
-    /// Gọi từ OnTtsProgress để kiểm tra liên tục trong khi phát.
+    /// Kiểm tra thời gian nghe tích lũy. Nếu đủ ngưỡng thì đánh dấu đủ điều kiện ghi lịch sử.
+    /// Lịch sử thực sự chỉ được ghi khi dừng hẳn (Stop) hoặc nghe xong (OnTtsFinished),
+    /// để đảm bảo lưu đúng thời gian thực tế chứ không phải thời điểm đạt ngưỡng.
     /// </summary>
     private void CheckAndRecordHistory(POI poi)
     {
-        if (_historyRecorded) return;
+        if (_listenThresholdReached) return;
         if (_listenStopwatch.Elapsed.TotalSeconds < HistoryThresholdSeconds) return;
 
-        _historyRecorded = true;
-        Debug.WriteLine($"[AudioService] Reached {HistoryThresholdSeconds}s -> Recording history for '{poi.Name}' ({ListenSeconds}s)");
-
-        // Fire-and-forget, không block luồng TTS
-        _ = HistoryStore.AddAsync(poi, ListenSeconds);
+        _listenThresholdReached = true;
+        Debug.WriteLine($"[AudioService] Reached {HistoryThresholdSeconds}s threshold for '{poi.Name}'. Will record on stop/finish.");
     }
 
     /// <summary>
@@ -312,7 +328,7 @@ public class AudioPlaybackService
             if (CurrentPlayingPoi != null)
             {
                 Debug.WriteLine($"[AudioService] Pause timeout ({PauseTimeoutSeconds}s) reached for '{CurrentPlayingPoi.Name}'. Finalizing session.");
-                Stop(); // Stop() sẽ tự động chốt lịch sử nếu cần và reset trạng thái về ban đầu
+                await StopAsync(); // await để đảm bảo HistoryStore.AddAsync chạy xong
             }
         }
         catch (OperationCanceledException)

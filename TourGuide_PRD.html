@@ -231,8 +231,8 @@ footer strong{color:rgba(255,255,255,.85)}
   <div class="stat-card"><div class="val">5</div><div class="lbl">Bảng SQL Server</div></div>
   <div class="stat-card"><div class="val">25+</div><div class="lbl">API Endpoints</div></div>
   <div class="stat-card"><div class="val">$0</div><div class="lbl">Chi phí API</div></div>
-  <div class="stat-card"><div class="val">21</div><div class="lbl">Sequence Diagrams</div></div>
-  <div class="stat-card"><div class="val">2</div><div class="lbl">State Diagrams</div></div>
+  <div class="stat-card"><div class="val">25</div><div class="lbl">Sequence Diagrams</div></div>
+  <div class="stat-card"><div class="val">4</div><div class="lbl">State Diagrams</div></div>
 </div>
 
 <!-- ══ OVERVIEW ══ -->
@@ -513,45 +513,45 @@ footer strong{color:rgba(255,255,255,.85)}
 <div id="diagrams">
   <div class="diag-hero">
     <h2>📊 Sơ đồ hệ thống</h2>
-    <p>Chọn loại sơ đồ bên dưới. Bấm vào từng chức năng để xem chi tiết.</p>
+    <p>Chọn loại sơ đồ bên dưới. Bấm vào từng chức năng để xem chi tiết. Tổng hợp đầy đủ từ source code thực tế của 3 project.</p>
   </div>
 
   <!-- Tab bar -->
   <div class="diag-tabs">
     <div class="diag-tab active" onclick="switchTab('seq')" data-tab="seq">
-      <span class="tab-icon">🔄</span> Sequence <span class="tab-count">20</span>
+      <span class="tab-icon">🔄</span> Sequence <span class="tab-count">25</span>
     </div>
     <div class="diag-tab" onclick="switchTab('state')" data-tab="state">
-      <span class="tab-icon">🔀</span> State <span class="tab-count">2</span>
+      <span class="tab-icon">🔀</span> State <span class="tab-count">4</span>
     </div>
     <div class="diag-tab" onclick="switchTab('class')" data-tab="class">
       <span class="tab-icon">🧱</span> Class <span class="tab-count">1</span>
     </div>
     <div class="diag-tab" onclick="switchTab('activity')" data-tab="activity">
-      <span class="tab-icon">📋</span> Activity <span class="tab-count">2</span>
+      <span class="tab-icon">📋</span> Activity <span class="tab-count">8</span>
     </div>
   </div>
 
-  <!-- ═══ SEQUENCE PANEL ═══ -->
+  <!-- ═══════════════════════════════════════
+       SEQUENCE PANEL
+  ═══════════════════════════════════════ -->
   <div id="panel-seq" class="diag-panel active">
 
     <p style="color:var(--text2);font-size:.83rem;margin-bottom:1.2rem">
       <strong style="color:var(--text)">🔐 Auth (5)</strong> &nbsp;·&nbsp;
-      <strong style="color:var(--text)">📱 Mobile App (9)</strong> &nbsp;·&nbsp;
-      <strong style="color:var(--text)">🌐 Web CMS (6)</strong>
+      <strong style="color:var(--text)">📱 Mobile App (11)</strong> &nbsp;·&nbsp;
+      <strong style="color:var(--text)">🌐 Web CMS (9)</strong>
     </p>
 
-    <!-- GROUP: AUTH -->
+    <!-- ══ AUTH ══ -->
     <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--red);font-weight:700;margin:.4rem 0 .7rem;padding-left:.3rem">🔐 AUTH</div>
 
-    <!-- S01 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num">1</div>
-          <div><div class="acc-title">CUSTOMER đăng nhập (Mobile)</div><div class="acc-subtitle">LoginPage → AuthService → POST /api/users/login → AppShell</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">CUSTOMER đăng nhập (Mobile App)</div><div class="acc-subtitle">LoginPage → ConnectivityService → AuthService → POST /api/users/login → AppShell</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -566,76 +566,96 @@ sequenceDiagram
 
     C->>LP: Nhap username + password, bam Dang nhap
     LP->>LP: Validate khong trong
+    LP->>LP: SetLoginLoading(true)
     LP->>CON: CanReachApiAsync()
-    CON-->>LP: true
-    LP->>AUTH: LoginAsync(username, password)
-    AUTH->>API: POST /api/users/login
-    API->>DB: SELECT WHERE Username=? AND PasswordHash=?
-    DB-->>API: User record
-    API->>API: Kiem tra Role = CUSTOMER
-    alt Role khac CUSTOMER
-        API-->>AUTH: 401 Unauthorized
-        AUTH-->>LP: false
-        LP-->>C: Hien loi
-    else Role = CUSTOMER
-        API-->>AUTH: 200 UserDto (Id, Username, Name, Email, Phone, Role)
-        AUTH->>AUTH: Luu Preferences (token, user_id, username, name, email, phone)
-        AUTH-->>LP: true
-        LP->>SHELL: Application.Current.MainPage = new AppShell()
-        SHELL-->>C: Vao TabBar Trang chu
+    alt Offline hoac server khong dat
+        CON-->>LP: false
+        LP->>LP: SetLoginLoading(false)
+        LP-->>C: Loi: Dang offline, khong ket noi duoc may chu
+    else Ket noi OK
+        CON-->>LP: true
+        LP->>AUTH: LoginAsync(username, password)
+        AUTH->>API: POST /api/users/login {Username, Password}
+        API->>DB: SELECT WHERE Username=? AND PasswordHash=?
+        DB-->>API: User record
+        API->>API: Kiem tra Role = CUSTOMER
+        alt Role khac CUSTOMER (Admin/Owner)
+            API-->>AUTH: 401 Chi CUSTOMER duoc login
+            AUTH-->>LP: false
+            LP-->>C: Hien loi tu choi
+        else Sai mat khau
+            API-->>AUTH: 401 Unauthorized
+            AUTH-->>LP: false
+            LP-->>C: Username hoac mat khau khong dung
+        else Thanh cong
+            API-->>AUTH: 200 UserDto (Id, Username, Name, Email, Phone, Role)
+            AUTH->>AUTH: Preferences.Set(token, user_id, username, name, email, phone)
+            AUTH-->>LP: true
+            LP->>SHELL: Application.Current.MainPage = new AppShell()
+            SHELL-->>C: Vao TabBar (Home/Map/History/Settings)
+        end
     end
         </pre></div>
       </div>
     </div>
 
-    <!-- S02 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num">2</div>
-          <div><div class="acc-title">CUSTOMER đăng ký (Mobile)</div><div class="acc-subtitle">RegisterAsync → POST /api/users/register → Role=CUSTOMER tự động</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">CUSTOMER đăng ký tài khoản mới (Mobile App)</div><div class="acc-subtitle">RegisterAsync → POST /api/users/register → Role=CUSTOMER tự động → AppShell</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
 sequenceDiagram
     participant C as Customer
     participant LP as LoginPage
+    participant CON as ConnectivityService
     participant AUTH as AuthService
     participant API as TourGuideAPI
     participant DB as SQL Server
     participant SHELL as AppShell
 
-    C->>LP: Bam tab Dang ky, nhap thong tin
-    LP->>LP: Validate username, name, email, pw >= 6, pw == confirm
-    LP->>API: (qua AuthService) POST /api/users/register
-    API->>DB: Kiem tra username ton tai
-    alt Ton tai
-        DB-->>API: co record
-        API-->>LP: 400 Username da ton tai
-        LP-->>C: Hien loi
-    else Hop le
-        API->>DB: INSERT Users (Role=CUSTOMER)
-        DB-->>API: UserDto moi
-        API-->>AUTH: 200 UserDto
-        AUTH->>AUTH: Luu Preferences
-        AUTH-->>LP: true
-        LP->>SHELL: new AppShell()
-        SHELL-->>C: Vao TabBar
+    C->>LP: Bam tab Dang ky, nhap username, ho ten, email, password, confirm
+    LP->>LP: Validate: username, name, email, pw>=6 chars, pw==confirm
+    alt Bat ky truong nao sai
+        LP-->>C: ShowRegError(msg), return
+    end
+    LP->>LP: SetRegisterLoading(true)
+    LP->>CON: CanReachApiAsync()
+    alt Offline
+        CON-->>LP: false
+        LP-->>C: Loi: Dang offline
+    else Online
+        LP->>AUTH: RegisterAsync(username, name, email, password)
+        AUTH->>API: POST /api/users/register {Username, Name, Email, PasswordHash}
+        API->>DB: Kiem tra username ton tai
+        alt Username da ton tai
+            DB-->>API: Co record
+            API-->>AUTH: 400 Username da ton tai
+            AUTH-->>LP: false
+            LP-->>C: Hien loi
+        else Hop le
+            API->>DB: INSERT Users (Role=CUSTOMER)
+            DB-->>API: UserDto moi
+            API-->>AUTH: 200 UserDto
+            AUTH->>AUTH: Preferences.Set(token, user_id, email, name, phone)
+            AUTH-->>LP: true
+            LP->>SHELL: Application.Current.MainPage = new AppShell()
+            SHELL-->>C: Vao TabBar
+        end
     end
         </pre></div>
       </div>
     </div>
 
-    <!-- S03 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num">3</div>
-          <div><div class="acc-title">Đăng nhập khách offline (Guest Mode)</div><div class="acc-subtitle">LoginOfflineAsGuest → UserId=0 → không ghi History</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">Đăng nhập khách offline (Guest Mode)</div><div class="acc-subtitle">LoginOfflineAsGuest → UserId=0 → SQLite seed data → không ghi History</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -646,32 +666,29 @@ sequenceDiagram
     participant PREF as Preferences
     participant SHELL as AppShell
     participant LDB as LocalDbService
+    participant HS as HistoryStore
 
-    C->>LP: Bam Vao xem khong can dang nhap
+    C->>LP: Bam Vao xem (khong can dang nhap)
     LP->>AUTH: LoginOfflineAsGuest()
-    AUTH->>PREF: Set user_id=0, username=guest
+    AUTH->>PREF: Set token=offline_guest_token, user_id=0, username=guest
     AUTH-->>LP: void
-    LP->>SHELL: new AppShell()
+    LP->>SHELL: Application.Current.MainPage = new AppShell()
     SHELL-->>C: Vao TabBar
 
-    Note over C,LDB: Load POI offline
-    SHELL->>LDB: GetCachedPOIsAsync()
-    LDB-->>SHELL: POI tu SQLite cache
-    SHELL-->>C: Hien danh sach POI
-
-    Note over C,LDB: TTS phat xong - HistoryStore.AddAsync kiem tra userId<=0 - skip
+    Note over C,LDB: App tai POI offline
+    SHELL->>LDB: InitAsync() -> SeedDataFromJsonAsync (seed_pois.json neu trong)
+    LDB-->>SHELL: SQLite sẵn sang
+    Note over C,HS: TTS phat xong -> HistoryStore.AddAsync kiem tra userId=0 -> SKIP
         </pre></div>
       </div>
     </div>
 
-    <!-- S04 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num">4</div>
-          <div><div class="acc-title">Đăng xuất (Mobile)</div><div class="acc-subtitle">SettingsPage → AuthService.Logout → xóa Preferences + HistoryStore</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">Đăng xuất (Mobile App)</div><div class="acc-subtitle">SettingsPage → DisplayAlert xác nhận → AuthService.Logout → xóa Preferences → LoginPage</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -680,31 +697,32 @@ sequenceDiagram
     participant SP as SettingsPage
     participant AUTH as AuthService
     participant PREF as Preferences
-    participant HS as HistoryStore
+    participant APS as AudioPlaybackService
+    participant LP as LoginPage
 
     C->>SP: Bam Dang xuat
-    SP->>SP: DisplayAlert xac nhan
-    alt Chon Co
+    SP->>C: DisplayAlert xac nhan: Co / Khong
+    alt Chon Khong
+        C->>SP: Huy
+        SP-->>C: Giu nguyen trang thai
+    else Chon Co
+        SP->>APS: (AudioPlaybackService.Instance - dang chay)
+        Note over APS: Tiep tuc chay den khi app reset
         SP->>AUTH: Logout()
-        AUTH->>PREF: Remove token, user_id, username, name, email, phone
-        AUTH->>HS: Clear()
-        SP->>SP: Application.Current.MainPage = new NavigationPage(new LoginPage())
-        SP-->>C: Ve man hinh Login
-    else Chon Khong
-        SP-->>C: Giu nguyen
+        AUTH->>PREF: Remove: token, user_id, username, name, email, phone
+        SP->>LP: Application.Current.MainPage = new NavigationPage(new LoginPage())
+        LP-->>C: Ve man hinh dang nhap
     end
         </pre></div>
       </div>
     </div>
 
-    <!-- S05 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num">5</div>
-          <div><div class="acc-title">Owner đăng ký / đăng nhập Web CMS</div><div class="acc-subtitle">Register.cshtml → POST /api/users (Role=OWNER) → Session → Dashboard</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">Owner/Admin đăng ký + đăng nhập Web CMS</div><div class="acc-subtitle">Register.cshtml → POST /api/users (Role=OWNER) → Session → Dashboard | Auth.cshtml → CUSTOMER bị chặn</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -719,24 +737,23 @@ sequenceDiagram
     Note over O,SES: Dang ky Owner moi
     O->>REG: POST /Register (username, password, confirmPassword)
     REG->>REG: Validate pw>=6, pw==confirm
-    REG->>API: GET /api/users kiem tra username
-    DB-->>API: Users list
-    alt Ton tai
+    REG->>API: GET /api/users kiem tra username ton tai
+    alt Username ton tai
         REG-->>O: Loi ten da ton tai
     else Chua co
         REG->>API: POST /api/users (Role=OWNER)
-        API->>DB: INSERT Users
+        API->>DB: INSERT Users (Role=OWNER)
         DB-->>API: UserDto
-        REG->>SES: Set UserId, Username, Role=OWNER
-        REG-->>O: Redirect /Index (vao luon)
+        REG->>SES: SetString UserId, Username, Role=OWNER
+        REG-->>O: Redirect /Index (Dashboard)
     end
 
     Note over O,SES: Dang nhap lai
     O->>AUTH: POST /Auth (username, password)
-    AUTH->>API: GET /api/users
-    AUTH->>AUTH: Tim khop username+password
+    AUTH->>API: GET /api/users - lay danh sach
+    AUTH->>AUTH: Tim khop username+password local
     alt Role = CUSTOMER
-        AUTH-->>O: Loi chi dung mobile
+        AUTH-->>O: Loi: Tai khoan nay chi dung tren mobile
     else ADMIN hoac OWNER
         AUTH->>SES: Set UserId, Username, Role
         AUTH-->>O: Redirect /Index
@@ -745,111 +762,15 @@ sequenceDiagram
       </div>
     </div>
 
-    <!-- GROUP: MOBILE -->
+    <!-- ══ MOBILE APP ══ -->
     <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);font-weight:700;margin:1.2rem 0 .7rem;padding-left:.3rem">📱 MOBILE APP</div>
 
-    <!-- S06 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num">6</div>
-          <div><div class="acc-title">Khởi động App: Đăng nhập / Đăng ký / Khách offline</div><div class="acc-subtitle">LoginPage → tab chuyển đổi → validate → ConnectivityService.CanReachApiAsync → AuthService → AppShell</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body">
-        <div class="mermaid-wrap"><pre class="mermaid">
-sequenceDiagram
-    participant C as Customer
-    participant LP as LoginPage
-    participant CON as ConnectivityService
-    participant AUTH as AuthService
-    participant API as ApiService
-    participant DB as SQL Server
-    participant SS as SessionService
-    participant SHELL as AppShell
-
-    C->>LP: Mo app, hien tab Dang nhap / Dang ky
-    Note over LP: _showingLogin = true mac dinh
-
-    alt Chon tab Dang nhap
-        C->>LP: OnLoginTabTapped -> ShowLogin()
-        LP->>LP: LoginForm.IsVisible=true, RegisterForm.IsVisible=false
-
-        C->>LP: Nhap username + password, bam Dang nhap (OnLoginClicked)
-        LP->>LP: Validate: username va password khong trong
-        alt Trong
-            LP-->>C: Hien loi, return
-        end
-        LP->>LP: SetLoginLoading(true): nut disabled, text = Dang dang nhap
-        LP->>CON: CanReachApiAsync()
-        CON->>CON: IsConnected? -> GET BaseUrl
-        alt Offline hoac server khong dat
-            CON-->>LP: false
-            LP->>LP: SetLoginLoading(false)
-            LP-->>C: Loi: Dang offline
-        else Ket noi OK
-            CON-->>LP: true
-            LP->>AUTH: LoginAsync(username, password)
-            AUTH->>API: new ApiService().Login(username, password)
-            API->>DB: POST /api/users/login {Username, Password}
-            DB-->>API: 200 UserDto (Id, Username, Name, Email, Phone, Role)
-            API->>SS: SessionService.CurrentUser = userDto
-            API-->>AUTH: UserDto
-            AUTH->>AUTH: Preferences.Set(token=Guid, username, email, name, phone, user_id)
-            AUTH-->>LP: true
-            LP->>SHELL: Application.Current.MainPage = new AppShell()
-            SHELL-->>C: Vao TabBar (Home/Map/History/Settings)
-        end
-    end
-
-    alt Chon tab Dang ky
-        C->>LP: OnRegisterTabTapped -> ShowRegister()
-        LP->>LP: RegisterForm.IsVisible=true, LoginForm.IsVisible=false
-
-        C->>LP: Nhap username, ho ten, email, mat khau, xac nhan (OnRegisterClicked)
-        LP->>LP: Validate tung truong: username, name, email, pw>=6, pw==confirm
-        alt Bat ky truong nao sai
-            LP-->>C: ShowRegError(msg), return
-        end
-        LP->>LP: SetRegisterLoading(true)
-        LP->>CON: CanReachApiAsync()
-        alt Offline
-            CON-->>LP: false
-            LP-->>C: Loi: Dang offline
-        else Online
-            LP->>AUTH: RegisterAsync(username, name, email, password)
-            AUTH->>API: new ApiService().Register(...)
-            API->>DB: POST /api/users/register {Username, Name, Email, PasswordHash, Role=CUSTOMER}
-            DB-->>API: 200 UserDto
-            API-->>AUTH: UserDto
-            AUTH->>AUTH: Preferences.Set(token=Guid, email, name, phone, user_id)
-            AUTH-->>LP: true
-            LP->>SHELL: Application.Current.MainPage = new AppShell()
-            SHELL-->>C: Vao TabBar
-        end
-    end
-
-    alt Chon Dung thu (Guest offline)
-        C->>LP: OnGuestLoginClicked
-        LP->>AUTH: LoginOfflineAsGuest()
-        AUTH->>AUTH: Preferences.Set(token=offline_guest_token, username=guest, user_id=0)
-        AUTH-->>LP: return
-        LP->>SHELL: Application.Current.MainPage = new AppShell()
-        SHELL-->>C: Vao TabBar (khach, user_id=0, khong luu lich su)
-    end
-        </pre></div>
-      </div>
-    </div>
-
-    <!-- S07 -->
-    <div class="acc-item">
-      <div class="acc-header" onclick="toggleAcc(this)">
-        <div class="acc-header-left">
-          <div class="acc-num">7</div>
-          <div><div class="acc-title">HomePage: tải dữ liệu + GPS geocoding + điều hướng</div><div class="acc-subtitle">HomePage.OnAppearing → HomeViewModel.LoadData → GetTopPOI+GetPOI+Geocoding song song → NearestPOI → QR / Map / Detail</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">HomePage: tải dữ liệu + GPS + điều hướng</div><div class="acc-subtitle">OnAppearing → LoadData (TopPOI+POI+Tours+Counts song song) → Geolocation → NearestPOI → FeaturedTours</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -862,97 +783,72 @@ sequenceDiagram
     participant GEO as Geolocation/Geocoding
     participant DU as DistanceUtils
     participant APS as AudioPlaybackService
-    participant QR as QrScannerPage
-    participant PD as PlaceDetailPage
 
     C->>HP: Chuyen sang tab Home (OnAppearing)
     HP->>VM: await _vm.LoadData()
 
-    VM->>API: GetTopPOI() [song song]
-    VM->>API: GetPOI() [song song]
-    VM->>API: GetPoiCount() [song song]
-    VM->>API: GetAudioCount() [song song]
+    par Song song (Task.WhenAll)
+        VM->>API: GetTopPOI()
+    and
+        VM->>API: GetPOI()
+    and
+        VM->>API: GetTours()
+    end
 
     alt Online
-        API->>API: GET /api/POI/top
-        API->>API: GET /api/POI
-        API->>API: GET /api/POI/count
-        API->>API: GET /api/POI/audio-count
-        API-->>VM: Ket qua tu server
-        Note over API,LDB: Background: LocalDbService.SavePOIsAsync(pois)
+        API-->>VM: Du lieu tu server
+        Note over LDB: Background: SavePOIsAsync, SaveToursAsync
     else Offline
-        API->>LDB: GetCachedPOIsAsync() (top lay Take(5))
-        LDB-->>API: POI tu SQLite cache
-        API-->>VM: Ket qua tu cache
+        API->>LDB: GetCachedPOIsAsync() / GetCachedToursAsync()
+        LDB-->>VM: Du lieu tu SQLite cache
     end
 
     VM->>GEO: GetLastKnownLocationAsync() hoac GetLocationAsync(Medium, 5s)
     GEO-->>VM: myLoc (lat, lon) hoac null
 
-    loop foreach poi in top
-        VM->>DU: UpdatePoiDistance(poi, myLoc.Lat, myLoc.Lon)
-        DU-->>VM: poi.DistanceText cap nhat
+    loop Top 2 POI noi bat
+        VM->>DU: UpdatePoiDistance(poi, lat, lon)
         VM->>VM: TopPOIs.Add(poi)
     end
 
-    loop foreach poi in all - tim NearestPOI
-        VM->>DU: UpdatePoiDistance(poi, myLoc.Lat, myLoc.Lon)
-        DU-->>VM: distance (Haversine, met)
-        VM->>VM: AllPOIs.Add(poi), cap nhat nearest neu distance < minDist
+    loop Tat ca POI - tim NearestPOI
+        VM->>DU: UpdatePoiDistance(poi, lat, lon) -> Haversine
+        VM->>VM: AllPOIs.Add, cap nhat nearest neu < minDist
     end
+    VM->>VM: NearestPoiName, NearestPoiDist, TourCount
 
-    VM->>VM: NearestPoiName = nearest.Name, NearestPoiDist = nearest.DistanceText
-    VM-->>HP: TopPOIs + AllPOIs + PoiCount + AudioCount + NearestPoi
+    HP->>GEO: LoadLocation(): RequestAsync LocationWhenInUse
+    GEO-->>HP: location + Geocoding.GetPlacemarksAsync
+    HP->>HP: LocationLabel = street + ward + city
 
-    HP->>HP: await LoadLocation() (Android/iOS)
-    HP->>HP: Permissions.RequestAsync LocationWhenInUse
-    alt Quyen duoc cap
-        HP->>GEO: Geolocation.GetLocationAsync(Medium)
-        GEO-->>HP: location
-        HP->>GEO: Geocoding.GetPlacemarksAsync(location)
-        GEO-->>HP: placemarks (Thoroughfare, SubLocality, Locality)
-        HP->>HP: LocationLabel.Text = street + ward + city
-    else Tu choi quyen
-        HP->>HP: LocationLabel.Text = Chua cap quyen
-    end
-    HP-->>C: Hien trang chu (TopPOI, AllPOI, vi tri, nearest)
+    HP-->>C: TopPOIs, AllPOIs, FeaturedTours(2), NearestPOI, vi tri
 
     alt Bam nut QR
-        C->>HP: OnScanQrClicked
-        HP->>QR: Navigation.PushAsync(new QrScannerPage())
+        C->>HP: OnScanQrClicked -> Navigation.PushAsync(new QrScannerPage())
     end
-
     alt Bam nut Ban do
-        C->>HP: OnMapButtonClicked
-        HP->>HP: Shell.Current.GoToAsync("//map")
+        C->>HP: OnMapButtonClicked -> Shell.GoToAsync("//map")
     end
-
-    alt Bam vao POI (GoToDetailCommand)
-        C->>HP: Chon POI trong AllPOIs / TopPOIs
-        VM->>PD: Shell.GoToAsync("placeDetail", {poi: poi})
+    alt Bam "Xem tat ca tours"
+        C->>HP: OnViewAllToursTapped -> MapTourState.SelectedTour=null -> GoToAsync("//map")
     end
-
-    alt Bam Play tren POI (PlayAudioCommand)
+    alt Bam vao Tour (GoToTourMapCommand)
+        C->>HP: Chon Tour -> MapTourState.SelectedTour=tour -> GoToAsync("//map")
+    end
+    alt Bam Play POI (PlayAudioCommand)
         C->>HP: Bam Play
         VM->>APS: AudioPlaybackService.Instance.PlayAsync(poi)
-    end
-
-    alt Bam Pause (PauseAudioCommand)
-        C->>HP: Bam Pause
-        VM->>APS: AudioPlaybackService.Instance.Pause()
     end
         </pre></div>
       </div>
     </div>
 
-    <!-- S08 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">8</div>
-          <div><div class="acc-title">MapViewModel: khởi tạo + GPS tracking 3s + Auto-play geofencing</div><div class="acc-subtitle">MapViewModel constructor → InitAsync chờ login → Task.WhenAll(GPS+POI) → TrackUserLocationAsync loop → CheckNearbyPOI Haversine → AudioPlaybackService</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">7</div>
+          <div><div class="acc-title">MapViewModel: khởi tạo + GPS tracking 3s + Auto-play geofencing</div><div class="acc-subtitle">InitAsync chờ login → Task.WhenAll(GPS+POI+Tours) → RefreshNearbyOrder → TrackUserLocationAsync loop → CheckNearbyPOI Haversine → AudioPlaybackService</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -962,217 +858,74 @@ sequenceDiagram
     participant AUTH as AuthService
     participant LOC as LocationService
     participant API as ApiService
-    participant LDB as LocalDbService
-    participant DU as DistanceUtils
     participant SET as SettingService
+    participant DU as DistanceUtils
     participant APS as AudioPlaybackService
-    participant HS as HistoryStore
     participant WV as Leaflet WebView
 
     SHELL->>VM: new MapViewModel() (DI Singleton)
     VM->>VM: MapHtml = mapService.BuildLeafletHtml()
     VM->>VM: _ = InitAsync() [fire and forget]
 
-    loop Cho den khi AuthService.IsLoggedIn = true
+    loop Doi den khi IsLoggedIn = true
         VM->>AUTH: IsLoggedIn?
         AUTH-->>VM: false -> await Task.Delay(1500)
     end
-    AUTH-->>VM: true -> thoat vong lap
 
-    VM->>LOC: GetCurrentLocationAsync() [song song voi GetPOI]
-    VM->>API: GetPOI() [song song]
-    Note over VM: await Task.WhenAll(locationTask, poisTask)
-
-    LOC->>LOC: Permissions.RequestAsync LocationWhenInUse
-    LOC->>LOC: Geolocation.GetLocationAsync(Best, 5s)
-    LOC-->>VM: location (lat, lon) hoac null
-
-    alt Online
-        API->>API: GET /api/POI
-        API->>LDB: Background SavePOIsAsync
-        API-->>VM: List pois
-    else Offline
-        API->>LDB: GetCachedPOIsAsync()
-        LDB-->>VM: List pois tu cache
+    par Task.WhenAll
+        VM->>LOC: GetCurrentLocationAsync()
+        LOC->>LOC: RequestAsync LocationWhenInUse -> GetLocationAsync(Best, 5s)
+        LOC-->>VM: location (lat,lon)
+    and
+        VM->>API: GetPOI()
+        API-->>VM: List<POI>
+    and
+        VM->>API: GetTours()
+        API-->>VM: List<Tour>
     end
 
-    VM->>VM: allPOIs.AddRange(pois), userLat/Lon = location
-    VM->>VM: RefreshNearbyOrder()
-    Note over VM: Sort theo Haversine, UpdatePoiDistance, IndexLabel, cap nhat NearbyPOI collection
+    VM->>VM: allPOIs = pois, AllTours = tours
+    VM->>VM: userLat/Lon = location
+    VM->>VM: RefreshNearbyOrder(): sort Haversine + IndexLabel
+    VM->>WV: PushMapDataAsync(): setUserLocation, flyTo, setPOIs
+    VM->>VM: _ = TrackUserLocationAsync() [fire and forget]
 
-    VM->>WV: PushMapDataAsync() [neu EvalJs san sang]
-    VM->>VM: _ = TrackUserLocationAsync() [fire and forget loop]
-    VM->>VM: _ = PushMapDataAsync() [refresh ban do]
-
-    loop Moi 3 giay (TrackUserLocationAsync)
-        VM->>AUTH: IsLoggedIn?
-        alt Chua dang nhap
-            VM->>APS: StopAll()
-            VM->>VM: await Task.Delay(3000), continue
-        end
-        VM->>SET: GpsEnabled?
-        alt GPS bi tat
-            VM->>VM: await Task.Delay(3000), continue
-        end
-
+    loop Moi 3 giay
+        VM->>AUTH: IsLoggedIn? [neu khong -> StopAll, delay]
+        VM->>SET: GpsEnabled? [neu tat -> delay]
         VM->>LOC: GetCurrentLocationAsync()
-        LOC-->>VM: loc (lat, lon)
-        VM->>VM: userLat = loc.Latitude, userLon = loc.Longitude
-        VM->>WV: EvalJs setUserLocation(lat, lon)
+        LOC-->>VM: loc
+        VM->>WV: EvalJs setUserLocation(lat,lon)
         VM->>VM: RefreshNearbyOrder()
+        VM->>VM: CheckNearbyPOI(lat, lon)
 
-        Note over VM,APS: CheckNearbyPOI(lat, lon)
-        VM->>SET: AutoPlay?
-        alt AutoPlay = false
-            VM->>VM: return (khong kiem tra geofence)
-        end
-
-        loop foreach poi in NearbyPOI
-            VM->>DU: GetDistance(lat, lon, poi.Lat, poi.Lon)
-            DU-->>VM: distance (Haversine met)
-            alt distance > poi.Radius*2 AND autoPlayedIds.Contains(poi.Id)
-                VM->>VM: autoPlayedIds.Remove(poi.Id) [reset vung, cho phep phat lai]
+        alt AutoPlay = true
+            loop foreach poi in NearbyPOI
+                VM->>DU: GetDistance(user, poi) Haversine
+                alt distance > poi.Radius*2 AND trong autoPlayedIds
+                    VM->>VM: autoPlayedIds.Remove(poi.Id) [reset vung]
+                end
+                alt distance <= poi.Radius AND chua auto AND khong IsPlaying
+                    VM->>VM: closestPoi = poi neu < minDistance
+                end
             end
-            alt distance <= poi.Radius AND khong trong autoPlayedIds AND NOT APS.IsPlaying
-                VM->>VM: closestPoi = poi neu distance < minDistance
+            alt closestPoi != null
+                VM->>VM: autoPlayedIds.Add(closestPoi.Id)
+                VM->>APS: PlayAsync(closestPoi) [fire and forget]
             end
         end
-
-        alt closestPoi != null
-            VM->>VM: autoPlayedIds.Add(closestPoi.Id)
-            VM->>APS: PlayAsync(closestPoi) [fire and forget]
-            Note over APS,HS: PlayAsync xu ly TTS + ghi History (xem S09)
-        end
-
         VM->>VM: await Task.Delay(3000)
     end
         </pre></div>
       </div>
     </div>
 
-    <!-- S09 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">9</div>
-          <div><div class="acc-title">AudioPlaybackService: Play / Pause / Resume / Stop + ghi History</div><div class="acc-subtitle">PlayAsync (3 nhánh: IsPlaying / Resume / Play mới) → _uiTimer 1s → CheckAndRecordHistory @10s → Pause timeout 120s → OnTtsFinished → HistoryStore</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body">
-        <div class="mermaid-wrap"><pre class="mermaid">
-sequenceDiagram
-    participant CALLER as Caller (MapVM/HomePage/PlaceDetail)
-    participant APS as AudioPlaybackService
-    participant API as ApiService
-    participant TTS as TextToSpeechService
-    participant LU as LanguageUtils
-    participant SET as SettingService
-    participant TMR as _uiTimer (1s)
-    participant HS as HistoryStore
-
-    CALLER->>APS: PlayAsync(poi)
-
-    Note over APS: Nhanh 1: Dang phat chinh POI nay
-    alt CurrentPoi.Id == poi.Id AND IsPlaying
-        APS-->>CALLER: return (khong lam gi)
-    end
-
-    Note over APS: Nhanh 2: Resume - cung POI, cung ngon ngu, dang pause
-    alt CurrentPoi.Id == poi.Id AND NOT IsPlaying AND Language == _currentLoadedLang
-        APS->>APS: CancelAndDisposePauseTimeout()
-        APS->>APS: _listenStopwatch.Start() [tiep tuc cong don]
-        APS->>TMR: _uiTimer.Start()
-        APS->>TTS: SpeakAsync(ttsToken) [tiep tuc tu _charIndex cu]
-        TTS-->>APS: Tiep tuc phat
-        APS-->>CALLER: return
-    end
-
-    Note over APS: Nhanh 3: Play moi / doi POI / doi ngon ngu
-    APS->>APS: Stop() [chot lich su POI cu neu du 10s, reset state]
-    APS->>APS: CurrentPlayingPoi = poi, _historyRecorded = false
-
-    alt Online (ConnectivityService.IsConnected)
-        APS->>API: GetPOIById(poi.Id)
-        API->>API: GET /api/POI/{id}
-        API->>API: LocalDbService.UpdateSinglePOIAsync(poi) [cap nhat cache]
-        API-->>APS: freshPoi (script moi nhat)
-        APS->>APS: poi.ScriptVi/En/Ja/Zh = freshPoi scripts
-    end
-
-    APS->>SET: Language (ngon ngu hien tai)
-    APS->>LU: GetScript(poi, lang)
-    LU-->>APS: finalText (script theo ngon ngu)
-
-    alt Ngon ngu thay doi (_currentLoadedLang != currentLang)
-        APS->>TTS: LoadText(finalText) [reset neu text khac, giu nguyen neu giong]
-        APS->>APS: _currentLoadedLang = currentLang
-    else Cung ngon ngu, POI moi
-        APS->>TTS: ForceLoadText(finalText) [reset _charIndex = 0 bat buoc]
-    end
-
-    APS->>APS: _listenStopwatch.Start(), _uiTimer.Start()
-    APS->>APS: IsPlaying=true, poi.IsPlaying=true, PlaybackStateChanged.Invoke()
-    APS->>TTS: SpeakAsync(ttsToken)
-    TTS-->>APS: Phat audio Android native TTS
-
-    loop _uiTimer tick moi 1 giay (khi IsPlaying)
-        TMR->>APS: Elapsed handler
-        APS->>APS: CheckAndRecordHistory(poi)
-        alt _historyRecorded=false AND Elapsed >= 10s
-            APS->>APS: _historyRecorded = true
-            APS->>HS: AddAsync(poi, ListenSeconds) [fire and forget]
-            HS->>HS: _items.Insert(0, item), OnItemAdded.Invoke()
-            HS->>API: POST /api/history {poiId, userId, listenDuration}
-        end
-        APS->>APS: ListenSecondsChanged.Invoke(ListenSeconds) [cap nhat UI]
-    end
-
-    Note over CALLER,APS: Pause
-    CALLER->>APS: Pause()
-    APS->>APS: _listenStopwatch.Stop(), _uiTimer.Stop()
-    APS->>APS: ttsToken.Cancel(), TTS.Pause()
-    APS->>APS: IsPlaying=false, poi.IsPlaying=false, PlaybackStateChanged.Invoke()
-    APS->>APS: StartPauseTimeout() [dem nguoc 120s]
-    alt Timeout 120s ma khong Resume
-        APS->>APS: Stop() [ket thuc phien, ghi history neu du 10s]
-    else Resume truoc 120s
-        CALLER->>APS: PlayAsync(poi) -> nhanh Resume
-        APS->>APS: CancelAndDisposePauseTimeout()
-    end
-
-    Note over TTS,HS: Khi TTS ket thuc tu nhien (OnTtsFinished)
-    TTS->>APS: OnFinished callback
-    APS->>APS: _listenStopwatch.Stop(), _uiTimer.Stop()
-    alt NOT _historyRecorded
-        APS->>HS: AddAsync(poi, ListenSeconds) [ghi du truong hop script ngan <10s]
-        APS->>APS: _historyRecorded = true
-    end
-    APS->>APS: IsPlaying=false, poi.IsPlaying=false, PlaybackStateChanged.Invoke()
-
-    Note over APS: Stop() - reset hoan toan
-    CALLER->>APS: Stop()
-    APS->>APS: CancelAndDisposePauseTimeout()
-    APS->>APS: _listenStopwatch.Stop(), _uiTimer.Stop()
-    alt NOT _historyRecorded AND Elapsed >= 10s
-        APS->>HS: AddAsync(poi, ListenSeconds)
-    end
-    APS->>APS: _listenStopwatch.Reset()
-    APS->>APS: ttsToken.Cancel/Dispose, TTS.Stop()
-    APS->>APS: CurrentPlayingPoi.IsPlaying=false
-    APS->>APS: IsPlaying=false, CurrentPlayingPoi=null, PlaybackStateChanged.Invoke()
-        </pre></div>
-      </div>
-    </div>
-
-    <!-- S10 -->
-    <div class="acc-item">
-      <div class="acc-header" onclick="toggleAcc(this)">
-        <div class="acc-header-left">
-          <div class="acc-num">10</div>
-          <div><div class="acc-title">MapPage: WebView Leaflet + detail card + tìm kiếm + chỉ đường OSRM</div><div class="acc-subtitle">MapPage.OnAppearing → poll WebView → PushMapDataAsync → URL scheme → ShowDetailCard → SearchPOI → OSRM drawRoute → BottomSheet</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">8</div>
+          <div><div class="acc-title">MapPage: WebView Leaflet + Detail Card + Tìm kiếm + Chỉ đường OSRM</div><div class="acc-subtitle">OnAppearing poll WebView → PushMapDataAsync → URL scheme tourguide://poi → ShowDetailCard → SearchPOI → OSRM drawRoute → Bottom sheet</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1188,131 +941,160 @@ sequenceDiagram
     C->>MP: Chuyen sang tab Map (OnAppearing)
     alt mapReady = false (lan dau)
         loop Poll toi da 30 lan x 100ms
-            MP->>WV: EvalJs "typeof map !== undefined ? 1 : 0"
-            WV-->>MP: "1" -> mapReady = true, break
+            MP->>WV: EvalJs typeof map != undefined ? 1 : 0
+            WV-->>MP: 1 -> mapReady=true, break
         end
         MP->>VM: PushMapDataAsync()
-        VM->>WV: EvalJs setUserLocation(lat, lon)
-        VM->>WV: EvalJs flyTo(lat, lon, 14)
-        VM->>WV: EvalJs setPOIs(json)
-        WV-->>C: Ban do Leaflet + markers (do=thuong, tim=gan nhat)
-        MP->>MP: UpdatePOICountLabel(): NearbyPOI.Count dia diem
+        VM->>WV: setUserLocation + flyTo + setPOIs
+        WV-->>C: Ban do Leaflet + markers
+    end
+
+    alt MapTourState.SelectedTour != null (tu HomePage)
+        MP->>VM: ApplyTourAsync(tour): ActiveTour=tour, RefreshNearbyOrder
+        MP->>WV: setPOIs(tourPois) + flyTo(firstPOI)
+        MP->>MP: poiBottomSheet.IsVisible=true
     end
 
     Note over C,OSRM: Tap marker tren ban do
     C->>WV: Tap marker POI
     WV->>MP: OnWebViewNavigating: URL = tourguide://poi/{id}
-    MP->>MP: e.Cancel = true (chan navigation)
-    MP->>VM: NearbyPOI.FirstOrDefault(p => p.Id == poiId)
-    MP->>MP: ShowDetailCard(poi)
+    MP->>MP: e.Cancel=true, parse poiId
+    MP->>VM: NearbyPOI.FirstOrDefault(p.Id==poiId)
+    MP->>MP: ShowDetailCard(poi): name, dist, desc, play/chidung/chitiet
     MP->>WV: EvalJs highlightPOI(poi.Id)
-    MP-->>C: Detail card: Name, DistanceText, Description, Play/ChiDuong/ChiTiet
+    MP-->>C: Detail card hien
 
-    alt Bam Play tren detail card
-        C->>MP: OnCardPlayAudioTapped
-        MP->>APS: PlayAsync(currentDetailPoi)
+    alt Bam Play/Pause tren detail card
+        C->>MP: OnCardPlayAudioTapped / OnCardPauseAudioTapped
+        MP->>APS: PlayAsync(poi) / Pause()
+    end
+    alt Bam Chi duong
+        C->>MP: OnCardNavigateTapped -> OnRouteDestSelectedAsync(poi)
+        MP->>LOC: GetCurrentLocationFastAsync()
+        LOC-->>MP: (userLat, userLon)
+        MP->>WV: EvalJs drawRoute(lat1,lon1,lat2,lon2)
+        WV->>OSRM: GET router.project-osrm.org/route/v1/driving/...
+        OSRM-->>WV: GeoJSON route
+        WV->>WV: Leaflet polyline xanh + fitBounds
+        WV-->>C: Duong di hien tren ban do
+    end
+    alt Bam Chi tiet
+        C->>MP: OnCardDetailTapped -> Shell.GoToAsync(placeDetail, poi)
     end
 
-    alt Bam Pause tren detail card
-        C->>MP: OnCardPauseAudioTapped
-        MP->>APS: Pause()
-    end
-
-    alt Bam Chi tiet tren detail card
-        C->>MP: OnCardDetailTapped
-        MP->>MP: poiDetailCard.IsVisible = false
-        MP->>VM: GoToDetailCommand.Execute(poi)
-        VM->>VM: Shell.GoToAsync("placeDetail", {poi: poi})
-    end
-
-    alt Bam Chi duong tren detail card
-        C->>MP: OnCardNavigateTapped
-        MP->>MP: OnRouteDestSelectedAsync(currentDetailPoi)
-    end
-
-    Note over C,OSRM: Tim kiem POI (OnRouteBarTapped)
-    C->>MP: Bam thanh lo trinh
-    alt poiDetailCard dang hien
-        MP->>MP: poiDetailCard.IsVisible = false, HighlightNearestIfNoSelection()
-    end
-    MP->>MP: searchPanelVisible = true, searchPanel.IsVisible = true
-    MP->>MP: searchEntry.Focus()
-
+    Note over C,OSRM: Tim kiem POI
+    C->>MP: Bam thanh route (OnRouteBarTapped)
+    MP->>MP: searchPanel.IsVisible=true, searchEntry.Focus()
     C->>MP: Nhap text (OnSearchTextChanged)
-    alt query rong
-        MP->>MP: searchResultList.IsVisible=false, fullPoiList.IsVisible=true
-    else Co query
-        MP->>VM: SearchPOI(query)
-        VM->>VM: allPOIs.Where(name.ToLower.Contains).OrderBy(Haversine distance)
-        VM-->>MP: List<POI> ket qua
-        MP->>MP: searchResultList.ItemsSource = results
-        MP-->>C: Dropdown ket qua tim kiem
-    end
+    MP->>VM: SearchPOI(query): allPOIs.Where(Name.Contains).OrderBy(Haversine)
+    VM-->>MP: List<POI> ket qua
+    MP-->>C: Dropdown ket qua
+    C->>MP: Chon POI -> OnRouteDestSelectedAsync(poi)
 
-    C->>MP: Chon POI (SelectRouteDestCommand / OnRouteDestSelectedAsync)
-    MP->>MP: lblRouteDestination.Text = poi.Name, btnClearRoute.IsVisible = true
-    MP->>MP: CloseSearchPanel()
-    MP->>WV: EvalJs highlightPOI(poi.Id)
-    MP->>LOC: GetCurrentLocationFastAsync()
-    LOC-->>MP: (userLat, userLon)
-    MP->>WV: EvalJs drawRoute(lat1,lon1,lat2,lon2)
-    WV->>OSRM: GET router.project-osrm.org/route/v1/driving/{coords}?overview=full&geometries=geojson
-    OSRM-->>WV: GeoJSON route
-    WV->>WV: Leaflet polyline xanh lam + fitBounds
-    WV-->>C: Hien duong di tren ban do
-    MP->>MP: ShowDetailCard(poi)
-
-    alt Bam Xoa lo trinh (OnClearRouteTapped)
-        C->>MP: Bam btnClearRoute
-        MP->>WV: EvalJs xoa routeLine khoi map
-        MP->>MP: lblRouteDestination.Text = Chon diem den, btnClearRoute.IsVisible=false
-        MP->>MP: poiDetailCard.IsVisible=false, HighlightNearestIfNoSelection()
-    end
-
-    Note over C,OSRM: Danh sach POI bottom sheet
-    C->>MP: Bam icon danh sach (OnTogglePOIListTapped)
-    alt searchPanel dang mo
-        MP->>MP: CloseSearchPanel()
-    end
-    MP->>MP: poiListVisible = !poiListVisible
-    MP->>MP: poiBottomSheet.IsVisible = poiListVisible
-    alt Mo bottom sheet
-        MP->>MP: poiDetailCard.IsVisible=false, HighlightNearestIfNoSelection()
-    end
-    MP-->>C: Bottom sheet: NearbyPOI sap xep gan nhat
+    Note over C,OSRM: Danh sach bottom sheet
+    C->>MP: OnTogglePOIListTapped
+    MP->>MP: poiBottomSheet.IsVisible = !poiListVisible
+    MP-->>C: NearbyPOI sap xep gan nhat
 
     Note over C,OSRM: Nut vi tri cua toi
-    C->>MP: Bam OnCurrentLocationTapped
+    C->>MP: OnCurrentLocationTapped
     MP->>VM: GetCurrentLocationFastAsync()
-    VM->>LOC: GetCurrentLocationAsync()
-    LOC-->>VM: location
-    VM->>VM: userLat/Lon = location.Lat/Lon
-    VM-->>MP: (lat, lon)
-    MP->>WV: EvalJs setUserLocation(lat,lon) + flyTo(lat,lon,15)
-    MP->>VM: RefreshDistances() -> RefreshNearbyOrder()
-
-    Note over MP,WV: POIUpdated event tu MapViewModel (moi 3s)
-    VM->>MP: POIUpdated.Invoke()
-    MP->>MP: OnPOIUpdated: MainThread.BeginInvokeOnMainThread
-    MP->>MP: UpdatePOICountLabel()
-    alt currentDetailPoi != null AND poiDetailCard.IsVisible
-        MP->>MP: lblCardDistance.Text = updated.DistanceText
-        MP->>MP: UpdateCardPlayButton(updated.IsPlaying)
-    else
-        MP->>MP: HighlightNearestIfNoSelection() -> EvalJs highlightNearest(closest.Id)
-    end
+    MP->>WV: setUserLocation + flyTo(zoom=15)
+    MP->>VM: RefreshDistances()
         </pre></div>
       </div>
     </div>
 
-    <!-- S11 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">11</div>
-          <div><div class="acc-title">PlaceDetailPage: xem POI + Play / Pause / Stop TTS + waveform</div><div class="acc-subtitle">QueryProperty Poi → StopPlayback → Play/Pause/Stop → AudioPlaybackService singleton → 7-bar waveform animation → OnDisappearing unsubscribe</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">9</div>
+          <div><div class="acc-title">AudioPlaybackService: Play / Pause / Resume / Stop + ghi History</div><div class="acc-subtitle">PlayAsync (3 nhánh) → refresh script API → TTS → _uiTimer 1s → OnTtsFinished → HistoryStore.AddAsync → PauseTimeout 120s</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant CALLER as Caller (MapVM/HomePage/PlaceDetail/QR)
+    participant APS as AudioPlaybackService
+    participant API as ApiService
+    participant TTS as TextToSpeechService
+    participant LU as LanguageUtils
+    participant SET as SettingService
+    participant SW as Stopwatch
+    participant TMR as _uiTimer (1s)
+    participant HS as HistoryStore
+
+    CALLER->>APS: PlayAsync(poi)
+
+    alt Nhanh 1: Dang phat chinh POI nay AND IsPlaying
+        APS-->>CALLER: return (khong lam gi)
+    else Nhanh 2: Cung POI + cung lang + dang Paused -> RESUME
+        APS->>APS: _pauseTimeoutCts.Cancel()
+        APS->>SW: Start() [cong don tu lan truoc]
+        APS->>TMR: Start()
+        APS->>TTS: SpeakAsync(ttsToken) [tiep tu _charIndex cu]
+        APS-->>CALLER: Resume tu vi tri dung
+    else Nhanh 3: POI khac hoac doi ngon ngu -> PLAY MOI
+        APS->>APS: StopAsync() [chot lich su POI cu]
+        APS->>APS: CurrentPlayingPoi=poi, reset SW/flags
+        alt Online
+            APS->>API: GetPOIById(poi.Id) [lay script moi nhat]
+            API-->>APS: poi.Script{Vi/En/Ja/Zh} fresh
+        end
+        APS->>SET: Language
+        APS->>LU: GetScript(poi, lang) -> finalText
+        APS->>TTS: ForceLoadText(finalText) [reset _charIndex=0]
+        APS->>SW: Start()
+        APS->>TMR: Start()
+        APS->>APS: IsPlaying=true, poi.IsPlaying=true
+        APS->>APS: PlaybackStateChanged.Invoke()
+        APS->>TTS: SpeakAsync(ttsToken)
+    end
+
+    loop _uiTimer tick moi 1 giay
+        TMR->>APS: Elapsed handler
+        APS->>APS: CheckAndRecordHistory: Elapsed>=5s -> _listenThresholdReached=true
+        APS->>APS: ListenSecondsChanged.Invoke(ListenSeconds) [cap nhat UI]
+    end
+
+    TTS-->>APS: OnProgress(current, total) moi 300ms
+    APS-->>APS: poi.AudioProgress=current/total, poi.AudioDuration=mm:ss
+
+    Note over CALLER,HS: Pause
+    CALLER->>APS: Pause()
+    APS->>SW: Stop() [giu Elapsed de Resume cong tiep]
+    APS->>TMR: Stop()
+    APS->>APS: ttsToken.Cancel(), TTS.Pause()
+    APS->>APS: IsPlaying=false, poi.IsPlaying=false
+    APS->>APS: PlaybackStateChanged.Invoke()
+    APS->>APS: StartPauseTimeout() [dem nguoc 120s]
+    alt Timeout 120s khong Resume
+        APS->>APS: StopAsync() [ket thuc phien, ghi history]
+    end
+
+    Note over TTS,HS: TTS ket thuc tu nhien -> OnTtsFinished
+    TTS->>APS: OnFinished callback
+    APS->>SW: Stop()
+    alt NOT _historyRecorded
+        APS->>APS: _historyRecorded=true
+        APS->>HS: AddAsync(poi, ListenSeconds)
+        HS->>HS: userId<=0? -> SKIP (Guest)
+        HS->>HS: _items.Insert(0, item), OnItemAdded.Invoke()
+        HS->>API: POST /api/history {poiId, userId, listenDuration}
+    end
+    APS->>APS: IsPlaying=false, poi.IsPlaying=false
+    APS->>APS: PlaybackStateChanged.Invoke()
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">10</div>
+          <div><div class="acc-title">PlaceDetailPage: xem chi tiết POI + Play/Pause/Stop TTS + waveform</div><div class="acc-subtitle">QueryProperty Poi → StopPlayback → Subscribe PlaybackStateChanged → 7-bar waveform → OnDisappearing unsubscribe</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1322,76 +1104,59 @@ sequenceDiagram
     participant PD as PlaceDetailPage
     participant APS as AudioPlaybackService
 
-    PREV->>PD: Shell.GoToAsync("placeDetail", {poi: poi})
-    PD->>PD: [QueryProperty] set Poi {
-    PD->>PD:   _currentPoi = value
-    PD->>PD:   BindingContext = value
-    PD->>PD:   StopPlayback(): APS.Stop()
+    PREV->>PD: Shell.GoToAsync(placeDetail, {poi})
+    PD->>PD: [QueryProperty] set Poi:
+    PD->>PD:   _currentPoi = value, BindingContext=value
+    PD->>PD:   StopPlayback() -> APS.Stop()
     PD->>PD:   _currentLoadedLang = ""
-    PD->>PD: }
     PD->>APS: Subscribe PlaybackStateChanged += OnPlaybackStateChanged
-    PD-->>C: Hien thong tin POI (Name, Description, Image, DistanceText)
-    PD-->>C: Nut Play hien (IsPlaying=false)
+    PD-->>C: Hien thong tin POI (Name, Desc, Images, DistanceText)
+    PD-->>C: Nut Play hien
 
     Note over C,APS: Phat TTS
     C->>PD: Bam Play (OnPlayTapped)
     PD->>APS: PlayAsync(poi)
-    Note over APS: Xu ly chi tiet trong S09
-    APS->>APS: PlaybackStateChanged.Invoke()
-    APS->>PD: OnPlaybackStateChanged()
-    PD->>PD: MainThread: _currentPoi.IsPlaying = true
-    PD->>PD: UpdateUI(true): lblAudioStatus = Dang phat am thanh
-    PD->>PD: StartWaveAnimation()
-    PD-->>C: 7-bar waveform animation + label
+    APS->>PD: OnPlaybackStateChanged() -> MainThread
+    PD->>PD: UpdateUI(playing=true): lblAudioStatus=Dang phat am thanh
+    PD->>PD: StartWaveAnimation() [7 thanh bars, BarPeaks, BarDelays]
+    PD-->>C: Waveform 7 thanh animation
 
     Note over C,APS: Tam dung
     C->>PD: Bam Pause (OnPauseTapped)
     PD->>APS: Pause()
-    APS->>APS: PlaybackStateChanged.Invoke()
     APS->>PD: OnPlaybackStateChanged()
-    PD->>PD: UpdateUI(false): lblAudioStatus = Nghe thuyet minh
-    PD->>PD: StopWaveAnimation(): huy tat ca AnimateBarAsync, HeightRequest=4
+    PD->>PD: UpdateUI(false): lblAudioStatus=Nghe thuyet minh
+    PD->>PD: StopWaveAnimation(): cancel AnimateBarAsync, HeightRequest=4
     PD-->>C: Waveform dung
-
-    Note over C,APS: Tiep tuc phat (Resume)
-    C->>PD: Bam Play lai
-    PD->>APS: PlayAsync(poi) -> Resume nhanh (xem S09)
-    APS->>PD: OnPlaybackStateChanged() -> StartWaveAnimation()
-    PD-->>C: Waveform chay lai
 
     Note over C,APS: Dung han
     C->>PD: Bam Stop (OnStopTapped)
     PD->>APS: Stop()
-    APS->>APS: PlaybackStateChanged.Invoke()
     APS->>PD: OnPlaybackStateChanged()
-    PD->>PD: UpdateUI(false)
-    PD->>PD: StopWaveAnimation()
+    PD->>PD: UpdateUI(false), StopWaveAnimation()
 
-    Note over APS,PD: Audio ket thuc tu nhien (OnTtsFinished)
-    APS->>APS: IsPlaying=false, poi.IsPlaying=false, PlaybackStateChanged.Invoke()
+    Note over APS,PD: TTS ket thuc tu nhien
+    APS->>APS: IsPlaying=false, PlaybackStateChanged.Invoke()
     APS->>PD: OnPlaybackStateChanged()
-    PD->>PD: _currentPoi.AudioProgress >= 0.99 -> lblAudioStatus = Nghe lai
+    PD->>PD: AudioProgress>=0.99 -> lblAudioStatus=Nghe lai
     PD->>PD: StopWaveAnimation()
-    PD-->>C: Nut Play hien lai, label = Nghe lai
 
     Note over C,APS: Quay lui
     C->>PD: Bam Back (OnBackTapped)
     PD->>PD: FadeTo(0.5, 100ms)
     PD->>PD: Shell.GoToAsync("..")
-    PD->>PD: OnDisappearing: APS.PlaybackStateChanged -= OnPlaybackStateChanged
-    Note over APS: APS.Instance tiep tuc phat (singleton), khong bi dung
+    PD->>PD: OnDisappearing: APS.PlaybackStateChanged -= handler
+    Note over APS: Singleton tiep tuc chay, khong bi dung
         </pre></div>
       </div>
     </div>
 
-    <!-- S12 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">12</div>
-          <div><div class="acc-title">QrScannerPage: quét mã QR → tìm POI → phát TTS + result card</div><div class="acc-subtitle">Camera permission → BarcodeScanner.Mobile → parse https://poi:{id} → ApiService.GetPOIById → PlayAsync → ResultCard → PlaceDetailPage</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">11</div>
+          <div><div class="acc-title">QrScannerPage: quét mã QR → tìm POI → phát TTS + Result Card</div><div class="acc-subtitle">Camera permission → BarcodeScanner.Mobile → parse https://poi:{id} → GetPOIById → PlayAsync → ResultCard → PlaceDetailPage</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1404,96 +1169,71 @@ sequenceDiagram
     participant APS as AudioPlaybackService
     participant PD as PlaceDetailPage
 
-    C->>HP: Bam nut QR (OnScanQrClicked)
+    C->>HP: OnScanQrClicked
     HP->>QR: Navigation.PushAsync(new QrScannerPage())
-    QR->>QR: Constructor: BindingContext=this
-    QR->>APS: Subscribe PlaybackStateChanged += OnPlaybackStateChanged
-    QR->>QR: StartScanningAnimation() [dong quet 0->224dp, loop cho den _isProcessingResult]
-
+    QR->>APS: Subscribe PlaybackStateChanged
+    QR->>QR: StartScanningAnimation() [dong quet 0->224dp, loop]
     QR->>QR: OnAppearing: CheckStatusAsync Camera
-    alt Quyen Camera chua cap
+    alt Chua cap quyen
         QR->>QR: RequestAsync Camera
         alt Tu choi
-            QR->>C: DisplayAlert "Can quyen Camera"
+            QR->>C: DisplayAlert Can quyen Camera
             QR->>HP: Navigation.PopAsync()
         else Chap nhan
-            QR->>QR: await Task.Delay(500)
-            QR->>BC: BarcodeReader.IsScanning = true
-            QR-->>C: Camera bat + animation dong quet
+            QR->>BC: IsScanning=true
         end
-    else Quyen da co
-        QR->>BC: BarcodeReader.IsScanning = true
+    else Da co quyen
+        QR->>BC: IsScanning=true
         QR-->>C: Camera bat + animation dong quet
     end
 
     C->>BC: Huong camera vao ma QR
     BC->>QR: OnBarcodesDetected(e.BarcodeResults)
-    QR->>QR: Kiem tra _isProcessingResult = true? -> return
-    QR->>QR: Lay barcodes.FirstOrDefault()
-    alt Format sai (khong bat dau "https://poi:")
-        QR->>QR: return (bo qua, tiep tuc scan)
-    else Format dung: "https://poi:{id}"
-        QR->>QR: _isProcessingResult = true
-        QR->>BC: IsScanning = false
-        QR->>QR: Dispatcher: ScannerFrame.ScaleTo(0.8) + FadeTo(0)
-        QR->>QR: Parse id tu code.Replace("https://poi:", "")
-        QR->>QR: int.TryParse(idStr, out int id)
-        QR->>QR: await ProcessScannedId(id)
-
+    QR->>QR: _isProcessingResult? -> return
+    QR->>QR: Lay first barcode, code.StartsWith(https://poi:)?
+    alt Format sai
+        QR->>QR: return (tiep tuc scan)
+    else Format dung: https://poi:{id}
+        QR->>QR: _isProcessingResult=true, IsScanning=false
+        QR->>QR: ScannerFrame.ScaleTo(0.8) + FadeTo(0)
         QR->>API: GetPOIById(id)
-        alt Online va tim thay POI
-            API->>API: GET /api/POI/{id}
-            API->>API: LocalDbService.UpdateSinglePOIAsync(poi)
+        alt Tim thay POI
             API-->>QR: POI object
-            QR->>QR: ScannedPoi = poi
-            QR->>QR: ShowResultCard() [ResultCard.FadeTo(1)]
+            QR->>QR: ScannedPoi=poi, ShowResultCard()
             QR->>APS: PlayAsync(poi)
-            APS-->>C: Phat TTS tu dong
-            QR-->>C: ResultCard: ten POI + nut Play/Pause/Stop + Xem chi tiet
-        else Khong tim thay / Offline
-            QR->>C: DisplayAlert "Khong tim thay"
-            QR->>QR: ResetScanner() [_isProcessingResult=false, IsScanning=true]
+            APS-->>C: TTS tu dong phat
+            QR-->>C: ResultCard: ten POI + Play/Pause/Stop + Xem chi tiet
+        else Khong tim thay
+            QR->>C: DisplayAlert Khong tim thay
+            QR->>QR: ResetScanner()
         end
     end
 
-    alt Bam Xem chi tiet (OnDetailClicked)
-        C->>QR: Tap nut Detail
-        alt ScannedPoi != null
-            QR->>PD: Shell.GoToAsync("placeDetail", {poi: ScannedPoi})
-            Note over APS: Audio tiep tuc phat, khong bi dung
-        end
+    alt Bam Xem chi tiet
+        C->>QR: OnDetailClicked
+        QR->>PD: Shell.GoToAsync(placeDetail, {poi})
     end
-
-    alt Bam Dong ket qua (OnCloseResultClicked)
-        C->>QR: Tap nut dong
+    alt Bam Dong ket qua
+        C->>QR: OnCloseResultClicked
         QR->>APS: Stop()
-        QR->>QR: await HideResultCard() [FadeTo(0)]
-        QR->>QR: ScannedPoi = null
-        QR->>QR: ResetScanner()
-        QR-->>C: Quay ve man hinh quet
+        QR->>QR: HideResultCard(), ScannedPoi=null, ResetScanner()
     end
-
-    alt Bam Back (OnBackClicked)
-        C->>QR: Tap Back
-        QR->>QR: _isProcessingResult = true, IsScanning = false
+    alt Bam Back
+        C->>QR: OnBackClicked
         QR->>APS: Stop()
         QR->>HP: Navigation.PopAsync()
     end
-
-    QR->>QR: OnDisappearing: IsScanning=false
-    QR->>APS: Unsubscribe PlaybackStateChanged -= OnPlaybackStateChanged
+    QR->>QR: OnDisappearing: IsScanning=false, Unsubscribe APS event
         </pre></div>
       </div>
     </div>
 
-    <!-- S13 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">13</div>
-          <div><div class="acc-title">HistoryPage: tải lịch sử + nhóm theo ngày + real-time update + xóa</div><div class="acc-subtitle">OnAppearing new HistoryViewModel → HistoryStore.OnItemAdded subscribe → GroupBy date → Rebuild → OnDisappearing unsubscribe</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">12</div>
+          <div><div class="acc-title">HistoryPage: tải + nhóm theo ngày + real-time update + xóa + replay</div><div class="acc-subtitle">OnAppearing new HistoryViewModel → HistoryStore.OnItemAdded subscribe → LoadFromApiAsync → GroupBy date → Rebuild → OnDisappearing unsubscribe</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1502,67 +1242,62 @@ sequenceDiagram
     participant HP as HistoryPage
     participant VM as HistoryViewModel
     participant HS as HistoryStore
-    participant APS as AudioPlaybackService
     participant API as ApiService
+    participant APS as AudioPlaybackService
+    participant PD as PlaceDetailPage
 
     C->>HP: Chuyen sang tab Lich su (OnAppearing)
     HP->>VM: _vm = new HistoryViewModel()
     HP->>HP: BindingContext = _vm
+    VM->>HS: OnItemAdded += HandleItemAdded [subscribe]
+    VM->>VM: Rebuild() [tu data in-memory]
+    HP->>HS: LoadFromApiAsync()
 
-    VM->>HS: HistoryStore.OnItemAdded += HandleItemAdded [dang ky event]
+    alt IsLoggedIn AND userId > 0
+        HS->>API: GetHistory(userId): GET /api/history/user/{userId}
+        API-->>HS: List<HistoryDto> (poiId, poiName, poiImage, playTime, listenDuration)
+        HS->>HS: _items.Clear(), dien lai tu API, sort DESC
+    end
+
     VM->>VM: Rebuild()
-    VM->>HS: HistoryStore.GetAll()
-    HS-->>VM: List<HistoryItem> (in-memory, da co san)
-    VM->>VM: GroupBy ListenedAt.Date, OrderByDescending date
+    VM->>HS: GetAll() -> List<HistoryItem>
+    VM->>VM: GroupBy ListenedAt.Date, OrderByDescending
     loop Moi nhom ngay
-        VM->>VM: DateLabel(date): HOM NAY / HOM QUA / dd/MM/yyyy
-        VM->>VM: HistoryGroup(key).Add(items OrderByDesc ListenedAt)
+        VM->>VM: DateLabel: HOM NAY / HOM QUA / dd/MM/yyyy
+        VM->>VM: HistoryGroup(key).Add items
         VM->>VM: HistoryGroups.Add(group)
     end
-    VM->>VM: TotalListened = allItems.Count
-    VM->>VM: TotalDuration = allItems.Sum(ListenDuration) / 60 [phut]
-    VM->>VM: IsHistoryEmpty = allItems.Count == 0
-    VM-->>HP: HistoryGroups bind CollectionView (IsGrouped=true)
-    HP-->>C: Danh sach lich su nhom theo ngay (HOM NAY / HOM QUA / ...)
+    VM->>VM: TotalListened, TotalDuration (phut), IsHistoryEmpty
+    HP-->>C: Danh sach nhom theo ngay + thong ke
 
-    Note over C,API: Real-time: khi AudioPlaybackService ghi history moi
-    APS->>HS: HistoryStore.AddAsync(poi, duration) [OnTtsFinished hoac @10s]
-    HS->>HS: lock: _items.Insert(0, new HistoryItem)
+    Note over C,APS: Real-time: khi APS ghi history moi
+    APS->>HS: HistoryStore.AddAsync(poi, duration)
     HS->>HS: OnItemAdded.Invoke(item)
-    HS->>API: POST /api/history {poiId, userId, listenDuration}
-    VM->>VM: HandleItemAdded(item): MainThread.BeginInvokeOnMainThread(Rebuild)
-    VM->>VM: Rebuild() [cap nhat lai toan bo nhom]
-    HP-->>C: Item moi hien o dau danh sach (real-time, khong can reload)
+    VM->>VM: HandleItemAdded -> MainThread.BeginInvokeOnMainThread(Rebuild)
+    HP-->>C: Item moi hien o dau (khong can reload)
 
-    Note over C,HS: Xoa lich su (ClearHistoryCommand)
-    C->>HP: Bam nut Xoa lich su
-    HP->>VM: ClearHistoryCommand.Execute()
+    Note over C,HS: Xoa lich su
+    C->>HP: Bam Xoa (ClearHistoryCommand)
     VM->>HS: HistoryStore.Clear()
-    HS->>HS: lock: _items.Clear()
-    VM->>VM: Rebuild()
-    VM->>VM: HistoryGroups.Clear(), TotalListened=0, IsHistoryEmpty=true
+    VM->>VM: Rebuild() -> HistoryGroups.Clear(), IsHistoryEmpty=true
     HP-->>C: Danh sach trong
 
-    Note over C,HS: Phat lai tu lich su (ReplayCommand)
-    C->>HP: Bam nut Replay tren HistoryItem
-    HP->>VM: ReplayCommand.Execute(item)
-    VM->>VM: Shell.GoToAsync("placeDetail", {poi: item.Poi})
+    Note over C,PD: Phat lai tu lich su
+    C->>HP: Bam Replay (ReplayCommand)
+    VM->>PD: Shell.GoToAsync(placeDetail, {poi: item.Poi})
 
     C->>HP: Roi tab (OnDisappearing)
-    HP->>HS: HistoryStore.OnItemAdded -= _vm.HandleItemAdded
-    Note over HP: Tranh memory leak - moi OnAppearing se tao _vm moi va subscribe lai
+    HP->>HS: OnItemAdded -= _vm.HandleItemAdded [tranh memory leak]
         </pre></div>
       </div>
     </div>
 
-    <!-- S14 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">14</div>
-          <div><div class="acc-title">SettingsPage + AccountPage: ngôn ngữ / hồ sơ / đăng xuất</div><div class="acc-subtitle">OnAppearing RefreshProfile → Language DisplayActionSheet → AccountPage SaveProfile PUT API → Logout clear Preferences</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">13</div>
+          <div><div class="acc-title">SettingsPage + AccountPage: ngôn ngữ / hồ sơ / đăng xuất</div><div class="acc-subtitle">OnAppearing RefreshProfile → DisplayActionSheet ngôn ngữ → AccountPage SaveProfileCommand → PUT /api/users/customer → Logout</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1570,96 +1305,238 @@ sequenceDiagram
     participant C as Customer
     participant SP as SettingsPage
     participant SET as SettingService.Instance
-    participant AUTH as AuthService (Preferences)
+    participant AUTH as AuthService
     participant ACC as AccountPage
     participant AVM as AccountViewModel
     participant API as ApiService
-    participant LP as LoginPage
 
     C->>SP: Chuyen sang tab Settings (OnAppearing)
     SP->>SP: RefreshProfile()
-    SP->>AUTH: AvatarLetter [Name[0].ToUpper()]
-    SP->>AUTH: Name, Email tu Preferences
-    SP->>SP: AvatarLabel.Text, NameLabel.Text, EmailLabel.Text
-    SP-->>C: Avatar chu cai, Ten, Email hien thi
+    SP->>AUTH: AvatarLetter, Name, Email tu Preferences
+    SP-->>C: Avatar chu cai, Ten, Email
 
-    Note over C,SET: Thay doi ngon ngu TTS
+    Note over C,SET: Doi ngon ngu TTS
     C->>SP: Tap Ngon ngu (OnLanguageTapped)
-    SP->>C: DisplayActionSheet("Chon ngon ngu", Cancel, [vi/en/ja/zh])
-    C->>SP: Chon (vi du: English)
-    SP->>SP: Tim pair trong SupportedLanguages.FirstOrDefault(kv.Value == chosen)
+    SP->>C: DisplayActionSheet(Chon ngon ngu): vi/en/ja/zh
+    C->>SP: Chon (vd: English)
+    SP->>SP: Tim pair trong SupportedLanguages
     SP->>SET: Instance.Language = "en"
-    SET->>SET: Preferences.Set("app_language", "en")
-    SET->>SET: OnPropertyChanged(Language + LanguageDisplayName)
-    SP-->>C: Label hien ngon ngu moi (English)
-    Note over SET: TextToSpeechService se doc SettingService.Instance.Language khi SpeakAsync
+    SET->>SET: Preferences.Set(app_language, en)
+    SET->>SET: OnPropertyChanged -> UI cap nhat
 
-    Note over C,ACC: Xem / sua ho so ca nhan
+    Note over C,API: Xem / sua ho so
     C->>SP: Tap Profile card (OnProfileCardTapped)
     SP->>ACC: Navigation.PushAsync(new AccountPage(new AccountViewModel()))
-    ACC->>AVM: new AccountViewModel()
     AVM->>AUTH: Username, Name, Email, Phone tu Preferences
-    AVM->>AVM: Set properties (ObservableProperty CommunityToolkit)
-    ACC->>ACC: BindingContext = viewModel
-    ACC-->>C: Form: Username (readonly), Name, Email (readonly), Phone
+    ACC-->>C: Form: Username(readonly), Name, Email(readonly), Phone
 
-    C->>ACC: Sua Name va/hoac Phone, bam Luu (SaveProfileCommand)
+    C->>ACC: Sua Name / Phone -> bam Luu (SaveProfileCommand)
     AVM->>AVM: Validate: Name.IsNullOrWhiteSpace?
     alt Name rong
-        AVM->>AVM: StatusMessage = "Ho ten khong duoc de trong", IsError=true
+        AVM->>AVM: StatusMessage=Ho ten khong duoc de trong, IsError=true
         ACC-->>C: Hien loi inline
-    else Name hop le
-        AVM->>API: AuthService.UpdateProfileAsync(Name, Phone)
-        AUTH->>API: new ApiService().UpdateProfile(userId, name, phone)
-        API->>API: PUT /api/users/customer/{userId} {Name, Phone}
-        alt Thanh cong (200 OK)
+    else Hop le
+        AVM->>AUTH: UpdateProfileAsync(Name, Phone)
+        AUTH->>API: PUT /api/users/customer/{userId} {Name, Phone}
+        alt 200 OK
             API-->>AUTH: true
-            AUTH->>AUTH: Preferences.Set(user_name=Name, user_phone=Phone)
-            AUTH-->>AVM: true
-            AVM->>AVM: StatusMessage = "Da luu thanh cong!", IsError=false
-            AVM->>ACC: DisplayAlert "Thanh cong - Cap nhat thanh cong!"
-            AVM->>AVM: await Task.Delay(2000), StatusMessage = ""
-            ACC-->>C: Alert thanh cong
-        else That bai
+            AUTH->>AUTH: Preferences.Set(user_name, user_phone)
+            AVM->>AVM: StatusMessage=Da luu thanh cong!, IsError=false
+            ACC->>C: DisplayAlert Thanh cong
+        else Loi
             API-->>AUTH: false
-            AUTH-->>AVM: false
-            AVM->>AVM: StatusMessage = "Cap nhat that bai!", IsError=true
-            AVM->>ACC: DisplayAlert "Loi - Cap nhat that bai!"
-            ACC-->>C: Alert loi
+            AVM->>AVM: StatusMessage=Cap nhat that bai!, IsError=true
+            ACC->>C: DisplayAlert Loi
         end
     end
 
-    C->>ACC: Bam Back
-    ACC->>ACC: Navigation.PopAsync()
-    ACC-->>C: Quay ve SettingsPage
-
-    Note over C,LP: Dang xuat
+    Note over C,AUTH: Dang xuat
     C->>SP: Bam Dang xuat (OnLogoutClicked)
-    SP->>C: DisplayAlert("Xac nhan", "Ban co muon dang xuat?", Co, Khong)
-    alt Chon Khong
-        C->>SP: Huy
-        SP-->>C: Khong lam gi
-    else Chon Co
+    SP->>C: DisplayAlert xac nhan: Co / Khong
+    alt Chon Co
         SP->>AUTH: Logout()
-        AUTH->>AUTH: Preferences.Remove: username, token, email, name, phone, user_id
-        SP->>LP: Application.Current.MainPage = new NavigationPage(new LoginPage())
-        LP-->>C: Ve man hinh dang nhap
+        AUTH->>AUTH: Preferences.Remove tat ca keys
+        SP->>SP: Application.Current.MainPage = new NavigationPage(new LoginPage())
     end
         </pre></div>
       </div>
     </div>
 
-<!-- GROUP: WEB CMS -->
-    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--p);font-weight:700;margin:1.1rem 0 .7rem;padding-left:.3rem">🌐 WEB CMS</div>
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">14</div>
+          <div><div class="acc-title">Offline Mode: SQLite cache + Seed JSON + Pending queue + Sync</div><div class="acc-subtitle">LocalDbService.InitAsync → SeedFromJson → SavePOIsAsync → AddPendingHistory → SyncPendingHistoriesAsync khi có mạng</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant App as Mobile App
+    participant CON as ConnectivityService
+    participant API as ApiService
+    participant LDB as LocalDbService
+    participant DB as SQL Server
 
-    <!-- S12 -->
+    Note over App,DB: Khoi dong lan dau
+    App->>LDB: InitAsync()
+    LDB->>LDB: Tao bang: CachedPOI, CachedTour, PendingHistory
+    LDB->>LDB: Count POI==0? -> SeedDataFromJsonAsync(seed_pois.json)
+    LDB->>LDB: Count Tour==0? -> SeedToursFromJsonAsync(seed_tours.json)
+    LDB-->>App: SQLite san sang
+
+    Note over App,DB: Tai POI
+    App->>API: GetPOI()
+    API->>CON: IsConnected?
+    alt Online
+        CON-->>API: true
+        API->>DB: GET /api/POI (APPROVED only)
+        DB-->>API: List<POI>
+        API->>LDB: SavePOIsAsync(pois) [DeleteAll + InsertAll]
+        API-->>App: POI tu server (fresh)
+    else Offline
+        CON-->>API: false
+        API->>LDB: GetCachedPOIsAsync()
+        LDB-->>API: POI tu SQLite (hoac seed)
+        API-->>App: POI offline
+    end
+
+    Note over App,DB: Ghi history khi offline
+    App->>API: SaveHistory(poiId, userId, duration)
+    API->>CON: IsConnected?
+    alt Online
+        API->>DB: POST /api/history
+        DB-->>API: 200 OK
+        API->>API: SyncPendingHistoriesAsync() [dong bo hang doi]
+    else Offline
+        API->>LDB: AddPendingHistoryAsync(poiId, userId, duration)
+        LDB-->>API: Saved PendingHistory (Synced=false)
+    end
+
+    Note over App,DB: Khi mang tro lai -> sync tu dong
+    API->>LDB: GetPendingHistoriesAsync()
+    LDB-->>API: List PendingHistory chua sync
+    loop Moi pending item
+        API->>DB: POST /api/history {poiId, userId, duration}
+        DB-->>API: 200 OK
+        API->>LDB: MarkHistorySyncedAsync(id)
+    end
+    API->>LDB: CleanSyncedHistoriesAsync()
+        </pre></div>
+      </div>
+    </div>
+
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num">15</div>
-          <div><div class="acc-title">Tạo / sửa / xóa POI + upload ảnh (Web CMS)</div><div class="acc-subtitle">Pois.cshtml → X-Role header → PENDING/APPROVED → cascade delete</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">Tour: Chọn Tour trên bản đồ + Apply từ HomePage</div><div class="acc-subtitle">SelectTourCommand → ActiveTour → RefreshNearbyOrder → setPOIs(tourPois) → flyTo firstPOI → StartTour alert</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant HP as HomePage
+    participant MTS as MapTourState
+    participant MP as MapPage
+    participant VM as MapViewModel
+    participant WV as Leaflet WebView
+
+    Note over C,WV: Tu HomePage chon Tour
+    C->>HP: Tap Tour card (GoToTourMapCommand)
+    HP->>MTS: SelectedTour = tour
+    HP->>MP: Shell.GoToAsync("//map")
+    MP->>MP: OnAppearing: MapTourState.SelectedTour != null
+    MP->>MTS: tour = SelectedTour, SelectedTour=null
+    MP->>VM: ApplyTourAsync(tour)
+    VM->>VM: ActiveTour=tour, RefreshNearbyOrder()
+    VM->>WV: setPOIs(tourPois)
+    VM->>WV: flyTo(firstPOI.lat, lon, zoom=15)
+    MP->>MP: poiBottomSheet.IsVisible=true
+    MP-->>C: Ban do hien POI cua tour, zoom vao POI dau
+
+    Note over C,WV: Tren MapPage chon Tour chip
+    C->>MP: Tap Tour chip
+    MP->>VM: SelectTourCommand.Execute(tour)
+    VM->>VM: ActiveTour=tour, RefreshNearbyOrder()
+    VM->>WV: setPOIs(tourPois)
+    VM->>WV: flyTo(firstPOI)
+    MP-->>C: Chi hien marker cua tour nay
+
+    Note over C,WV: Bam "Tat ca" chip
+    C->>MP: OnTourChipAllTapped
+    MP->>VM: SelectTourCommand.Execute(null)
+    VM->>VM: ActiveTour=null, RefreshNearbyOrder()
+    VM->>WV: setPOIs(allPOIs)
+    MP-->>C: Hien tat ca POI
+
+    Note over C,WV: StartTourCommand
+    C->>VM: StartTourCommand
+    VM->>C: DisplayAlert: Chao mung den tour [name]
+    VM->>VM: RefreshNearbyOrder()
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">16</div>
+          <div><div class="acc-title">TTS đa ngôn ngữ: đổi ngôn ngữ → reload script → TextToSpeechService</div><div class="acc-subtitle">SettingService.Language → LanguageUtils.GetScript → LoadText/ForceLoadText → ResolveLocaleAsync → Android SpeakNative / MAUI fallback</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant C as Customer
+    participant SET as SettingService
+    participant APS as AudioPlaybackService
+    participant LU as LanguageUtils
+    participant TTS as TextToSpeechService
+
+    C->>SET: Language = "en" (doi tu "vi")
+    SET->>SET: Preferences.Set(app_language, en)
+    SET->>SET: OnPropertyChanged()
+
+    Note over C,TTS: Lan tiep theo PlayAsync(poi)
+    C->>APS: PlayAsync(poi)
+    APS->>SET: currentLang = Instance.Language -> "en"
+    APS->>APS: currentLang != _currentLoadedLang? -> Play moi
+    APS->>LU: GetScript(poi, "en") -> poi.ScriptEn
+    APS->>TTS: ForceLoadText(englishScript) [reset _charIndex=0]
+    APS->>APS: _currentLoadedLang = "en"
+
+    APS->>TTS: SpeakAsync(token)
+    TTS->>TTS: lang = SettingService.Instance.Language -> "en"
+
+    alt Android
+        TTS->>TTS: SpeakNativeAndroidAsync("en", token)
+        TTS->>TTS: TextToSpeech.SetLanguage(Locale("en","US"))
+        TTS->>TTS: TextToSpeech.Speak(text)
+    else iOS/Windows MAUI fallback
+        TTS->>TTS: GetLocalesAsync()
+        TTS->>TTS: ResolveLocaleAsync("en"): LocalePriority["en"] = Google US English...
+        TTS->>TTS: TextToSpeech.SpeakAsync(text, {Locale}, token)
+    end
+    TTS-->>C: Thuyet minh bang tieng Anh
+
+    Note over TTS,C: Progress bao cao (Android native moi cau, MAUI timer 300ms)
+    TTS->>APS: OnProgress(current, total)
+    APS->>APS: poi.AudioProgress = current/total, AudioDuration = mm:ss
+        </pre></div>
+      </div>
+    </div>
+
+    <!-- ══ WEB CMS ══ -->
+    <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--p);font-weight:700;margin:1.2rem 0 .7rem;padding-left:.3rem">🌐 WEB CMS (ASP.NET Core Razor Pages)</div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">17</div>
+          <div><div class="acc-title">Tạo / sửa / xóa POI + upload ảnh (Web CMS)</div><div class="acc-subtitle">Pois.cshtml → X-Role header → PENDING/APPROVED → cascade delete Audio+History+Images</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1668,47 +1545,57 @@ sequenceDiagram
     participant PG as Pois.cshtml
     participant API as TourGuideAPI
     participant DB as SQL Server
+    participant FS as FileSystem (wwwroot)
 
     U->>PG: GET /Pois
     PG->>API: GET /api/poi/owner/{id} hoac /api/poi/all
-    API->>DB: SELECT theo role
-    PG->>API: GET /api/poi/{id}/images (foreach)
-    API-->>PG: POI + Images
-    PG-->>U: Bang POI
+    PG->>API: GET /api/poi/{id}/images (foreach POI)
+    API-->>PG: POI + Images list
+    PG-->>U: Bang POI voi anh thumbnail
 
-    Note over U,DB: Tao moi
-    U->>PG: Nhap form + chon toa do tren Leaflet + upload anh
+    Note over U,FS: Tao moi POI
+    U->>PG: Nhap form + chon toa do tren Leaflet
     PG->>PG: Owner -> Status=PENDING, Admin -> Status=APPROVED
-    PG->>API: POST /api/poi (X-Role)
-    API->>DB: INSERT POI
+    PG->>API: POST /api/poi {name, desc, address, lat, lon, radius, ownerId}
+    API->>DB: INSERT POI (status = PENDING hoac APPROVED)
     DB-->>API: POI.Id = X
-    loop moi file
+    loop Moi anh upload
         PG->>API: POST /api/poi/{X}/image (<=5MB, jpg/png/webp)
+        API->>API: Validate ext + size
+        API->>FS: Luu file /uploads/poi/poi_{id}_{timestamp}.ext
         API->>DB: INSERT POIImages (IsThumbnail=true neu la anh dau)
     end
-    PG-->>U: Owner: cho duyet / Admin: xong
+    PG-->>U: Owner: cho duyet / Admin: da hoan tat
 
-    Note over U,DB: Sua
-    PG->>API: PUT /api/poi/{id} (X-Role)
-    API->>DB: UPDATE, Owner->PENDING, Admin->thang
+    Note over U,FS: Sua POI
+    U->>PG: Sua form -> Submit
+    PG->>API: PUT /api/poi/{id} (X-Role: ADMIN hoac OWNER)
+    API->>DB: UPDATE POI
+    alt X-Role = ADMIN
+        API->>DB: SET Status=APPROVED (giu nguyen)
+    else X-Role = OWNER
+        API->>DB: SET Status=PENDING (cho duyet lai)
+    end
     PG-->>U: Da cap nhat
 
-    Note over U,DB: Xoa
+    Note over U,FS: Xoa POI (cascade)
     PG->>API: DELETE /api/poi/{id}
-    API->>DB: DELETE cascade Audio + History + POIImages + file vat ly
-    PG-->>U: Da xoa
+    API->>DB: DELETE Audio WHERE poiId=id
+    API->>DB: DELETE History WHERE poiId=id
+    API->>DB: SELECT POIImages WHERE poiId=id -> xoa files vat ly tren FS
+    API->>DB: DELETE POIImages WHERE poiId=id
+    API->>DB: DELETE POI WHERE id=id
+    PG-->>U: Da xoa hoan toan
         </pre></div>
       </div>
     </div>
 
-    <!-- S12 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">16</div>
-          <div><div class="acc-title">Phê duyệt / từ chối / rút duyệt / xóa hàng loạt</div><div class="acc-subtitle">Approval.cshtml → Admin only → approve/reject/revoke/delete-rejected</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">18</div>
+          <div><div class="acc-title">Phê duyệt / Từ chối / Rút duyệt / Xóa hàng loạt (Admin)</div><div class="acc-subtitle">Approval.cshtml → 3 tab → PUT /api/poi/{id}/approve|reject → DELETE /api/poi/rejected</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1721,45 +1608,42 @@ sequenceDiagram
 
     A->>AP: GET /Approval
     AP->>API: GET /api/poi/all
-    AP-->>A: 3 tab: Cho duyet / Da duyet / Tu choi
+    AP-->>A: 3 tab: Cho duyet (PENDING) / Da duyet (APPROVED) / Tu choi (REJECTED)
 
-    Note over A,APP: Duyet
+    Note over A,APP: Duyet POI
     A->>AP: POST Duyet (PoiId)
     AP->>API: PUT /api/poi/{id}/approve
     API->>DB: UPDATE Status=APPROVED, RejectReason=NULL
     AP-->>A: Da duyet
-    APP->>API: GET /api/poi (next refresh)
-    API-->>APP: Co POI moi Status=APPROVED
+    Note over APP: GET /api/poi (next refresh) -> thay POI moi
 
-    Note over A,APP: Tu choi
+    Note over A,APP: Tu choi POI
     A->>AP: POST TuChoi (PoiId, Reason)
-    AP->>API: PUT /api/poi/{id}/reject
-    API->>DB: UPDATE Status=REJECTED, RejectReason=?
+    AP->>API: PUT /api/poi/{id}/reject + {reason}
+    API->>DB: UPDATE Status=REJECTED, RejectReason=reason
     AP-->>A: Da tu choi
 
-    Note over A,APP: Rut duyet
+    Note over A,APP: Rut duyet (APPROVED -> REJECTED)
     A->>AP: POST RutDuyet (PoiId)
     AP->>API: PUT /api/poi/{id}/reject (Reason=Admin rut duyet)
     API->>DB: UPDATE Status=REJECTED
-    AP-->>A: Da rut duyet
+    AP-->>A: Da rut duyet, POI bien mat khoi App
 
-    Note over A,APP: Xoa hang loat
+    Note over A,APP: Xoa hang loat REJECTED
     A->>AP: POST XoaTatCaTuChoi
     AP->>API: DELETE /api/poi/rejected
-    API->>DB: DELETE tat ca Status=REJECTED
-    AP-->>A: Da xoa N POI
+    API->>DB: SELECT + DELETE tat ca Status=REJECTED
+    AP-->>A: Da xoa N POI tu choi
         </pre></div>
       </div>
     </div>
 
-    <!-- S12 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">17</div>
-          <div><div class="acc-title">Quản lý Audio (tạo / sửa / xóa + preview TTS)</div><div class="acc-subtitle">AudioManager.cshtml → 4 script vi/en/ja/zh → Web Speech API preview</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">19</div>
+          <div><div class="acc-title">Quản lý Audio: tạo / sửa / xóa + Auto-translate + Preview TTS (Web)</div><div class="acc-subtitle">AudioManager.cshtml → 4 script vi/en/ja/zh → Google Translate Free → Web Speech API preview → POST /api/audio</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1767,44 +1651,60 @@ sequenceDiagram
     participant U as Admin/Owner (Browser)
     participant AM as AudioManager.cshtml
     participant API as TourGuideAPI
-    participant DB as SQL Server
+    participant GT as Google Translate Free
     participant TTS as Web Speech API
+    participant DB as SQL Server
 
     U->>AM: GET /AudioManager
-    AM->>API: GET /api/audio + /api/poi/...
-    AM->>AM: Tinh PoisWithoutAudio (APPROVED + chua co audio)
+    AM->>API: GET /api/audio (tat ca audio + POI)
+    AM->>AM: Tinh PoisWithoutAudio: APPROVED + chua co audio
     AM-->>U: Bang audio + dropdown POI chua co
 
-    Note over U,TTS: Tao moi
-    U->>AM: Chon POI, nhap script vi
+    Note over U,DB: Tao audio moi (1 audio / POI)
+    U->>AM: Chon POI tu PoisWithoutAudio, nhap script tieng Viet
     U->>AM: Bam Auto-translate
-    AM->>TTS: fetch translate.googleapis.com (sl=vi, tl=en/ja/zh)
-    TTS-->>AM: 3 ban dich dien tu dong
-    U->>AM: Bam Preview
-    AM->>TTS: window.speechSynthesis.speak(text)
-    TTS-->>U: Phat giong trong browser
-    U->>AM: Bam Luu
-    AM->>API: POST /api/audio (PoiId, vi, en, ja, zh)
-    API->>DB: Kiem tra POI APPROVED + chua co audio
-    API->>DB: INSERT Audio
-    AM-->>U: Them thanh cong
+    AM->>GT: fetch translate.googleapis.com (sl=vi, tl=en) -> en script
+    AM->>GT: fetch translate.googleapis.com (sl=vi, tl=ja) -> ja script
+    AM->>GT: fetch translate.googleapis.com (sl=vi, tl=zh) -> zh script
+    GT-->>AM: 3 ban dich tu dong
 
-    Note over U,TTS: Sua / Xoa
-    AM->>API: PUT /api/audio/{id} hoac DELETE /api/audio/{id}
-    API->>DB: UPDATE hoac DELETE
-    AM-->>U: Cap nhat
+    U->>AM: Bam Preview (ngon ngu tuy chon)
+    AM->>TTS: window.speechSynthesis.speak(text)
+    TTS-->>U: Phat giong doc trong browser
+
+    U->>AM: Bam Luu
+    AM->>API: POST /api/audio {poiId, vi, en, ja, zh}
+    API->>DB: Kiem tra POI APPROVED? + Chua co audio?
+    alt POI chua duyet
+        API-->>AM: 400 POI chua duoc duyet
+    else Da co audio
+        API-->>AM: 400 POI nay da co Audio roi
+    else OK
+        API->>DB: INSERT Audio (poiId, vi, en, ja, zh)
+        AM-->>U: Them thanh cong
+    end
+
+    Note over U,DB: Sua audio
+    U->>AM: Sua script, bam Luu
+    AM->>API: PUT /api/audio/{id} {vi, en, ja, zh}
+    API->>DB: UPDATE Audio
+    AM-->>U: Cap nhat thanh cong
+
+    Note over U,DB: Xoa audio
+    U->>AM: Bam Xoa
+    AM->>API: DELETE /api/audio/{id}
+    API->>DB: DELETE Audio
+    AM-->>U: Da xoa
         </pre></div>
       </div>
     </div>
 
-    <!-- S12 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">18</div>
-          <div><div class="acc-title">Quản lý Users: tạo / đổi role / xóa (Admin)</div><div class="acc-subtitle">Users.cshtml → POST/PUT/DELETE /api/users → ADMIN only</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">20</div>
+          <div><div class="acc-title">Quản lý Users: tạo / sửa role / xóa (Admin)</div><div class="acc-subtitle">Users.cshtml → POST/PUT/DELETE /api/users → Admin tạo bất kỳ role: ADMIN/OWNER/CUSTOMER</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1815,41 +1715,129 @@ sequenceDiagram
     participant DB as SQL Server
 
     A->>UP: GET /Users
-    UP->>API: GET /api/users
-    API->>DB: SELECT tat ca
+    UP->>API: GET /api/users (tat ca)
+    API->>DB: SELECT * FROM Users
     UP-->>A: Bang users (Id, Username, Role, Name, Email, Phone)
 
-    Note over A,DB: Tao moi
-    A->>UP: Nhap Username, Password, Role
-    UP->>API: POST /api/users (bat ky role: ADMIN/OWNER/CUSTOMER)
-    API->>DB: INSERT Users
+    Note over A,DB: Tao user moi (bat ky role)
+    A->>UP: Nhap Username, Password, Role, Name, Email, Phone
+    UP->>API: POST /api/users
+    API->>DB: INSERT Users (bat ky role: ADMIN/OWNER/CUSTOMER)
     UP-->>A: Tao thanh cong
 
-    Note over A,DB: Doi role
-    A->>UP: Chon role moi tu dropdown, bam Luu
-    UP->>API: GET /api/users/{id}
-    API-->>UP: du lieu hien tai
-    UP->>API: PUT /api/users/{id} (cap nhat Role)
-    API->>DB: UPDATE Role=?
-    UP-->>A: Da doi role
+    Note over A,DB: Doi role / cap nhat thong tin
+    A->>UP: Sua thong tin hoac chon role moi
+    UP->>API: PUT /api/users/{id} {Username, Role, Name, Email, Phone, [Password]}
+    API->>DB: UPDATE (Password giu nguyen neu truyen rong)
+    UP-->>A: Da cap nhat
 
-    Note over A,DB: Xoa
+    Note over A,DB: Xoa user
     A->>UP: Bam Xoa, xac nhan
     UP->>API: DELETE /api/users/{id}
-    API->>DB: DELETE Users
+    API->>DB: DELETE Users WHERE id=?
     UP-->>A: Da xoa
+
+    Note over A,DB: Loc theo role
+    A->>UP: Loc Owner / Customer
+    UP->>API: GET /api/users/owners hoac /customers
+    API->>DB: SELECT WHERE Role=?
+    UP-->>A: Danh sach loc
         </pre></div>
       </div>
     </div>
 
-    <!-- S12 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">19</div>
-          <div><div class="acc-title">Owner cập nhật hồ sơ cá nhân (Profile - Web)</div><div class="acc-subtitle">Profile.cshtml → GET /api/users/{id} → PUT /api/users/{id}</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">21</div>
+          <div><div class="acc-title">Dashboard thống kê tổng quan (Admin)</div><div class="acc-subtitle">Index.cshtml → GET /api/poi/all + /audio + /history + /users → counts + TopPOI by History + RecentHistory</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant A as Admin (Browser)
+    participant IDX as Index.cshtml (Dashboard)
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+
+    A->>IDX: GET /Index
+    par Song song
+        IDX->>API: GET /api/poi/all -> TotalPoi, PendingCount
+    and
+        IDX->>API: GET /api/audio -> TotalAudio
+    and
+        IDX->>API: GET /api/history -> TotalHistory, RecentHistory(10), TopPoi by count
+    and
+        IDX->>API: GET /api/users -> TotalUsers breakdown by role
+    end
+    API->>DB: Cac query tuong ung
+    DB-->>API: So lieu aggregated
+    IDX-->>A: Dashboard: TotalPoi/Audio/History/Users, Badge pending, Top5POI, Recent10
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">22</div>
+          <div><div class="acc-title">Quản lý Tour (Web CMS): tạo / sửa / xóa / gán POI có thứ tự</div><div class="acc-subtitle">POST/PUT/DELETE /api/tours → TourPOI table (OrderIndex) → PUBLISHED/DRAFT</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant A as Admin (Browser)
+    participant TG as Tours.cshtml
+    participant API as TourGuideAPI
+    participant DB as SQL Server
+    participant APP as Mobile App
+
+    Note over A,DB: Tao tour moi
+    A->>TG: Nhap Name, Description, ThumbnailUrl, chon danh sach POI
+    TG->>API: POST /api/tours {name, desc, thumbnailUrl, status=PUBLISHED, poiIds:[1,3,5]}
+    API->>DB: INSERT Tour
+    DB-->>API: tour.Id = X
+    loop Moi poiId theo thu tu
+        API->>DB: INSERT TourPOI (tourId=X, poiId, orderIndex=i+1)
+    end
+    TG-->>A: Tour tao xong
+    APP->>API: GET /api/tours -> thay Tour moi
+
+    Note over A,DB: Sua tour + cap nhat POI
+    A->>TG: Sua thong tin + re-order POI
+    TG->>API: PUT /api/tours/{id} {name, desc, status, poiIds:[2,4,6]}
+    API->>DB: UPDATE Tour
+    API->>DB: DELETE TourPOI WHERE tourId=id
+    loop Danh sach POI moi
+        API->>DB: INSERT TourPOI (orderIndex moi)
+    end
+    TG-->>A: Cap nhat thanh cong
+
+    Note over A,DB: Them/xoa POI rieng le
+    A->>TG: Them POI vao tour
+    TG->>API: POST /api/tours/{id}/pois {poiId}
+    API->>DB: Kiem tra da co chua? INSERT TourPOI (maxOrder+1)
+    A->>TG: Xoa POI khoi tour
+    TG->>API: DELETE /api/tours/{id}/pois/{poiId}
+    API->>DB: DELETE TourPOI WHERE tourId=id AND poiId=poiId
+
+    Note over A,DB: Xoa tour
+    TG->>API: DELETE /api/tours/{id}
+    API->>DB: DELETE TourPOI WHERE tourId=id
+    API->>DB: DELETE Tour WHERE id=id
+    TG-->>A: Da xoa
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">23</div>
+          <div><div class="acc-title">Owner cập nhật hồ sơ cá nhân (Web CMS)</div><div class="acc-subtitle">Profile.cshtml → GET /api/users/{id} → PUT /api/users/{id} → Session.Username update</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
@@ -1866,188 +1854,405 @@ sequenceDiagram
     DB-->>API: UserInfo
     PP-->>O: Form voi thong tin hien tai
 
-    O->>PP: Sua Username, Password (optional), Name, Email, Phone
+    O->>PP: Sua Username, Password (tuy chon), Name, Email, Phone
     O->>PP: POST /Profile
-    PP->>API: GET /api/users/{MyId} - lay du lieu cu
-    PP->>PP: Neu Password trong thi giu cu, Role giu nguyen
-    PP->>API: PUT /api/users/{MyId}
-    API->>DB: UPDATE Users SET ...
+    PP->>API: GET /api/users/{MyId} [lay Password cu neu khong nhap moi]
+    PP->>PP: Neu Password trong -> giu cu; Role giu nguyen
+    PP->>API: PUT /api/users/{MyId} {Username, Role, Name, Email, Phone, Password}
+    API->>DB: UPDATE Users
     DB-->>API: OK
     PP->>SES: SetString Username moi
-    PP-->>O: Da cap nhat thanh cong
+    PP-->>O: Cap nhat thanh cong
         </pre></div>
       </div>
     </div>
 
-    <!-- S12 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num">20</div>
-          <div><div class="acc-title">Dashboard thống kê tổng quan (Admin)</div><div class="acc-subtitle">Index.cshtml → GET /api/poi/all + /audio + /history + /users → thống kê tổng hợp</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num">24</div>
+          <div><div class="acc-title">Xem lịch sử phát toàn hệ thống (Admin/Owner)</div><div class="acc-subtitle">HistoryPage.cshtml → GET /api/history (Admin) hoặc filter theo owner POI → JOIN User+POI → Sort PlayTime DESC</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
 sequenceDiagram
-    participant A as Admin (Browser)
-    participant IDX as Index.cshtml (Dashboard)
+    participant A as Admin/Owner (Browser)
+    participant HG as HistoryPage.cshtml
     participant API as TourGuideAPI
     participant DB as SQL Server
 
-    A->>IDX: GET /Index
-    IDX->>API: GET /api/poi/all
-    IDX->>API: GET /api/audio
-    IDX->>API: GET /api/history
-    IDX->>API: GET /api/users
-    API->>DB: Cac query tuong ung
-    DB-->>API: So lieu
-    IDX-->>A: TotalPoi, TotalAudio, TotalHistory, TotalUsers, RecentHistory, TopPoi
+    A->>HG: GET /HistoryPage
+    alt Role = ADMIN
+        HG->>API: GET /api/history
+        API->>DB: SELECT h.*, p.Name AS PoiName, u.Username, u.Name, u.Role FROM History h LEFT JOIN POI p LEFT JOIN Users u ORDER BY PlayTime DESC
+        DB-->>API: Full history list
+    else Role = OWNER
+        HG->>API: GET /api/history (filter by owner's POI)
+        API->>DB: Chỉ history cua POI co OwnerId=MyId
+        DB-->>API: Filtered list
+    end
+    HG-->>A: Bang: PoiName, UserLogin, UserFullName, PlayTime, Duration
+
+    Note over A,DB: Xoa record
+    A->>HG: Bam Xoa record
+    HG->>API: DELETE /api/history/{id}
+    API->>DB: DELETE History WHERE id=?
+    HG-->>A: Da xoa
+
+    Note over A,DB: Top POI (GET /api/poi/top)
+    HG->>API: GET /api/poi/top
+    API->>DB: SELECT poiId, COUNT(*) FROM History GROUP BY poiId ORDER BY COUNT DESC TAKE 5
+    API->>DB: JOIN POI WHERE status=APPROVED
+    DB-->>API: Top5 POI phat nhieu nhat
+    HG-->>A: Top 5 POI phat nhieu nhat
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num">25</div>
+          <div><div class="acc-title">Upload / quản lý ảnh POI: thumbnail + xóa (Web CMS)</div><div class="acc-subtitle">POST /api/poi/{id}/image → lưu file → PUT /api/poi/image/{id}/thumbnail → DELETE /api/poi/image/{id}</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+sequenceDiagram
+    participant U as Owner/Admin (Browser)
+    participant PG as Pois.cshtml
+    participant API as TourGuideAPI
+    participant FS as FileSystem (wwwroot/uploads/poi)
+    participant DB as SQL Server
+
+    Note over U,DB: Upload anh moi
+    U->>PG: Chon file anh, bam Upload
+    PG->>API: POST /api/poi/{id}/image (multipart IFormFile)
+    API->>API: Validate ext (.jpg/.png/.webp) + size <=5MB
+    alt File sai dinh dang hoac qua lon
+        API-->>PG: 400 BadRequest
+    else OK
+        API->>FS: Luu file: /uploads/poi/poi_{id}_{timestamp}.ext
+        FS-->>API: imagePath
+        API->>DB: Kiem tra isFirst? (chua co anh nao)
+        alt isFirst = true
+            API->>DB: INSERT POIImages (IsThumbnail=true)
+            API->>DB: UPDATE POI.ImageUrl = imageUrl
+        else
+            API->>DB: INSERT POIImages (IsThumbnail=false)
+        end
+        PG-->>U: 200 OK + {imageUrl}
+    end
+
+    Note over U,DB: Doi anh thumbnail chinh
+    U->>PG: Bam Set Thumbnail tren mot anh
+    PG->>API: PUT /api/poi/image/{imageId}/thumbnail
+    API->>DB: UPDATE tat ca anh cua POI: IsThumbnail=false
+    API->>DB: UPDATE image nay: IsThumbnail=true
+    PG-->>U: Da doi thumbnail
+
+    Note over U,DB: Xoa anh
+    U->>PG: Bam Xoa anh
+    PG->>API: DELETE /api/poi/image/{imageId}
+    API->>DB: Lay ImageUrl
+    API->>FS: Xoa file vat ly tren disk
+    API->>DB: DELETE POIImages WHERE id=imageId
+    PG-->>U: Da xoa anh
         </pre></div>
       </div>
     </div>
 
   </div><!-- end panel-seq -->
 
-  <!-- ═══ STATE PANEL ═══ -->
+  <!-- ═══════════════════════════════════════
+       STATE PANEL
+  ═══════════════════════════════════════ -->
   <div id="panel-state" class="diag-panel">
 
-    <!-- ST1 -->
     <div class="acc-item">
       <div class="acc-header open" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num" style="background:#059669">ST1</div>
-          <div><div class="acc-title">Trạng thái POI</div><div class="acc-subtitle">PENDING → APPROVED / REJECTED — vòng đời quản lý nội dung</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">Trạng thái POI — Vòng đời quản lý nội dung</div><div class="acc-subtitle">PENDING → APPROVED / REJECTED — Owner sửa → về PENDING lại</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body open">
         <div class="mermaid-wrap"><pre class="mermaid">
 stateDiagram-v2
-    [*] --> PENDING : Owner tao POI moi
+    [*] --> PENDING : Owner tao POI moi (POST /api/poi)
 
-    PENDING --> APPROVED : Admin duyet
+    PENDING --> APPROVED : Admin duyet (PUT approve)
+    PENDING --> REJECTED : Admin tu choi + ly do (PUT reject)
 
-    PENDING --> REJECTED : Admin tu choi + ly do
+    APPROVED --> PENDING : Owner sua POI (PUT, X-Role=OWNER)
+    APPROVED --> REJECTED : Admin rut duyet (PUT reject)
 
-    APPROVED --> PENDING : Owner sua POI
-
-    APPROVED --> REJECTED : Admin rut duyet
-
-    REJECTED --> APPROVED : Admin duyet lai
-
-    REJECTED --> [*] : Admin xoa hang loat
+    REJECTED --> APPROVED : Admin duyet lai (PUT approve)
+    REJECTED --> [*] : Admin xoa hang loat (DELETE /api/poi/rejected)
+    APPROVED --> [*] : Admin xoa don le (DELETE /api/poi/{id})
 
     note right of APPROVED
-        App chi tra APPROVED
+        App chi hien APPROVED
         Hien tren ban do Mobile
-        Moi co the them Audio
+        Moi co the them Audio (1 audio/POI)
+        Tinh vao Top POI tu History
     end note
 
     note right of PENDING
         An tren Mobile App
-        Badge so tren sidebar (PendingCountFilter)
-        Owner biet dang cho duyet
+        Badge so PENDING tren sidebar CMS
+        Owner thay: Dang cho duyet
     end note
 
     note right of REJECTED
         An tren App
-        Owner thay ly do tu choi
+        Owner thay RejectReason
         Admin co the duyet lai
+        Delete /rejected xoa hang loat
     end note
         </pre></div>
       </div>
     </div>
 
-    <!-- ST2 -->
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num" style="background:#059669">ST2</div>
-          <div><div class="acc-title">Trạng thái phát Audio — AudioPlaybackService (Mobile)</div><div class="acc-subtitle">Idle → Playing → Paused → Stopped → ghi History khi OnFinished</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">Trạng thái Audio Playback — AudioPlaybackService Singleton</div><div class="acc-subtitle">Idle → Loading → Playing → Paused → Stopped → ghi History khi OnTtsFinished</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
 stateDiagram-v2
-    [*] --> Idle : App khoi dong / Stop() duoc goi
+    [*] --> Idle : App khoi dong / StopAsync() xong
 
-    Idle --> Loading : PlayAsync(poi) duoc goi
-    note right of Loading
-        1. Kiem tra neu cung POI dang Playing -> return
-        2. Neu cung POI, cung lang, dang Paused -> Resume
-        3. Neu khac -> Stop POI cu, bat dau moi
-    end note
+    Idle --> Loading : PlayAsync(poi) - POI moi
+    Loading --> Fetching : Online: GET /api/poi/{id} refresh script
+    Fetching --> TextReady : Scripts cap nhat
+    Loading --> TextReady : Offline: dung script cache
 
-    Loading --> Fetching : Online: GET /api/poi/{id}
-    Fetching --> TextReady : ScriptVi/En/Ja/Zh cap nhat
-    Fetching --> TextReady : Offline: dung script co san
-
-    Loading --> TextReady : Offline / cung ngon ngu: LoadText / ForceLoadText
-
-    TextReady --> Playing : StartSpeakingAsync: IsPlaying=true, poi.IsPlaying=true, PlaybackStateChanged
+    TextReady --> Playing : StartSpeakingAsync - IsPlaying=true, PlaybackStateChanged
 
     state Playing {
-        [*] --> SpeakAsync
-        SpeakAsync --> SpeakingNative : Android TextToSpeech speak theo sentence
-        SpeakingNative --> OnProgress : callback current/total cau
-        OnProgress --> SpeakingNative : cau tiep theo
-        SpeakingNative --> OnFinished : ket thuc tat ca cau
+        [*] --> Speaking
+        Speaking --> OnProgress : Android: callback moi cau
+        OnProgress --> Speaking : cau tiep theo
+        Speaking --> OnFinished : het toan bo text
     }
 
-    Playing --> Paused : Pause() - ttsToken.Cancel, TTS.Pause, poi.IsPlaying=false
-    Paused --> Playing : PlayAsync cung POI + cung lang -> StartSpeakingAsync (resume)
-    Paused --> Idle : Stop() - ttsToken.Cancel, TTS.Stop, CurrentPlayingPoi=null
+    Playing --> Paused : Pause() - Stop+giu Elapsed, StartPauseTimeout(120s)
+    Paused --> Playing : PlayAsync cung POI cung lang - Resume, cong don Elapsed
+    Paused --> Idle : Timeout 120s hoac StopAsync()
 
-    Playing --> Idle : Stop() duoc goi tu ngoai
-    Playing --> HistorySaved : OnFinished callback (TTS ket thuc tu nhien)
+    Playing --> Idle : StopAsync() tu ngoai
+    Playing --> HistorySaved : OnTtsFinished - phat xong tu nhien
 
     state HistorySaved {
         [*] --> AddAsync
-        AddAsync --> PostAPI : IsConnected = true
-        AddAsync --> SQLiteQueue : IsConnected = false
-        PostAPI --> Done : POST /api/history (kiem tra Role=CUSTOMER)
-        SQLiteQueue --> Done : PendingHistory, sync khi co mang
+        AddAsync --> Skip : userId=0 (Guest)
+        AddAsync --> PostAPI : IsConnected=true
+        AddAsync --> SQLiteQueue : IsConnected=false
+        PostAPI --> Done
+        SQLiteQueue --> Done : sync khi co mang
         Done --> [*]
     }
 
-    HistorySaved --> Idle : IsPlaying=false, poi.IsPlaying=false, PlaybackStateChanged
+    HistorySaved --> Idle : IsPlaying=false, PlaybackStateChanged
 
     note right of Playing
+        _listenStopwatch.Start()
+        _uiTimer tick 1s
+        poi.AudioProgress cap nhat
         PlaybackStateChanged.Invoke()
-        UI lang nghe: waveform animation
-        lblAudioStatus = Dang phat am thanh
-        AudioProgress = current/total
     end note
-
     note right of Paused
-        poi.IsPlaying = false
-        IsPlaying = false
-        CurrentPlayingPoi giu nguyen
+        Elapsed giu nguyen (cong tiep khi Resume)
+        PauseTimeout 120s -> auto Stop
+        poi.IsPlaying=false
     end note
         </pre></div>
       </div>
     </div>
 
-</div><!-- end panel-state -->
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#059669">ST3</div>
+          <div><div class="acc-title">Trạng thái kết nối mạng — ConnectivityService + Offline fallback</div><div class="acc-subtitle">Online → Offline → Online lại → SyncPendingHistories</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+stateDiagram-v2
+    [*] --> CheckingNetwork : App khoi dong
 
-  <!-- ═══ CLASS PANEL ═══ -->
+    CheckingNetwork --> Online : Connectivity.NetworkAccess=Internet AND CanReachApiAsync=true
+    CheckingNetwork --> Offline : Khong co mang hoac server khong dat
+
+    Online --> FetchFromServer : GetPOI / GetTours / GetHistory
+    FetchFromServer --> CacheToSQLite : SavePOIsAsync / SaveToursAsync
+    CacheToSQLite --> Online : Cache cap nhat
+
+    Online --> SyncPending : SaveHistory -> SyncPendingHistoriesAsync
+    SyncPending --> Online : Tat ca pending da sync
+
+    Online --> Offline : Mat mang dot ngot
+
+    Offline --> LoadFromSQLite : GetCachedPOIsAsync / GetCachedToursAsync
+    LoadFromSQLite --> Offline : Du lieu tu cache (hoac seed JSON)
+
+    Offline --> QueueHistory : SaveHistory -> AddPendingHistoryAsync
+    QueueHistory --> Offline : Luu PendingHistory (Synced=false)
+
+    Offline --> Online : Mang tro lai
+    Online --> SyncPending : Chay SyncPendingHistoriesAsync tu dong
+
+    note right of Online
+        ApiService.ApiConfig.BaseUrl:
+        Emulator: 10.0.2.2:5266
+        Thiet bi that: 192.168.1.25:5266
+    end note
+    note right of Offline
+        Seed JSON: seed_pois.json, seed_tours.json
+        SQLite: tourguide_local.db3
+        PendingHistory queue
+    end note
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#059669">ST4</div>
+          <div><div class="acc-title">Trạng thái Tour trên Mobile App</div><div class="acc-subtitle">No Tour → Tour Selected → Tour Active → GPS Auto-play → Tour Cleared</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+stateDiagram-v2
+    [*] --> NoTour : App khoi dong, MapViewModel.ActiveTour=null
+
+    NoTour --> TourSelected : SelectTourCommand(tour) hoac ApplyTourAsync(tour)
+    NoTour --> NoTour : ShowAllPOIs: setPOIs(allPOIs)
+
+    TourSelected --> TourActive : StartTourCommand - Alert chao mung
+    TourSelected --> NoTour : SelectTourCommand(null) hoac chip "Tat ca"
+
+    TourActive --> GpsTracking : TrackUserLocationAsync loop 3s
+    GpsTracking --> AutoPlay : CheckNearbyPOI: dist <= poi.Radius AND chua auto
+    AutoPlay --> GpsTracking : AudioPlaybackService.PlayAsync(poi)
+
+    GpsTracking --> TourActive : Tiep tuc theo doi GPS
+    TourActive --> NoTour : SelectTourCommand(null) hoac thoat map
+
+    note right of TourSelected
+        ActiveTour != null
+        RefreshNearbyOrder: chi POI trong tour
+        Map: setPOIs(tourPois)
+        flyTo(firstPOI, zoom=15)
+        Bottom sheet: ten tour
+    end note
+    note right of GpsTracking
+        autoPlayedIds tracking
+        dist > radius*2 -> remove ID (reset)
+        Haversine distance every 3s
+    end note
+        </pre></div>
+      </div>
+    </div>
+
+  </div><!-- end panel-state -->
+
+  <!-- ═══════════════════════════════════════
+       CLASS PANEL
+  ═══════════════════════════════════════ -->
   <div id="panel-class" class="diag-panel">
+
     <div class="acc-item">
       <div class="acc-header open" onclick="toggleAcc(this)">
         <div class="acc-header-left">
           <div class="acc-num" style="background:#0ea5e9">CD</div>
-          <div><div class="acc-title">Class Diagram — Toàn hệ thống TourGuide</div><div class="acc-subtitle">Models, Services, ViewModels và quan hệ giữa các layer</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div><div class="acc-title">Class Diagram — Toàn hệ thống TourGuide (3 Project)</div><div class="acc-subtitle">Models API + Models App + Services + ViewModels + Controllers — quan hệ đầy đủ</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body open">
         <div class="mermaid-wrap"><pre class="mermaid">
 classDiagram
-    %% ── MODELS (MAUI App) ───────────────────────────────────────────────────
-    class POI {
+    %% ── API MODELS (SQL Server) ──────────────────────────────────────────────
+    class POI_API {
+        +int Id
+        +string Name
+        +string Description
+        +string Address
+        +string Phone
+        +double Latitude
+        +double Longitude
+        +int Radius
+        +int OwnerId
+        +string Status [PENDING/APPROVED/REJECTED]
+        +string RejectReason
+        +string OwnerName [NotMapped]
+        +string ImageUrl [NotMapped]
+    }
+    class Audio {
+        +int Id
+        +int PoiId
+        +string vi
+        +string en
+        +string ja
+        +string zh
+        +POI_API POI [JsonIgnore]
+    }
+    class History {
+        +int Id
+        +int PoiId
+        +int UserId
+        +DateTime PlayTime
+        +int ListenDuration
+        +POI_API POI [JsonIgnore]
+    }
+    class User {
+        +int Id
+        +string Username
+        +string Name
+        +string Email
+        +string Phone
+        +string PasswordHash
+        +string Role [ADMIN/OWNER/CUSTOMER]
+    }
+    class Tour_API {
+        +int Id
+        +string Name
+        +string Description
+        +string ThumbnailUrl
+        +string Status [PUBLISHED/DRAFT]
+        +int CreatedBy
+        +DateTime CreatedAt
+    }
+    class TourPOI {
+        +int Id
+        +int TourId
+        +int PoiId
+        +int OrderIndex
+    }
+    class POIImage {
+        +int Id
+        +int PoiId
+        +string ImageUrl
+        +bool IsThumbnail
+    }
+
+    POI_API "1" --> "*" Audio : has (cascade delete)
+    POI_API "1" --> "*" History : has (cascade delete)
+    POI_API "1" --> "*" POIImage : has
+    Tour_API "1" --> "*" TourPOI : contains
+    POI_API "1" --> "*" TourPOI : referenced by
+    User "1" --> "*" History : creates
+
+    %% ── APP MODELS (MAUI) ────────────────────────────────────────────────────
+    class POI_App {
         +int Id
         +string Name
         +string Description
@@ -2061,13 +2266,12 @@ classDiagram
         +string ScriptJa
         +string ScriptZh
         +List~string~ Images
-        +bool IsPlaying
-        +double AudioProgress
+        +bool IsPlaying [ObservableProperty]
+        +double AudioProgress [ObservableProperty]
         +string AudioDuration
         +string IndexLabel
         +string DistanceText
-        +List~string~ FullImages
-        +string MainImage
+        +string MainImage [computed]
     }
     class UserDto {
         +int Id
@@ -2082,61 +2286,63 @@ classDiagram
         +string PoiName
         +string PoiImage
         +DateTime PlayTime
+        +int ListenDuration
     }
-    class CachedPOI {
+    class Tour_App {
         +int Id
         +string Name
-        +string ScriptVi/En/Ja/Zh
-        +string ImagesJson
-        +DateTime CachedAt
-    }
-    class PendingHistory {
-        +int Id
-        +int PoiId
-        +int UserId
-        +DateTime PlayTime
-        +bool Synced
+        +string Description
+        +string ThumbnailUrl
+        +string Status
+        +List~POI_App~ POIs
     }
 
     %% ── SERVICES ────────────────────────────────────────────────────────────
     class ApiService {
+        +BaseUrl string [static: emulator/device]
         +GetPOI() Task~List~POI~~
         +GetPOIById(id) Task~POI~
         +GetTopPOI() Task~List~POI~~
         +GetPoiCount() Task~int~
         +GetAudioCount() Task~int~
-        +SaveHistory(poiId, userId)
+        +GetTours() Task~List~Tour~~
+        +GetTourById(id) Task~Tour~
+        +SaveHistory(poiId, userId, dur)
         +GetHistory(userId) Task~List~HistoryDto~~
         +SyncPendingHistoriesAsync(userId)
-        +Login(username, password) Task~UserDto~
-        +Register(u,n,e,p) Task~UserDto~
+        +Login(u, p) Task~UserDto~
+        +Register(u, n, e, p) Task~UserDto~
         +UpdateProfile(userId, name, phone) Task~bool~
-        -BaseUrl string
     }
     class AuthService {
-        +IsLoggedIn bool$
-        +Username string$
-        +Name string$
-        +Email string$
-        +Phone string$
-        +AvatarLetter string$
-        +LoginAsync(u,p) Task~bool~$
-        +RegisterAsync(u,n,e,p) Task~bool~$
-        +UpdateProfileAsync(n,ph) Task~bool~$
+        +IsLoggedIn bool$ [Preferences]
+        +Username string$ [Preferences]
+        +Name string$ [Preferences]
+        +Email string$ [Preferences]
+        +Phone string$ [Preferences]
+        +AvatarLetter string$ [computed]
+        +LoginAsync(u, p) Task~bool~$
+        +RegisterAsync(u, n, e, p) Task~bool~$
+        +UpdateProfileAsync(n, ph) Task~bool~$
         +LoginOfflineAsGuest()$
         +Logout()$
     }
     class AudioPlaybackService {
-        +Instance AudioPlaybackService$
+        +Instance AudioPlaybackService$ [Singleton]
         +CurrentPlayingPoi POI
         +IsPlaying bool
+        +ListenSeconds int [Stopwatch]
         +event PlaybackStateChanged Action
+        +event ListenSecondsChanged Action~int~
         +PlayAsync(poi) Task
         +Pause()
         +Stop()
+        +StopAsync() Task
         -StartSpeakingAsync(poi) Task
+        -CheckAndRecordHistory(poi)
+        -StartPauseTimeout()
         -OnTtsFinished()
-        -OnTtsProgress(current, total)
+        -OnTtsProgress(cur, total)
     }
     class TextToSpeechService {
         +IsFinished bool
@@ -2148,349 +2354,568 @@ classDiagram
         +SpeakAsync(token) Task
         +Pause()
         +Stop()
+        -SpeakNativeAndroidAsync(lang, token) [partial Android]
+        -SpeakMauiAsync(lang, token) [iOS/Windows fallback]
+        -ResolveLocaleAsync(lang, locales) Task~Locale~
     }
     class LocalDbService {
-        +Instance LocalDbService$
+        +Instance LocalDbService$ [Singleton]
         +InitAsync()
         +SavePOIsAsync(pois)
         +GetCachedPOIsAsync() Task~List~POI~~
         +UpdateSinglePOIAsync(poi)
-        +AddPendingHistoryAsync(poiId, userId)
-        +GetPendingHistoriesAsync() Task~List~PendingHistory~~
+        +SaveToursAsync(tours)
+        +GetCachedToursAsync() Task~List~Tour~~
+        +AddPendingHistoryAsync(poiId, userId, dur)
+        +GetPendingHistoriesAsync() Task~List~
         +MarkHistorySyncedAsync(id)
         +CleanSyncedHistoriesAsync()
+        -SeedDataFromJsonAsync() [seed_pois.json]
+        -SeedToursFromJsonAsync() [seed_tours.json]
     }
     class HistoryStore {
-        +event OnItemAdded Action~HistoryDto~$
-        +AddAsync(poi) Task$
-        +LoadFromApiAsync() Task$
-        +GetAll() List~HistoryDto~$
-        +Clear()$
+        +event OnItemAdded Action~HistoryItem~$ [static]
+        +AddAsync(poi, dur) Task$ [static]
+        +LoadFromApiAsync() Task$ [static]
+        +GetAll() List~HistoryItem~$ [static]
+        +Clear()$ [static]
+        -_items List~HistoryItem~ [lock]
     }
     class SettingService {
-        +Instance SettingService$
-        +Language string
-        +AutoPlay bool
-        +GpsEnabled bool
-        +LanguageDisplayName string
-        +SupportedLanguages Dictionary$
+        +Instance SettingService$ [Singleton]
+        +Language string [Preferences]
+        +AutoPlay bool [Preferences]
+        +GpsEnabled bool [Preferences]
+        +LanguageDisplayName string [computed]
+        +SupportedLanguages Dictionary$ [vi/en/ja/zh]
     }
     class ConnectivityService {
-        +IsConnected bool$
+        +IsConnected bool$ [NetworkAccess]
         +CanReachApiAsync() Task~bool~$
     }
     class LocationService {
         +GetCurrentLocationAsync() Task~Location~
     }
     class MapService {
-        +BuildLeafletHtml() string
+        +BuildLeafletHtml() string [Leaflet + OSRM]
     }
-    class SessionService {
-        +CurrentUser UserDto$
+    class DistanceUtils {
+        +GetDistance(lat1,lon1,lat2,lon2) double$ [Haversine]
+        +UpdatePoiDistance(poi,lat,lon) double$
+    }
+    class LanguageUtils {
+        +GetScript(poi, lang) string$ [vi/en/ja/zh]
     }
 
     %% ── VIEWMODELS ──────────────────────────────────────────────────────────
-    class MapViewModel {
-        +NearbyPOI ObservableCollection~POI~
-        +MapHtml string
-        +EvalJs Func~string,Task~
-        +Command PlayAudioCommand
-        +Command PauseAudioCommand
-        +Command GoToDetailCommand
-        +Command SelectRouteDestCommand
-        +event POIUpdated Action
-        +PushMapDataAsync() Task
-        +SearchPOI(query) List~POI~
-        +RefreshDistances()
-        +GetCurrentLocationFastAsync() Task
-        -TrackUserLocationAsync() Task
-        -CheckNearbyPOI(lat, lon)
-        -RefreshNearbyOrder()
-    }
     class HomeViewModel {
         +TopPOIs ObservableCollection~POI~
         +AllPOIs ObservableCollection~POI~
-        +PoiCount int
-        +AudioCount int
+        +FeaturedTours ObservableCollection~Tour~
+        +TourCount int
         +NearestPoiName string
         +NearestPoiDist string
-        +Command GoToDetailCommand
-        +Command PlayAudioCommand
-        +Command PauseAudioCommand
+        +GoToDetailCommand ICommand
+        +PlayAudioCommand Command~POI~
+        +PauseAudioCommand Command~POI~
+        +GoToTourMapCommand Command~Tour~
         +LoadData() Task
     }
+    class MapViewModel {
+        +NearbyPOI ObservableCollection~POI~
+        +AllTours ObservableCollection~Tour~
+        +ActiveTour Tour
+        +IsTourSelected bool
+        +MapHtml string
+        +EvalJs Func~string,Task~
+        +event POIUpdated Action
+        +event ActiveTourChanged Action
+        +event TourSelected Action~Tour~
+        +PlayAudioCommand Command~POI~
+        +PauseAudioCommand Command~POI~
+        +GoToDetailCommand Command~POI~
+        +SelectRouteDestCommand Command~POI~
+        +SelectTourCommand Command~Tour~
+        +StartTourCommand Command
+        +PushMapDataAsync() Task
+        +SearchPOI(query) List~POI~
+        +ApplyTourAsync(tour) Task
+        +GetCurrentLocationFastAsync() Task
+        +RefreshDistances()
+        -InitAsync() Task
+        -TrackUserLocationAsync() Task
+        -CheckNearbyPOI(lat,lon)
+        -RefreshNearbyOrder()
+    }
     class HistoryViewModel {
-        +HistoryItems ObservableCollection~HistoryDto~
+        +HistoryGroups ObservableCollection~HistoryGroup~
+        +TotalListened int
+        +TotalDuration int [minutes]
+        +IsHistoryEmpty bool
+        +IsLoggedIn bool
+        +ClearHistoryCommand ICommand
+        +ReplayCommand ICommand
         +HandleItemAdded(item)
+        -Rebuild()
+        -DateLabel(date) string
     }
     class AccountViewModel {
-        +Name string
-        +Phone string
-        +Username string
-        +Email string
-        +StatusMessage string
-        +Command SaveProfileCommand
+        +Username string [ObservableProperty]
+        +Name string [ObservableProperty]
+        +Email string [ObservableProperty]
+        +Phone string [ObservableProperty]
+        +StatusMessage string [ObservableProperty]
+        +IsError bool [ObservableProperty]
+        +SaveProfileCommand IRelayCommand
     }
 
-    %% ── PAGES ───────────────────────────────────────────────────────────────
-    class LoginPage {
-        -_showingLogin bool
-        +OnLoginClicked()
-        +OnRegisterClicked()
-        +OnGuestLoginClicked()
-    }
-    class HomePage {
-        -_vm HomeViewModel
-        +OnScanQrClicked()
-        +OnMapButtonClicked()
-    }
-    class MapPage {
-        -viewModel MapViewModel
-        -currentDetailPoi POI
-        +ShowDetailCard(poi)
-        +OnRouteDestSelectedAsync(poi) Task
-        +OnWebViewNavigating()
-    }
-    class PlaceDetailPage {
-        -_currentPoi POI
-        -_bars BoxView[]
-        +Poi POI (QueryProperty)
-        +OnPlayTapped()
-        +OnPauseTapped()
-        +OnStopTapped()
-    }
-    class QrScannerPage {
-        -_isProcessingResult bool
-        -ScannedPoi POI
-        +OnBarcodesDetected()
-        +ProcessScannedId(id) Task
-        +OnDetailClicked()
-    }
-    class HistoryPage {
-        -_vm HistoryViewModel
-    }
-    class SettingsPage {
-        +OnLanguageTapped()
-        +OnProfileCardTapped()
-        +OnLogoutClicked()
-    }
-    class AccountPage {
-        -viewModel AccountViewModel
-    }
-
-    %% ── RELATIONS ───────────────────────────────────────────────────────────
-    ApiService --> LocalDbService : cache online→SQLite
-    ApiService --> ConnectivityService : kiem tra ket noi
-    AudioPlaybackService --> TextToSpeechService : speak
-    AudioPlaybackService --> ApiService : GetPOIById
-    AudioPlaybackService --> HistoryStore : AddAsync khi ket thuc
-    AudioPlaybackService --> SettingService : lay Language
-    AuthService --> ApiService : Login/Register/UpdateProfile
-    HistoryStore --> ApiService : GET/POST history
-    MapViewModel --> ApiService : GetPOI
-    MapViewModel --> LocationService : GPS
-    MapViewModel --> AudioPlaybackService : Play/Pause
-    MapViewModel --> HistoryStore : AddAsync
+    %% ── RELATIONSHIPS ────────────────────────────────────────────────────────
+    ApiService --> ConnectivityService : checks
+    ApiService --> LocalDbService : cache read/write
+    AuthService --> ApiService : uses
+    AudioPlaybackService --> ApiService : GetPOIById (refresh script)
+    AudioPlaybackService --> TextToSpeechService : delegates TTS
+    AudioPlaybackService --> HistoryStore : AddAsync
+    AudioPlaybackService --> SettingService : reads Language
+    HistoryStore --> ApiService : SaveHistory + GetHistory
+    HistoryStore --> LocalDbService : AddPendingHistoryAsync
+    MapViewModel --> ApiService : GetPOI, GetTours
+    MapViewModel --> LocationService : GetCurrentLocationAsync
+    MapViewModel --> AudioPlaybackService : PlayAsync, Pause
     MapViewModel --> SettingService : AutoPlay, GpsEnabled
-    MapViewModel --> MapService : BuildLeafletHtml
-    HomeViewModel --> ApiService : GetTopPOI, GetPOI
-    HomeViewModel --> AudioPlaybackService : Play/Pause
-    HistoryViewModel --> HistoryStore : Load + event
-    AccountViewModel --> AuthService : UpdateProfile
-    LoginPage --> AuthService : Login/Register/Guest
-    LoginPage --> ConnectivityService : CanReachApiAsync
-    HomePage --> HomeViewModel
-    HomePage ..> QrScannerPage : Navigation.PushAsync
-    MapPage --> MapViewModel
-    PlaceDetailPage --> AudioPlaybackService : Play/Pause/Stop
-    QrScannerPage --> ApiService : GetPOIById
-    QrScannerPage --> AudioPlaybackService : Play/Pause/Stop
-    SettingsPage --> AuthService : AvatarLetter, Logout
-    SettingsPage --> SettingService : Language
-    SettingsPage ..> AccountPage : Navigation.PushAsync
-    AccountPage --> AccountViewModel
-    HistoryPage --> HistoryViewModel
-    POI --> ApiService : FullImages (BaseUrl)
-    LocalDbService --> CachedPOI : SQLite table
-    LocalDbService --> PendingHistory : SQLite table</pre></div>
-      </div>
-    </div>
-  </div><!-- end panel-class -->
-
-  <!-- ═══ ACTIVITY PANEL ═══ -->
-  <div id="panel-activity" class="diag-panel">
-
-    <!-- ACT1 -->
-    <div class="acc-item">
-      <div class="acc-header open" onclick="toggleAcc(this)">
-        <div class="acc-header-left">
-          <div class="acc-num" style="background:#d97706">AC1</div>
-          <div><div class="acc-title">Quy trình nghiệp vụ Web CMS</div><div class="acc-subtitle">Login → Dashboard → POI/Audio/Approval/Users/Profile</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
-      </div>
-      <div class="acc-body open">
-        <div class="mermaid-wrap"><pre class="mermaid">
-flowchart TD
-    A([Mo Web CMS]) --> B{Co Session?}
-    B -- Khong --> C[GET /Auth]
-    C --> D{Xac thuc OK?}
-    D -- Sai hoac CUSTOMER --> C
-    D -- ADMIN hoac OWNER --> E[Set Session, Redirect /Index]
-    B -- Co --> E
-
-    E --> G{Chon chuc nang}
-
-    G -- Quan ly POI --> H[GET /Pois]
-    H --> I{Hanh dong?}
-    I -- Tao moi --> J[Form modal + Leaflet picker + upload anh]
-    J --> K{Role?}
-    K -- Admin --> L[Status=APPROVED]
-    K -- Owner --> M[Status=PENDING, cho duyet]
-    I -- Sua --> N[PUT /api/poi, Owner->PENDING]
-    I -- Xoa --> O[DELETE /api/poi cascade]
-
-    G -- Phe duyet POI --> P[GET /Approval, 3 tab]
-    P --> Q{Hanh dong?}
-    Q -- Duyet --> R[PUT /approve]
-    Q -- Tu choi --> S[PUT /reject + ly do]
-    Q -- Rut duyet --> T[PUT /reject]
-    Q -- Xoa hang loat --> U[DELETE /poi/rejected]
-
-    G -- Quan ly Audio --> V[GET /AudioManager]
-    V --> W[Nhap script, auto-translate, preview TTS]
-    W --> X{Luu?}
-    X -- Co --> Y[POST /api/audio]
-    X -- Sua --> Z[PUT /api/audio/id]
-
-    G -- Quan ly Users --> AA[GET /Users, tao/doi role/xoa]
-    G -- Ho so ca nhan --> AC[GET /Profile, PUT /api/users/id]
-    G -- Dang xuat --> AD[Session.Clear -> /Auth]
-
-    style L fill:#dcfce7,stroke:#059669
-    style M fill:#fef3c7,stroke:#d97706
+    MapViewModel --> DistanceUtils : Haversine
+    MapViewModel --> HistoryStore : LoadFromApiAsync
+    HomeViewModel --> ApiService : GetTopPOI, GetPOI, GetTours
+    HomeViewModel --> AudioPlaybackService : PlayAsync, Pause
+    HomeViewModel --> DistanceUtils : UpdatePoiDistance
+    HistoryViewModel --> HistoryStore : GetAll, Clear, LoadFromApiAsync
+    AccountViewModel --> AuthService : UpdateProfileAsync
+    AudioPlaybackService --> LanguageUtils : GetScript
         </pre></div>
       </div>
     </div>
 
-    <!-- ACT2 -->
+  </div><!-- end panel-class -->
+
+  <!-- ═══════════════════════════════════════
+       ACTIVITY PANEL
+  ═══════════════════════════════════════ -->
+  <div id="panel-activity" class="diag-panel">
+
+    <p style="color:var(--text2);font-size:.83rem;margin-bottom:1.2rem">
+      <strong style="color:var(--text)">📱 Mobile (5)</strong> &nbsp;·&nbsp;
+      <strong style="color:var(--text)">🌐 Web CMS (3)</strong>
+    </p>
+
+    <div class="acc-item">
+      <div class="acc-header open" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">A1</div>
+          <div><div class="acc-title">Luồng xác thực tổng thể (Mobile App)</div><div class="acc-subtitle">Khởi động → IsLoggedIn? → Login / Register / Guest → TabBar</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body open">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    START([App khoi dong]) --> CHECK{AuthService.IsLoggedIn?}
+    CHECK -->|true| SHELL[Vao AppShell - TabBar]
+    CHECK -->|false| LOGIN[Hien LoginPage]
+
+    LOGIN --> TAB{Chon tab}
+    TAB -->|Dang nhap| L1[Nhap username + password]
+    TAB -->|Dang ky| R1[Nhap username, ten, email, pw, confirm]
+    TAB -->|Dung thu| GUEST[LoginOfflineAsGuest: userId=0]
+
+    L1 --> LVAL{Validate}
+    LVAL -->|Sai| LERR[Hien loi, quay lai]
+    LERR --> L1
+    LVAL -->|OK| CONN1{CanReachApiAsync?}
+    CONN1 -->|Offline| LERR2[Loi: Dang offline]
+    LERR2 --> L1
+    CONN1 -->|Online| LAPI[POST /api/users/login]
+    LAPI --> LRES{Ket qua}
+    LRES -->|401 Role != CUSTOMER| LERR3[Loi: Chi CUSTOMER]
+    LRES -->|401 Sai thong tin| LERR4[Loi: Username/password sai]
+    LRES -->|200 OK| LSAVE[Luu Preferences: token, userId, name...]
+
+    R1 --> RVAL{Validate tat ca truong}
+    RVAL -->|Fail| RERR[Hien loi]
+    RERR --> R1
+    RVAL -->|OK| CONN2{CanReachApiAsync?}
+    CONN2 -->|Offline| RERR2[Loi: Dang offline]
+    RERR2 --> R1
+    CONN2 -->|Online| RAPI[POST /api/users/register]
+    RAPI --> RRES{Ket qua}
+    RRES -->|400 username trung| RERR3[Loi: Username da ton tai]
+    RRES -->|200 OK| RSAVE[Luu Preferences]
+
+    LSAVE --> SHELL
+    RSAVE --> SHELL
+    GUEST --> SHELL
+    LERR3 --> L1
+    LERR4 --> L1
+    RERR3 --> R1
+        </pre></div>
+      </div>
+    </div>
+
     <div class="acc-item">
       <div class="acc-header" onclick="toggleAcc(this)">
         <div class="acc-header-left">
-          <div class="acc-num" style="background:#d97706">AC2</div>
-          <div><div class="acc-title">Quy trình sử dụng Mobile App (CUSTOMER)</div><div class="acc-subtitle">Login/Guest → TabBar → Geofencing → TTS → History → Account</div></div>
-        </div>
-        <span class="acc-chevron">▼</span>
+          <div class="acc-num" style="background:#d97706">A2</div>
+          <div><div class="acc-title">Luồng phát TTS đầy đủ — AudioPlaybackService</div><div class="acc-subtitle">PlayAsync → 3 nhánh → fetch script → TTS → Stopwatch → History → Pause timeout</div></div>
+        </div><span class="acc-chevron">▼</span>
       </div>
       <div class="acc-body">
         <div class="mermaid-wrap"><pre class="mermaid">
 flowchart TD
-    A([Mo TourGuideApp]) --> B{AuthService.IsLoggedIn?}
-    B -- Chua --> C[LoginPage]
-    C --> D{Chon}
-    D -- Dang nhap --> E[ConnectivityService.CanReachApiAsync]
-    E -- Online --> E2[POST /api/users/login - chi CUSTOMER]
-    E -- Offline --> E3[Bao loi offline]
-    D -- Dang ky --> F[ConnectivityService check + POST /api/users/register]
-    D -- Khach offline --> G[LoginOfflineAsGuest: UserId=0, token=offline_guest]
-    E2 --> H[Luu Preferences + SessionService.CurrentUser]
-    F --> H
-    G --> H
-    H --> K[AppShell TabBar 4 tab]
-    B -- Roi --> K
+    PLAY([PlayAsync poi duoc goi]) --> CHK1{CurrentPoi.Id == poi.Id\nAND IsPlaying?}
+    CHK1 -->|Yes| SKIP([return - khong lam gi])
+    CHK1 -->|No| CHK2{Cung POI + cung lang\n+ dang Paused?}
+    CHK2 -->|Yes - RESUME| CANCEL_T[Cancel PauseTimeout]
+    CANCEL_T --> SW_START[Stopwatch.Start - cong don]
+    SW_START --> TIMER_START[_uiTimer.Start]
+    TIMER_START --> SPEAK[TTS.SpeakAsync tu _charIndex]
 
-    K --> APP_INIT[App.xaml.cs: HistoryStore.LoadFromApiAsync
-+ SyncPendingHistoriesAsync]
-    APP_INIT --> K2{Tab}
+    CHK2 -->|No - PLAY MOI| STOP_OLD[StopAsync: chot lich su POI cu]
+    STOP_OLD --> RESET[Reset CurrentPoi, SW, flags]
+    RESET --> ONLINE{IsConnected?}
+    ONLINE -->|Yes| FETCH[GET /api/poi id - refresh script]
+    FETCH --> SCRIPT
+    ONLINE -->|No| SCRIPT[LanguageUtils.GetScript poi, lang]
+    SCRIPT --> LOAD[TTS.ForceLoadText finalText]
+    LOAD --> SW_START2[Stopwatch.Start]
+    SW_START2 --> TIMER2[_uiTimer.Start]
+    TIMER2 --> SPEAK
 
-    K2 -- Trang chu --> M[HomePage: LoadData]
-    M --> M1[GetTopPOI + GetPOI + GetPoiCount + AudioCount]
-    M --> M2[Geolocation.GetLastKnownLocation -> tinh khoang cach]
-    M --> M3{Bam POI?}
-    M3 -- GoToDetailCommand --> O[PlaceDetailPage]
-    M3 -- ScanQR --> QR[QrScannerPage]
-    O --> P[AudioPlaybackService.PlayAsync/Pause/Stop]
-    P --> P2[7-bar waveform animation]
-    P --> P3[OnTtsFinished -> HistoryStore.AddAsync]
-    QR --> QR2[BarcodeScanner detect https://poi:{id}]
-    QR2 --> QR3[GetPOIById -> PlayAsync tu dong]
-    QR3 --> QR4[Xem chi tiet -> PlaceDetailPage]
+    SPEAK --> PROG[OnProgress: AudioProgress + AudioDuration]
+    PROG --> TICK{_uiTimer tick moi 1s}
+    TICK --> THRESH{Elapsed >= 5s\nAND !_historyRecorded?}
+    THRESH -->|Yes| MARK[_listenThresholdReached=true]
+    THRESH -->|No| TICK
+    MARK --> TICK
 
-    K2 -- Ban do --> R[MapPage: OnAppearing poll WebView ready]
-    R --> R0[MapViewModel.InitAsync: cho login, load POI+GPS song song]
-    R0 --> R1[PushMapDataAsync: setUserLocation + flyTo + setPOIs]
-    R --> S{Tuong tac}
-    S -- Tap marker --> T[URL scheme tourguide://poi/{id} -> ShowDetailCard]
-    T --> T1[Play / Chi duong / Xem chi tiet]
-    T1 -- Chi duong --> U[GetCurrentLocationFastAsync + drawRoute qua OSRM]
-    S -- Tim kiem --> V[SearchPOI: allPOIs.Where.OrderBy khoang cach]
-    S -- Bottom sheet --> W[NearbyPOI sort gan nhat]
-    S -- My location --> X[flyTo + RefreshDistances]
+    SPEAK --> FIN{Ket thuc tu nhien\nOnTtsFinished}
+    FIN -->|Phat het| HIST_W[Ghi History neu chua ghi]
+    FIN -->|Dang phat| PROG
 
-    R --> GPS[TrackUserLocationAsync loop 3s]
-    GPS --> GPS1[GetCurrentLocationAsync]
-    GPS1 --> GPS2[RefreshNearbyOrder: sap xep theo khoang cach]
-    GPS2 --> GPS3{AutoPlay AND dist le= Radius AND chua play}
-    GPS3 -- Co --> GPS4[AudioPlaybackService.PlayAsync - geofence]
-    GPS4 --> GPS5[OnTtsFinished -> HistoryStore.AddAsync]
-    GPS3 -- Khong --> GPS
-    GPS5 --> GPS
+    PAUSE([Pause duoc goi]) --> SW_STOP[Stopwatch.Stop - giu Elapsed]
+    SW_STOP --> TTS_PAUSE[TTS.Pause + ttsToken.Cancel]
+    TTS_PAUSE --> STATE_PAUSE[IsPlaying=false, PlaybackStateChanged]
+    STATE_PAUSE --> TIMEOUT[StartPauseTimeout 120s]
 
-    K2 -- Lich su --> LH[HistoryPage: new HistoryViewModel]
-    LH --> LH1[HistoryStore.LoadFromApiAsync]
-    LH --> LH2[Subscribe OnItemAdded real-time]
-    LH --> LH3[OnDisappearing: Unsubscribe]
+    TIMEOUT --> RESUME_CHK{Resume trong 120s?}
+    RESUME_CHK -->|Yes| CANCEL_T
+    RESUME_CHK -->|No - Timeout| STOP_FINAL[StopAsync - ghi History]
 
-    K2 -- Cai dat --> SET[SettingsPage: RefreshProfile]
-    SET --> SET1{Chon}
-    SET1 -- Ngon ngu --> SET2[DisplayActionSheet -> SettingService.Language]
-    SET1 -- Ho so --> SET3[AccountPage: sua Name + Phone]
-    SET3 --> SET4[PUT /api/users/customer/{id}]
-    SET1 -- Dang xuat --> SET5[DisplayAlert xac nhan -> AuthService.Logout]
-    SET5 --> C
+    STOP_FINAL --> HIST_W
+    HIST_W --> GUEST{userId <= 0?}
+    GUEST -->|Yes| DONE2([Skip - Guest Mode])
+    GUEST -->|No| HIST_API{IsConnected?}
+    HIST_API -->|Yes| POST_HIST[POST /api/history]
+    HIST_API -->|No| SQLITE_HIST[AddPendingHistoryAsync]
+    POST_HIST --> DONE([Xong])
+    SQLITE_HIST --> SYNC[Sync khi co mang]
+    SYNC --> DONE
+        </pre></div>
+      </div>
+    </div>
 
-    style E2 fill:#dcfce7,stroke:#059669
-    style P3 fill:#dcfce7,stroke:#059669
-    style GPS5 fill:#dcfce7,stroke:#059669
-    style G fill:#fef3c7,stroke:#d97706</pre></div>
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">A3</div>
+          <div><div class="acc-title">Luồng GPS Geofencing + Auto-play (MapViewModel)</div><div class="acc-subtitle">TrackUserLocationAsync loop 3s → CheckNearbyPOI Haversine → AutoPlay → HistoryStore</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    INIT([MapViewModel.InitAsync]) --> WAIT{IsLoggedIn?}
+    WAIT -->|No| DELAY1[Delay 1500ms]
+    DELAY1 --> WAIT
+    WAIT -->|Yes| PARALLEL[Task.WhenAll]
+    PARALLEL --> LOC[GetCurrentLocationAsync]
+    PARALLEL --> POIS[GetPOI - online/offline]
+    PARALLEL --> TOURS[GetTours - online/offline]
+    LOC & POIS & TOURS --> INIT2[allPOIs, AllTours, userLat/Lon]
+    INIT2 --> REFRESH[RefreshNearbyOrder: sort Haversine + IndexLabel]
+    REFRESH --> PUSH[PushMapDataAsync: setUserLocation + setPOIs]
+    PUSH --> LOOP([TrackUserLocationAsync Loop])
+
+    LOOP --> LOGIN{IsLoggedIn?}
+    LOGIN -->|No| STOP_ALL[StopAll, Delay 3s]
+    STOP_ALL --> LOOP
+    LOGIN -->|Yes| GPS{GpsEnabled?}
+    GPS -->|No| DELAY3[Delay 3s]
+    DELAY3 --> LOOP
+    GPS -->|Yes| GET_LOC[GetCurrentLocationAsync Best 5s]
+    GET_LOC --> UPDATE[Update userLat/Lon]
+    UPDATE --> JS[EvalJs setUserLocation lat,lon]
+    JS --> REFRESH2[RefreshNearbyOrder]
+    REFRESH2 --> AUTOPLAY{AutoPlay setting?}
+    AUTOPLAY -->|Off| DELAY4[Delay 3s]
+    DELAY4 --> LOOP
+
+    AUTOPLAY -->|On| FOREACH[foreach poi in NearbyPOI]
+    FOREACH --> DIST[Haversine distance user-poi]
+    DIST --> RESET_CHK{dist > poi.Radius*2\nAND trong autoPlayedIds?}
+    RESET_CHK -->|Yes| REMOVE[autoPlayedIds.Remove poi.Id]
+    REMOVE --> PLAY_CHK
+    RESET_CHK -->|No| PLAY_CHK{dist <= poi.Radius\nAND chua auto-play\nAND IsPlaying=false?}
+    PLAY_CHK -->|Yes| CANDIDATE[Candidate: neu dist < minDist]
+    PLAY_CHK -->|No| NEXT_POI[POI tiep theo]
+    CANDIDATE --> NEXT_POI
+    NEXT_POI --> FOREACH
+
+    FOREACH --> FOUND{closestPoi != null?}
+    FOUND -->|No| DELAY5[Delay 3s]
+    DELAY5 --> LOOP
+    FOUND -->|Yes| ADD_ID[autoPlayedIds.Add poi.Id]
+    ADD_ID --> APS[AudioPlaybackService.PlayAsync closestPoi]
+    APS --> DELAY6[Delay 3s]
+    DELAY6 --> LOOP
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">A4</div>
+          <div><div class="acc-title">Luồng quét QR và xử lý POI</div><div class="acc-subtitle">Camera permission → BarcodeScanner → parse https://poi:{id} → GetPOIById → Play + ResultCard</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    OPEN([Mo QrScannerPage]) --> ANIM[StartScanningAnimation: dong quet loop]
+    ANIM --> PERM{Camera permission?}
+    PERM -->|Chua cap| REQ[RequestAsync Camera]
+    REQ --> GRANTED{Chap nhan?}
+    GRANTED -->|No| ALERT[DisplayAlert Can quyen]
+    ALERT --> BACK[Navigation.PopAsync]
+    GRANTED -->|Yes| SCAN[BarcodeReader.IsScanning=true]
+    PERM -->|Da co| SCAN
+
+    SCAN --> DETECT{OnBarcodesDetected}
+    DETECT -->|_isProcessingResult=true| IGNORE[return - bo qua]
+    DETECT -->|barcode empty| IGNORE
+    IGNORE --> SCAN
+    DETECT -->|Co ma QR| CHK_FMT{code.StartsWith\nhttps://poi:?}
+    CHK_FMT -->|Sai| SCAN
+    CHK_FMT -->|Dung| PROC[_isProcessingResult=true]
+    PROC --> PARSE[Parse id tu code]
+    PARSE --> TRYPARSE{int.TryParse OK?}
+    TRYPARSE -->|Fail| RESET1[ResetScanner]
+    RESET1 --> SCAN
+    TRYPARSE -->|OK| API[ApiService.GetPOIById id]
+    API --> FOUND{POI found?}
+    FOUND -->|No| DISP[DisplayAlert Khong tim thay]
+    DISP --> RESET2[ResetScanner]
+    RESET2 --> SCAN
+    FOUND -->|Yes| SHOW[ScannedPoi=poi, ShowResultCard]
+    SHOW --> PLAY[AudioPlaybackService.PlayAsync poi]
+    PLAY --> WAIT_ACTION{Nguoi dung chon}
+    WAIT_ACTION -->|Play/Pause/Stop| AUDIO_CTRL[Dieu khien am thanh]
+    AUDIO_CTRL --> WAIT_ACTION
+    WAIT_ACTION -->|Xem chi tiet| DETAIL[Shell.GoToAsync placeDetail poi]
+    WAIT_ACTION -->|Dong ket qua| STOP_CLOSE[APS.Stop + HideResultCard]
+    STOP_CLOSE --> RESET3[ResetScanner]
+    RESET3 --> SCAN
+    WAIT_ACTION -->|Back| STOP_BACK[APS.Stop + Navigation.PopAsync]
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">A5</div>
+          <div><div class="acc-title">Luồng Offline Cache + Sync (LocalDbService)</div><div class="acc-subtitle">InitAsync → Seed JSON → GetPOI online/offline → PendingHistory queue → Sync khi có mạng</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    INIT([LocalDbService.InitAsync]) --> DB_CHK{_db != null?}
+    DB_CHK -->|Yes| DONE_INIT([return])
+    DB_CHK -->|No| CREATE[Tao SQLiteAsyncConnection]
+    CREATE --> TABLES[CreateTableAsync: CachedPOI + CachedTour + PendingHistory]
+    TABLES --> SEED_CHK{Count CachedPOI == 0?}
+    SEED_CHK -->|Yes| SEED_POI[SeedDataFromJsonAsync: doc seed_pois.json]
+    SEED_CHK -->|No| TOUR_CHK
+    SEED_POI --> TOUR_CHK{Count CachedTour == 0?}
+    TOUR_CHK -->|Yes| SEED_TOUR[SeedToursFromJsonAsync: doc seed_tours.json]
+    TOUR_CHK -->|No| DONE_INIT
+    SEED_TOUR --> DONE_INIT
+
+    GET_POI([ApiService.GetPOI duoc goi]) --> CONN{IsConnected?}
+    CONN -->|Yes| SERVER[GET /api/POI - chi APPROVED]
+    SERVER --> OK{200 OK AND pois.Count > 0?}
+    OK -->|Yes| CACHE[SavePOIsAsync: DeleteAll + InsertAll CachedPOI]
+    CACHE --> RETURN_SERVER([tra POI tu server])
+    OK -->|No| OFFLINE_FB
+    CONN -->|No| OFFLINE_FB[GetCachedPOIsAsync]
+    OFFLINE_FB --> RETURN_CACHE([tra POI tu SQLite])
+
+    SAVE_HIST([SaveHistory duoc goi]) --> CONN2{IsConnected?}
+    CONN2 -->|Yes| POST[POST /api/history]
+    POST --> SYNC_PEND[SyncPendingHistoriesAsync]
+    SYNC_PEND --> GET_PEND[GetPendingHistoriesAsync: Synced=false]
+    GET_PEND --> LOOP_SYNC[foreach pending item]
+    LOOP_SYNC --> POST_ITEM[POST /api/history item]
+    POST_ITEM --> MARK[MarkHistorySyncedAsync]
+    MARK --> LOOP_SYNC
+    LOOP_SYNC --> CLEAN[CleanSyncedHistoriesAsync: DELETE WHERE Synced=true]
+    CLEAN --> DONE_SYNC([Sync xong])
+    CONN2 -->|No| QUEUE[AddPendingHistoryAsync: INSERT PendingHistory]
+    QUEUE --> DONE_Q([Cho mang de sync])
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">A6</div>
+          <div><div class="acc-title">Luồng phê duyệt POI (Web CMS — Admin)</div><div class="acc-subtitle">Approval.cshtml → xem 3 tab → Approve/Reject/Revoke → App nhận POI mới</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    OPEN([Admin mo /Approval]) --> GET[GET /api/poi/all]
+    GET --> TABS[Hien 3 tab: PENDING - APPROVED - REJECTED]
+
+    TABS --> ACTION{Admin chon hanh dong}
+
+    ACTION -->|Xem PENDING| PEND_LIST[Danh sach POI cho duyet]
+    PEND_LIST --> DECIDE{Quyet dinh}
+    DECIDE -->|Duyet| APR[PUT /api/poi id/approve]
+    DECIDE -->|Tu choi| REJ_FORM[Nhap ly do tu choi]
+    REJ_FORM --> REJ[PUT /api/poi id/reject + reason]
+    APR --> DB_APR[DB: Status=APPROVED, RejectReason=null]
+    REJ --> DB_REJ[DB: Status=REJECTED, RejectReason=reason]
+    DB_APR --> NOTIFY_APP[Mobile App: next refresh thay POI moi]
+    DB_REJ --> NOTIFY_OWNER[Owner: thay Status=REJECTED + ly do]
+
+    ACTION -->|Xem APPROVED| APR_LIST[Danh sach da duyet]
+    APR_LIST --> RUT{Rut duyet?}
+    RUT -->|Yes| REVOKE[PUT /api/poi id/reject reason=Admin rut duyet]
+    REVOKE --> DB_REVOKE[DB: Status=REJECTED]
+    DB_REVOKE --> APP_REMOVE[Mobile App: POI bien mat]
+
+    ACTION -->|Xem REJECTED| REJ_LIST[Danh sach tu choi]
+    REJ_LIST --> REJ_ACTION{Hanh dong}
+    REJ_ACTION -->|Duyet lai| RE_APR[PUT /api/poi id/approve]
+    RE_APR --> DB_APR
+    REJ_ACTION -->|Xoa hang loat| DEL_ALL[DELETE /api/poi/rejected]
+    DEL_ALL --> DB_DEL_ALL[DB: DELETE tat ca REJECTED]
+    DB_DEL_ALL --> CLEAN([Don sach])
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">A7</div>
+          <div><div class="acc-title">Luồng quản lý Audio + Translate + Preview (Web CMS)</div><div class="acc-subtitle">Chọn POI APPROVED chưa có audio → nhập vi → Auto-translate en/ja/zh → Preview → Lưu</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    OPEN([Mo /AudioManager]) --> GET_AUDIO[GET /api/audio: tat ca audio + POI]
+    GET_AUDIO --> CALC[Tinh PoisWithoutAudio: APPROVED + chua co audio]
+    CALC --> SHOW[Hien bang audio + dropdown POI chua co]
+
+    SHOW --> ACTION{Hanh dong}
+
+    ACTION -->|Them moi| SEL[Chon POI tu dropdown]
+    SEL --> VI[Nhap script tieng Viet]
+    VI --> TRANS{Bam Auto-translate?}
+    TRANS -->|Yes| GT_EN[fetch Google Translate vi->en]
+    GT_EN --> GT_JA[fetch Google Translate vi->ja]
+    GT_JA --> GT_ZH[fetch Google Translate vi->zh]
+    GT_ZH --> FILL[Dien tu dong 3 field en/ja/zh]
+    TRANS -->|No| MANUAL[Nhap thu cong en/ja/zh]
+    FILL --> PREVIEW
+    MANUAL --> PREVIEW{Bam Preview?}
+    PREVIEW -->|Yes| TTS_BROWSER[window.speechSynthesis.speak text, lang]
+    TTS_BROWSER --> PREVIEW
+    PREVIEW -->|Save| VAL{Validate}
+    VAL -->|POI chua APPROVED| ERR1[Loi: POI chua duoc duyet]
+    VAL -->|Da co audio| ERR2[Loi: Da co Audio cho POI nay]
+    VAL -->|OK| POST[POST /api/audio poiId,vi,en,ja,zh]
+    POST --> SUCCESS([Them thanh cong])
+
+    ACTION -->|Sua audio| EDIT[Load audio vao form]
+    EDIT --> EDIT_SCRIPT[Sua script vi/en/ja/zh]
+    EDIT_SCRIPT --> PUT[PUT /api/audio id]
+    PUT --> UPDATE([Cap nhat thanh cong])
+
+    ACTION -->|Xoa audio| DEL[DELETE /api/audio id]
+    DEL --> DELETE([Da xoa])
+        </pre></div>
+      </div>
+    </div>
+
+    <div class="acc-item">
+      <div class="acc-header" onclick="toggleAcc(this)">
+        <div class="acc-header-left">
+          <div class="acc-num" style="background:#d97706">A8</div>
+          <div><div class="acc-title">Luồng tạo / quản lý Tour và gán POI có thứ tự</div><div class="acc-subtitle">Tours.cshtml → POST /api/tours → INSERT TourPOI (OrderIndex) → Mobile App GET /api/tours</div></div>
+        </div><span class="acc-chevron">▼</span>
+      </div>
+      <div class="acc-body">
+        <div class="mermaid-wrap"><pre class="mermaid">
+flowchart TD
+    OPEN([Admin mo /Tours]) --> GET_TOURS[GET /api/tours: tat ca tour]
+    GET_TOURS --> SHOW[Hien danh sach tour voi so POI]
+
+    SHOW --> ACTION{Hanh dong}
+
+    ACTION -->|Tao moi| FORM[Nhap Name, Description, ThumbnailUrl]
+    FORM --> SEL_POIS[Chon danh sach POI tu dropdown - co thu tu]
+    SEL_POIS --> STATUS{Status?}
+    STATUS -->|PUBLISHED| POST_T[POST /api/tours name,desc,thumbnail,status=PUBLISHED,poiIds]
+    STATUS -->|DRAFT| POST_T
+    POST_T --> INSERT_TOUR[DB: INSERT Tour]
+    INSERT_TOUR --> LOOP_POI[foreach poiId - INSERT TourPOI orderIndex=i+1]
+    LOOP_POI --> DONE_CREATE([Tour tao xong - App thay ngay])
+
+    ACTION -->|Sua| LOAD_TOUR[Load thong tin tour + danh sach POI hien tai]
+    LOAD_TOUR --> EDIT_FORM[Sua name/desc/status, re-order POI]
+    EDIT_FORM --> PUT_T[PUT /api/tours id name,desc,status,poiIds moi]
+    PUT_T --> UPDATE_TOUR[DB: UPDATE Tour]
+    UPDATE_TOUR --> DEL_TPOI[DB: DELETE TourPOI WHERE tourId=id]
+    DEL_TPOI --> RE_INSERT[foreach poiId moi - INSERT TourPOI orderIndex moi]
+    RE_INSERT --> DONE_UPDATE([Cap nhat xong])
+
+    ACTION -->|Them POI vao tour| ADD_POI[POST /api/tours id/pois poiId]
+    ADD_POI --> CHK_DUP{Da co POI nay chua?}
+    CHK_DUP -->|Co| ERR[400: POI da co trong tour]
+    CHK_DUP -->|Chua| INSERT_TPOI[INSERT TourPOI maxOrder+1]
+    INSERT_TPOI --> DONE_ADD([Them thanh cong])
+
+    ACTION -->|Xoa POI khoi tour| DEL_POI[DELETE /api/tours id/pois poiId]
+    DEL_POI --> DELETE_TPOI[DB: DELETE TourPOI]
+    DELETE_TPOI --> DONE_DEL_POI([Da xoa POI khoi tour])
+
+    ACTION -->|Xoa tour| DEL_TOUR[DELETE /api/tours id]
+    DEL_TOUR --> DEL_CASCADE[DB: DELETE TourPOI + DELETE Tour]
+    DEL_CASCADE --> DONE_DEL_TOUR([Tour da xoa])
+
+    DONE_CREATE & DONE_UPDATE --> APP_REFRESH[Mobile App GET /api/tours: thay doi ngay]
+        </pre></div>
       </div>
     </div>
 
   </div><!-- end panel-activity -->
 
 </div><!-- end #diagrams -->
-
-<!-- ══ PATTERNS ══ -->
-<section id="patterns" class="alt"><div class="inner">
-  <div class="sec-hdr">
-    <div class="icon" style="background:#ede9fe;color:#4527a0">⚡</div>
-    <div><div class="sec-num">Summary</div><h2>Design Patterns &amp; Key Decisions</h2></div>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Pattern</th><th>Thực tế trong code</th><th>Lý do</th></tr></thead>
-      <tbody>
-        <tr><td><strong>3-Project Solution</strong></td><td>Web :5248 + API :5266 + MAUI Android</td><td>API dùng chung, tách biệt hoàn toàn</td></tr>
-        <tr><td><strong>X-Role Header</strong></td><td><code>X-Role: ADMIN/OWNER</code> qua HttpClient</td><td>Phân biệt role không cần JWT</td></tr>
-        <tr><td><strong>POI Approval Workflow</strong></td><td>PENDING→APPROVED/REJECTED; Owner sửa→PENDING</td><td>Kiểm soát chất lượng nội dung</td></tr>
-        <tr><td><strong>DTO Pattern</strong></td><td>POIDto bỏ OwnerId, Status, PasswordHash</td><td>Bảo vệ thông tin nhạy cảm khỏi App</td></tr>
-        <tr><td><strong>SQLite Offline Cache</strong></td><td>tourguide_local.db3 + PendingHistory queue + seed_pois.json</td><td>App dùng không cần mạng</td></tr>
-        <tr><td><strong>Haversine Client-side</strong></td><td><code>DistanceHelper.GetDistance()</code> trong MAUI</td><td>Không cần server roundtrip mỗi GPS update</td></tr>
-        <tr><td><strong>Static AuthService</strong></td><td>Static class + Preferences; SessionService.CurrentUser in-memory</td><td>Truy cập global không cần DI</td></tr>
-        <tr><td><strong>img-proxy Endpoint</strong></td><td>Web proxy <code>/img-proxy?url=</code></td><td>Tránh mixed content HTTPS/HTTP</td></tr>
-        <tr><td><strong>PendingCountFilter</strong></td><td>IAsyncPageFilter inject ViewData tự động</td><td>Badge pending mọi trang, không lặp code</td></tr>
-        <tr><td><strong>1 Audio per POI</strong></td><td>AnyAsync check trước Create, 4 cột vi/en/ja/zh</td><td>Đơn giản hóa cấu trúc</td></tr>
-        <tr><td><strong>3 màu Marker Leaflet</strong></td><td>Đỏ (thường) / Cam (chọn) / Tím (gần nhất auto)</td><td>UX rõ ràng trực quan</td></tr>
-        <tr><td><strong>Zero-Cost TTS</strong></td><td>Web Speech API + Google Translate free</td><td>$0/tháng, không cần API key</td></tr>
-        <tr><td><strong>OSRM Routing</strong></td><td>router.project-osrm.org, polyline Leaflet</td><td>Free, không cần key</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="hl success" style="margin-top:1.2rem">
-    <strong>Tóm tắt:</strong> TourGuide — 3 project .NET, 5 bảng SQL Server, GPS Geofencing Haversine, TTS 4 ngôn ngữ $0/tháng, offline SQLite cache, POI approval workflow, OSRM routing.
-  </div>
-</div></section>
-
 <footer>
   <strong>TourGuide System — PRD</strong><br/>
   ASP.NET Core 8 · .NET MAUI Android · SQL Server Express · EF Core · SQLite<br/>
