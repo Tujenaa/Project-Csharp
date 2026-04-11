@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 
 namespace TourGuideApp.Services;
 
@@ -7,7 +7,9 @@ public class SettingService : INotifyPropertyChanged
     public static SettingService Instance { get; } = new();
 
     // ── Language ──────────────────────────────────────────────────────────────
-    public static readonly Dictionary<string, string> SupportedLanguages = new()
+    
+    // Lưu trữ danh sách ngôn ngữ động từ API
+    public Dictionary<string, string> AvailableLanguages { get; private set; } = new()
     {
         { "vi", "🇻🇳  Tiếng Việt" },
         { "en", "🇬🇧  English" },
@@ -30,7 +32,54 @@ public class SettingService : INotifyPropertyChanged
     }
 
     public string LanguageDisplayName =>
-        SupportedLanguages.TryGetValue(_language, out var name) ? name : _language;
+        AvailableLanguages.TryGetValue(_language, out var name) ? name : _language;
+
+    /// <summary>
+    /// Tải danh sách ngôn ngữ từ API và cập nhật AvailableLanguages.
+    /// </summary>
+    public async Task LoadLanguagesAsync()
+    {
+        try
+        {
+            var api = new ApiService();
+            var list = await api.GetLanguages();
+            
+            if (list != null && list.Count > 0)
+            {
+                var dict = new Dictionary<string, string>();
+                foreach (var l in list)
+                {
+                    string emoji = GetFlagEmoji(l.Code);
+                    dict[l.Code] = string.IsNullOrEmpty(emoji) ? l.Name : $"{emoji}  {l.Name}";
+                }
+                AvailableLanguages = dict;
+                OnPropertyChanged(nameof(LanguageDisplayName));
+                System.Diagnostics.Debug.WriteLine($"[SettingService] Loaded {dict.Count} languages from API");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SettingService] LoadLanguages failed: {ex.Message}");
+        }
+    }
+
+    private string GetFlagEmoji(string langCode)
+    {
+        return langCode.ToLower() switch
+        {
+            "vi" => "🇻🇳",
+            "en" => "🇬🇧",
+            "ja" => "🇯🇵",
+            "zh" => "🇨🇳",
+            "ko" => "🇰🇷",
+            "fr" => "🇫🇷",
+            "de" => "🇩🇪",
+            "es" => "🇪🇸",
+            "it" => "🇮🇹",
+            "ru" => "🇷🇺",
+            _ => "🌐"
+        };
+    }
 
     // ── Auto-play when near POI ───────────────────────────────────────────────
     bool _autoPlay = true;

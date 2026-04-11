@@ -13,10 +13,8 @@ public class POI : INotifyPropertyChanged
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public int Radius { get; set; }
-    public string? ScriptVi { get; set; }
-    public string? ScriptEn { get; set; }
-    public string? ScriptJa { get; set; }
-    public string? ScriptZh { get; set; }
+    
+    public List<Audio> Audios { get; set; } = new();
     public List<string> Images { get; set; } = new();
 
     public List<string> FullImages

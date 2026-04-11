@@ -1,4 +1,4 @@
-﻿using System.Xml;
+using System.Xml;
 using TourGuideApp.Services;
 using TourGuideApp.ViewModels;
 
@@ -15,6 +15,7 @@ public partial class SettingsPage : ContentPage
     {
         base.OnAppearing();
         RefreshProfile();
+        _ = SettingService.Instance.LoadLanguagesAsync();
     }
 
     private void RefreshProfile()
@@ -36,14 +37,14 @@ public partial class SettingsPage : ContentPage
 
     private async void OnLanguageTapped(object sender, EventArgs e)
     {
-        var names = SettingService.SupportedLanguages.Values.ToArray();
+        var languages = SettingService.Instance.AvailableLanguages;
+        var names = languages.Values.ToArray();
 
         var chosen = await DisplayActionSheet("Chọn ngôn ngữ", "Huỷ", null, names);
 
         if (chosen == null || chosen == "Huỷ") return;
 
-        var pair = SettingService.SupportedLanguages
-            .FirstOrDefault(kv => kv.Value == chosen);
+        var pair = languages.FirstOrDefault(kv => kv.Value == chosen);
 
         if (pair.Key != null)
             SettingService.Instance.Language = pair.Key;

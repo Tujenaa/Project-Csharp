@@ -16,5 +16,7 @@ namespace TourGuideAPI.Models
         public string? RejectReason { get; set; }
         [NotMapped] public string? OwnerName { get; set; }
         [NotMapped] public string? ImageUrl { get; set; }
+        
+        public List<Audio> Audios { get; set; } = new();
     }
 }

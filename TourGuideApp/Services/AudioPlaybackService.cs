@@ -126,10 +126,7 @@ public class AudioPlaybackService
             var freshPoi = await _apiService.GetPOIById(poi.Id);
             if (freshPoi != null)
             {
-                poi.ScriptVi = freshPoi.ScriptVi;
-                poi.ScriptEn = freshPoi.ScriptEn;
-                poi.ScriptJa = freshPoi.ScriptJa;
-                poi.ScriptZh = freshPoi.ScriptZh;
+                poi.Audios = freshPoi.Audios;
             }
         }
 

@@ -17,14 +17,15 @@ namespace TourGuideAPI.Controllers
         {
             var list = await _context.Audio
                 .Include(a => a.POI)
+                .Include(a => a.Language)
                 .Select(a => new {
                     a.Id,
                     a.PoiId,
                     PoiName = a.POI != null ? a.POI.Name : null,
-                    a.vi,
-                    a.en,
-                    a.ja,
-                    a.zh
+                    a.LanguageId,
+                    LanguageCode = a.Language != null ? a.Language.Code : null,
+                    LanguageName = a.Language != null ? a.Language.Name : null,
+                    a.Script
                 })
                 .ToListAsync();
             return Ok(list);
@@ -33,7 +34,10 @@ namespace TourGuideAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var a = await _context.Audio.Include(x => x.POI).FirstOrDefaultAsync(x => x.Id == id);
+            var a = await _context.Audio
+                .Include(x => x.POI)
+                .Include(x => x.Language)
+                .FirstOrDefaultAsync(x => x.Id == id);
             return a == null ? NotFound() : Ok(a);
         }
 
@@ -43,14 +47,17 @@ namespace TourGuideAPI.Controllers
             // Kiểm tra POI đã được APPROVED chưa
             var poi = await _context.POI.FindAsync(audio.PoiId);
             if (poi == null) return BadRequest("POI không tồn tại.");
-            if (poi.Status != "APPROVED" && poi.Status != "PENDING_EDIT" && poi.Status != "PENDING_DELETE")
-                return BadRequest("POI chưa được duyệt, không thể thêm audio.");
+            
+            // Kiểm tra ngôn ngữ tồn tại
+            var lang = await _context.Languages.FindAsync(audio.LanguageId);
+            if (lang == null) return BadRequest("Ngôn ngữ không tồn tại.");
 
-            // Kiểm tra đã có audio chưa
-            var exists = await _context.Audio.AnyAsync(a => a.PoiId == audio.PoiId);
-            if (exists) return BadRequest("POI này đã có Audio rồi.");
+            // Kiểm tra xem POI này đã có audio của ngôn ngữ này chưa
+            var exists = await _context.Audio.AnyAsync(a => a.PoiId == audio.PoiId && a.LanguageId == audio.LanguageId);
+            if (exists) return BadRequest("POI này đã có Audio cho ngôn ngữ này rồi.");
 
             audio.POI = null;
+            audio.Language = null;
             _context.Audio.Add(audio);
             await _context.SaveChangesAsync();
             return Ok(audio);
@@ -61,11 +68,11 @@ namespace TourGuideAPI.Controllers
         {
             var existing = await _context.Audio.FindAsync(id);
             if (existing == null) return NotFound();
+            
             existing.PoiId = audio.PoiId;
-            existing.vi = audio.vi;
-            existing.en = audio.en;
-            existing.ja = audio.ja;
-            existing.zh = audio.zh;
+            existing.LanguageId = audio.LanguageId;
+            existing.Script = audio.Script;
+            
             await _context.SaveChangesAsync();
             return Ok(existing);
         }

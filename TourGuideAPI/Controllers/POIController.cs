@@ -23,31 +23,36 @@ namespace TourGuideAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPOI()
         {
-            var data = await (
-                from p in _context.POI
-                where p.Status == "APPROVED"
-                join a in _context.Audio on p.Id equals a.PoiId into pa
-                from a in pa.DefaultIfEmpty()
-                select new POIDto
+            var list = await _context.POI
+                .Where(p => p.Status == "APPROVED")
+                .Include(p => p.Audios)
+                .ThenInclude(a => a.Language)
+                .ToListAsync();
+
+            var data = list.Select(p => new POIDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Address = p.Address,
+                Phone = p.Phone,
+                Latitude = p.Latitude,
+                Longitude = p.Longitude,
+                Radius = p.Radius,
+                Audios = p.Audios.Select(a => new AudioDto
                 {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Description = p.Description,
-                    Address = p.Address,
-                    Phone = p.Phone,
-                    Latitude = p.Latitude,
-                    Longitude = p.Longitude,
-                    Radius = p.Radius,
-                    ScriptVi = a != null ? a.vi : null,
-                    ScriptEn = a != null ? a.en : null,
-                    ScriptJa = a != null ? a.ja : null,
-                    ScriptZh = a != null ? a.zh : null,
-                    Images = _context.POIImages
-                                 .Where(img => img.PoiId == p.Id)
-                                 .Select(img => img.ImageUrl)
-                                 .ToList()
-                }
-            ).ToListAsync();
+                    Id = a.Id,
+                    PoiId = a.PoiId,
+                    LanguageId = a.LanguageId,
+                    LanguageCode = a.Language?.Code,
+                    Script = a.Script
+                }).ToList(),
+                Images = _context.POIImages
+                             .Where(img => img.PoiId == p.Id)
+                             .Select(img => img.ImageUrl)
+                             .ToList()
+            }).ToList();
+
             return Ok(data);
         }
 
@@ -61,30 +66,35 @@ namespace TourGuideAPI.Controllers
                 .Take(5)
                 .Select(g => g.Key);
 
-            var data = await (
-                from p in _context.POI
-                where p.Status == "APPROVED" && topPoiIds.Contains(p.Id)
-                join a in _context.Audio on p.Id equals a.PoiId into pa
-                from a in pa.DefaultIfEmpty()
-                select new POIDto
+            var list = await _context.POI
+                .Where(p => p.Status == "APPROVED" && topPoiIds.Contains(p.Id))
+                .Include(p => p.Audios)
+                .ThenInclude(a => a.Language)
+                .ToListAsync();
+
+            var data = list.Select(p => new POIDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Address = p.Address,
+                Latitude = p.Latitude,
+                Longitude = p.Longitude,
+                Radius = p.Radius,
+                Audios = p.Audios.Select(a => new AudioDto
                 {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Description = p.Description,
-                    Address = p.Address,
-                    Latitude = p.Latitude,
-                    Longitude = p.Longitude,
-                    Radius = p.Radius,
-                    ScriptVi = a != null ? a.vi : null,
-                    ScriptEn = a != null ? a.en : null,
-                    ScriptJa = a != null ? a.ja : null,
-                    ScriptZh = a != null ? a.zh : null,
-                    Images = _context.POIImages
-                                 .Where(img => img.PoiId == p.Id)
-                                 .Select(img => img.ImageUrl)
-                                 .ToList()
-                }
-            ).ToListAsync();
+                    Id = a.Id,
+                    PoiId = a.PoiId,
+                    LanguageId = a.LanguageId,
+                    LanguageCode = a.Language?.Code,
+                    Script = a.Script
+                }).ToList(),
+                Images = _context.POIImages
+                             .Where(img => img.PoiId == p.Id)
+                             .Select(img => img.ImageUrl)
+                             .ToList()
+            }).ToList();
+
             return Ok(data);
         }
 
@@ -116,33 +126,38 @@ namespace TourGuideAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var data = await (
-                from p in _context.POI
-                where p.Id == id
-                join a in _context.Audio on p.Id equals a.PoiId into pa
-                from a in pa.DefaultIfEmpty()
-                select new POIDto
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Description = p.Description,
-                    Address = p.Address,
-                    Phone = p.Phone,
-                    Latitude = p.Latitude,
-                    Longitude = p.Longitude,
-                    Radius = p.Radius,
-                    ScriptVi = a != null ? a.vi : null,
-                    ScriptEn = a != null ? a.en : null,
-                    ScriptJa = a != null ? a.ja : null,
-                    ScriptZh = a != null ? a.zh : null,
-                    Images = _context.POIImages
-                                 .Where(img => img.PoiId == p.Id)
-                                 .Select(img => img.ImageUrl)
-                                 .ToList()
-                }
-            ).FirstOrDefaultAsync();
+            var p = await _context.POI
+                .Include(poi => poi.Audios)
+                .ThenInclude(a => a.Language)
+                .FirstOrDefaultAsync(poi => poi.Id == id);
 
-            return data == null ? NotFound() : Ok(data);
+            if (p == null) return NotFound();
+
+            var data = new POIDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Address = p.Address,
+                Phone = p.Phone,
+                Latitude = p.Latitude,
+                Longitude = p.Longitude,
+                Radius = p.Radius,
+                Audios = p.Audios.Select(a => new AudioDto
+                {
+                    Id = a.Id,
+                    PoiId = a.PoiId,
+                    LanguageId = a.LanguageId,
+                    LanguageCode = a.Language?.Code,
+                    Script = a.Script
+                }).ToList(),
+                Images = _context.POIImages
+                             .Where(img => img.PoiId == p.Id)
+                             .Select(img => img.ImageUrl)
+                             .ToList()
+            };
+
+            return Ok(data);
         }
 
         // ── WEB: GET /api/poi/{id}/images ──

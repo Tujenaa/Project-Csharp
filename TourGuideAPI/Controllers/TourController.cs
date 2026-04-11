@@ -181,30 +181,44 @@ namespace TourGuideAPI.Controllers
 
         private async Task<TourDto> BuildTourDto(Tour tour)
         {
-            var pois = await (
-                from tp in _context.TourPOI
-                join p in _context.POI on tp.PoiId equals p.Id
-                where tp.TourId == tour.Id && p.Status == "APPROVED"
-                orderby tp.OrderIndex
-                join a in _context.Audio on p.Id equals a.PoiId into pa
-                from a in pa.DefaultIfEmpty()
-                select new POIDto
+            var poiList = await _context.TourPOI
+                .Where(tp => tp.TourId == tour.Id)
+                .OrderBy(tp => tp.OrderIndex)
+                .Select(tp => tp.PoiId)
+                .ToListAsync();
+
+            var pois = await _context.POI
+                .Where(p => poiList.Contains(p.Id) && p.Status == "APPROVED")
+                .Include(p => p.Audios)
+                .ThenInclude(a => a.Language)
+                .ToListAsync();
+
+            // Sắp xếp lại theo đúng OrderIndex của TourPOI
+            var resultPois = poiList
+                .Select(id => pois.FirstOrDefault(p => p.Id == id))
+                .Where(p => p != null)
+                .Select(p => new POIDto
                 {
-                    Id = p.Id,
+                    Id = p!.Id,
                     Name = p.Name,
                     Description = p.Description,
                     Address = p.Address,
                     Latitude = p.Latitude,
                     Longitude = p.Longitude,
                     Radius = p.Radius,
-                    ScriptVi = a != null ? a.vi : null,
-                    ScriptEn = a != null ? a.en : null,
+                    Audios = p.Audios.Select(a => new AudioDto
+                    {
+                        Id = a.Id,
+                        PoiId = a.PoiId,
+                        LanguageId = a.LanguageId,
+                        LanguageCode = a.Language?.Code,
+                        Script = a.Script
+                    }).ToList(),
                     Images = _context.POIImages
                         .Where(img => img.PoiId == p.Id)
                         .Select(img => img.ImageUrl)
                         .ToList()
-                }
-            ).ToListAsync();
+                }).ToList();
 
             return new TourDto
             {
@@ -213,7 +227,7 @@ namespace TourGuideAPI.Controllers
                 Description = tour.Description,
                 ThumbnailUrl = tour.ThumbnailUrl,
                 Status = tour.Status,
-                POIs = pois
+                POIs = resultPois
             };
         }
     }

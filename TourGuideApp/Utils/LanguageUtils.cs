@@ -12,13 +12,17 @@ public static class LanguageUtils
     {
         if (poi == null) return "Không có dữ liệu địa điểm";
 
-        string? script = lang switch
+        string? script = poi.Audios?
+            .FirstOrDefault(a => a.LanguageCode != null && a.LanguageCode.Equals(lang, StringComparison.OrdinalIgnoreCase))?
+            .Script;
+        
+        // Nếu không tìm thấy ngôn ngữ yêu cầu, thử tìm Tiếng Việt làm fallback
+        if (string.IsNullOrWhiteSpace(script) && !lang.Equals("vi", StringComparison.OrdinalIgnoreCase))
         {
-            "en" => poi.ScriptEn,
-            "ja" => poi.ScriptJa,
-            "zh" => poi.ScriptZh,
-            _ => poi.ScriptVi
-        };
+            script = poi.Audios?
+                .FirstOrDefault(a => a.LanguageCode != null && a.LanguageCode.Equals("vi", StringComparison.OrdinalIgnoreCase))?
+                .Script;
+        }
 
         if (string.IsNullOrWhiteSpace(script))
         {

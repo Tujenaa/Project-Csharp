@@ -6,6 +6,7 @@ namespace TourGuideAPI.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
         public DbSet<POI> POI { get; set; }
+        public DbSet<Language> Languages { get; set; }
         public DbSet<Audio> Audio { get; set; }
         public DbSet<History> History { get; set; }
         public DbSet<User> Users { get; set; }
@@ -15,6 +16,7 @@ namespace TourGuideAPI.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<POI>().ToTable("POI");
+            modelBuilder.Entity<Language>().ToTable("Languages");
             modelBuilder.Entity<Audio>().ToTable("Audio");
             modelBuilder.Entity<History>().ToTable("History");
             modelBuilder.Entity<User>().ToTable("Users");
@@ -27,6 +29,11 @@ namespace TourGuideAPI.Data
                 .WithMany()
                 .HasForeignKey(a => a.PoiId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Audio>()
+                .HasOne(a => a.Language)
+                .WithMany()
+                .HasForeignKey(a => a.LanguageId);
             modelBuilder.Entity<History>()
                 .HasOne(h => h.POI)
                 .WithMany()

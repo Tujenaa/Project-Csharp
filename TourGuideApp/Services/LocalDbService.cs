@@ -68,10 +68,7 @@ public class LocalDbService
                     Latitude = p.Latitude,
                     Longitude = p.Longitude,
                     Radius = p.Radius,
-                    ScriptVi = p.ScriptVi ?? "",
-                    ScriptEn = p.ScriptEn ?? "",
-                    ScriptJa = p.ScriptJa ?? "",
-                    ScriptZh = p.ScriptZh ?? "",
+                    AudiosJson = JsonSerializer.Serialize(p.Audios),
                     ImagesJson = JsonSerializer.Serialize(p.Images),
                     CachedAt = DateTime.UtcNow
                 }).ToList();
@@ -124,10 +121,7 @@ public class LocalDbService
             Latitude    = p.Latitude,
             Longitude   = p.Longitude,
             Radius      = p.Radius,
-            ScriptVi    = p.ScriptVi ?? "",
-            ScriptEn    = p.ScriptEn ?? "",
-            ScriptJa    = p.ScriptJa ?? "",
-            ScriptZh    = p.ScriptZh ?? "",
+            AudiosJson  = JsonSerializer.Serialize(p.Audios),
             ImagesJson  = JsonSerializer.Serialize(p.Images),
             CachedAt    = DateTime.UtcNow
         }).ToList();
@@ -152,10 +146,7 @@ public class LocalDbService
             Latitude    = p.Latitude,
             Longitude   = p.Longitude,
             Radius      = p.Radius,
-            ScriptVi    = p.ScriptVi ?? "",
-            ScriptEn    = p.ScriptEn ?? "",
-            ScriptJa    = p.ScriptJa ?? "",
-            ScriptZh    = p.ScriptZh ?? "",
+            AudiosJson  = JsonSerializer.Serialize(p.Audios),
             ImagesJson  = JsonSerializer.Serialize(p.Images),
             CachedAt    = DateTime.UtcNow
         };
@@ -179,10 +170,7 @@ public class LocalDbService
             Latitude    = c.Latitude,
             Longitude   = c.Longitude,
             Radius      = c.Radius,
-            ScriptVi    = c.ScriptVi,
-            ScriptEn    = c.ScriptEn,
-            ScriptJa    = c.ScriptJa,
-            ScriptZh    = c.ScriptZh,
+            Audios      = string.IsNullOrEmpty(c.AudiosJson) ? new List<Audio>() : JsonSerializer.Deserialize<List<Audio>>(c.AudiosJson) ?? new List<Audio>(),
             Images      = string.IsNullOrEmpty(c.ImagesJson) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(c.ImagesJson) ?? new List<string>()
         }).ToList();
     }
@@ -299,10 +287,7 @@ public class CachedPOI
     public double Latitude    { get; set; }
     public double Longitude   { get; set; }
     public int    Radius      { get; set; }
-    public string ScriptVi    { get; set; } = "";
-    public string ScriptEn    { get; set; } = "";
-    public string ScriptJa    { get; set; } = "";
-    public string ScriptZh    { get; set; } = "";
+    public string AudiosJson  { get; set; } = "[]";
     public string ImagesJson  { get; set; } = "[]";
     public DateTime CachedAt  { get; set; }
 }

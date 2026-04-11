@@ -175,16 +175,17 @@ public partial class TextToSpeechService
     private static async Task<Locale?> ResolveLocaleAsync(string lang, IEnumerable<Locale> locales)
     {
         var localeList = locales.ToList();
-        if (LocalePriority.TryGetValue(lang.ToLowerInvariant(), out var preferred))
+        string normalizedLang = lang.ToLowerInvariant();
+
+        // 1. Thử khớp theo danh sách ưu tiên (nếu có)
+        if (LocalePriority.TryGetValue(normalizedLang, out var preferred))
         {
             foreach (var pref in preferred)
             {
-                // Thử khớp theo tên hiển thị
                 var byName = localeList.FirstOrDefault(l =>
                     l.Name != null && l.Name.Contains(pref, StringComparison.OrdinalIgnoreCase));
                 if (byName != null) return byName;
 
-                // Thử khớp theo mã ngôn ngữ (vd: vi-VN)
                 var parts = pref.Split('-');
                 var byCode = localeList.FirstOrDefault(l =>
                     l.Language.Equals(parts[0], StringComparison.OrdinalIgnoreCase) &&
@@ -193,9 +194,15 @@ public partial class TextToSpeechService
             }
         }
 
-        // Fallback: tìm bất kỳ locale nào bắt đầu bằng mã ngôn ngữ
+        // 2. Thử khớp theo mã ngôn ngữ chính (vd: "ko" -> bất kỳ locale nào có Language == "ko")
+        var byLangCode = localeList.FirstOrDefault(l =>
+            l.Language.Equals(normalizedLang, StringComparison.OrdinalIgnoreCase));
+        if (byLangCode != null) return byLangCode;
+
+        // 3. Fallback: tìm bất kỳ locale nào có tên chứa mã ngôn ngữ
         var fallback = localeList.FirstOrDefault(l =>
-            l.Language.StartsWith(lang, StringComparison.OrdinalIgnoreCase));
+            l.Language.StartsWith(normalizedLang, StringComparison.OrdinalIgnoreCase) ||
+            (l.Name != null && l.Name.Contains(normalizedLang, StringComparison.OrdinalIgnoreCase)));
 
         if (fallback == null)
             Debug.WriteLine($"[TTS] No locale found for lang='{lang}', using system default");

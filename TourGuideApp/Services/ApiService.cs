@@ -13,7 +13,7 @@ public class ApiService
     {
         public static string BaseUrl => DeviceInfo.DeviceType == DeviceType.Virtual 
             ? "http://10.0.2.2:5266/api/" 
-            : "http://192.168.1.25:5266/api/";
+            : "http://192.168.1.19:5266/api/";
     }
 
     // ── POI ──────────────────────────────────────────────────────────────────
@@ -279,6 +279,24 @@ public class ApiService
     {
         var all = await GetTours();
         return all.Count;
+    }
+
+    public async Task<List<Language>> GetLanguages()
+    {
+        if (ConnectivityService.IsConnected)
+        {
+            try
+            {
+                return await client.GetFromJsonAsync<List<Language>>(
+                    $"{ApiConfig.BaseUrl}languages")
+                    ?? new List<Language>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[API] GetLanguages failed: {ex.Message}");
+            }
+        }
+        return new List<Language>();
     }
 }
 // Thêm ở cuối class - nhưng cần thêm vào trong class body
