@@ -127,9 +127,12 @@
                 <a href="/TourManager" class="nav-item @(ViewData["Active"]?.ToString() == "tours" ? "active" : "")">
                     <i class="bi bi-map"></i><span>Quản lý Tour</span>
                 </a>
-                <a href="/LanguageManager" class="nav-item @(ViewData["Active"]?.ToString() == "languages" ? "active" : "")">
-                    <i class="bi bi-translate"></i><span>Ngôn ngữ</span>
-                </a>
+                @if (isAdmin)
+                {
+                    <a href="/LanguageManager" class="nav-item ...">
+                        <i class="bi bi-translate"></i><span>Ngôn ngữ</span>
+                    </a>
+                }
                 <div class="nav-section">DỮ LIỆU</div>
                 <a href="/HistoryPage" class="nav-item @(ViewData["Active"]?.ToString() == "history" ? "active" : "")">
                     <i class="bi bi-clock-history"></i><span>Lịch sử phát</span>

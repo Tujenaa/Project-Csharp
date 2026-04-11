@@ -39,7 +39,7 @@
                 <tr>
                     <td colspan="5" class="empty-state">
                         Chưa có audio nào.
-                        <a href="javascript:void(0)" onclick="openAddModal()">Thêm mới</a>
+                        <a href="#" onclick="openAddModal();return false">Thêm mới</a>
                     </td>
                 </tr>
             }
@@ -63,13 +63,11 @@
                                     onclick="seekRow(@a.Id,-1)" style="display:none" id="btn-back-@a.Id">
                                 <i class="bi bi-skip-backward-fill"></i>
                             </button>
-
                             <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Phát"
-                                    onclick='rowPlay(@a.Id, "@a.LanguageCode", @Html.Raw(System.Text.Json.JsonSerializer.Serialize(a.Script)))'
+                                    onclick="rowPlay(@a.Id,'@a.LanguageCode',`@Html.Raw(a.Script.Replace("`", "\\`"))`)"
                                     id="btn-play-@a.Id">
                                 <i class="bi bi-play-fill"></i>
                             </button>
-
                             <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Tạm dừng"
                                     onclick="rowPause(@a.Id)" style="display:none" id="btn-pause-@a.Id">
                                 <i class="bi bi-pause-fill"></i>
@@ -91,10 +89,9 @@
                     <td>
                         <div class="action-group">
                             <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Sửa"
-                                    onclick='openEditModal(@a.Id, @a.PoiId, @a.LanguageId, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(a.Script)), "@(a.PoiName ?? "")", "@a.LanguageCode @a.LanguageName", "@a.LanguageCode")'>
+                                    onclick='openEditModal(@a.Id, @a.PoiId, @a.LanguageId, `@Html.Raw(a.Script.Replace("`", "\\`"))`, "@(a.PoiName ?? "")", "@a.LanguageCode @a.LanguageName")'>
                                 <i class="bi bi-pencil"></i>
                             </button>
-
                             <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" title="Xóa"
                                     onclick="confirmDelete(@a.Id, '@(a.PoiName ?? $"#{a.PoiId}")', '@a.LanguageName')">
                                 <i class="bi bi-trash"></i>
@@ -107,6 +104,7 @@
     </table>
 </div>
 
+<!-- MODAL THÊM -->
 <div id="addModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeAddModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -154,9 +152,16 @@
                     <div class="form-group">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                             <label class="form-label" style="margin:0">Script <span style="color:#dc3545">*</span></label>
-                            <div style="display:flex;gap:6px">
-                                <button type="button" class="btn btn-xs btn-outline" onclick="autoTranslate('a')" id="aBtnTrans">
-                                    <i class="bi bi-translate"></i> Dịch script
+                            <div style="display:flex;gap:6px;align-items:center">
+                                <select id="aSourceLang" class="form-control" style="font-size:11px;padding:2px 6px;width:auto;height:auto">
+                                    @foreach (var l in Model.Languages)
+                                    {
+                                        <option value="@l.Code">@l.Code.ToUpper()</option>
+                                    }
+                                </select>
+                                <span style="font-size:11px;color:#9ca3af">→</span>
+                                <button type="button" class="btn btn-xs btn-outline" onclick="autoTranslate()" id="aBtnTrans">
+                                    <i class="bi bi-translate"></i> Dịch
                                 </button>
                                 <button type="button" class="btn btn-xs btn-outline" onclick="previewFromTextarea('aScript','aLangId')" id="aBtnPlay">
                                     <i class="bi bi-play-fill"></i> Nghe thử
@@ -164,7 +169,7 @@
                             </div>
                         </div>
                         <textarea name="Script" id="aScript" class="form-control" rows="4"
-                              placeholder="Nhập nội dung script hoặc bấm Dịch script..." required></textarea>
+                              placeholder="Nhập script rồi chọn ngôn ngữ nguồn và bấm Dịch..." required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -176,6 +181,7 @@
     </div>
 </div>
 
+<!-- MODAL SỬA -->
 <div id="editModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeEditModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -199,9 +205,21 @@
                 <div class="form-group">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
                         <label class="form-label" style="margin:0">Script <span style="color:#dc3545">*</span></label>
-                        <button type="button" class="btn btn-xs btn-outline" onclick="previewFromTextarea('eScript','eLangIdHidden')">
-                            <i class="bi bi-play-fill"></i> Nghe thử
-                        </button>
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <select id="eSourceLang" class="form-control" style="font-size:11px;padding:2px 6px;width:auto;height:auto">
+                                @foreach (var l in Model.Languages)
+                                {
+                                    <option value="@l.Code">@l.Code.ToUpper()</option>
+                                }
+                            </select>
+                            <span style="font-size:11px;color:#9ca3af">→</span>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="autoTranslateEdit()">
+                                <i class="bi bi-translate"></i> Dịch
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline" onclick="previewFromTextarea('eScript','eLangIdHidden')">
+                                <i class="bi bi-play-fill"></i> Nghe thử
+                            </button>
+                        </div>
                         <input type="hidden" id="eLangIdHidden" />
                         <input type="hidden" id="eLangCode" />
                     </div>
@@ -216,6 +234,7 @@
     </div>
 </div>
 
+<!-- MODAL XÓA -->
 <div id="deleteModal" class="modal-backdrop" style="display:none" onclick="closeDelete()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -239,10 +258,12 @@
 <script>
     const API_BASE = document.getElementById('apiBaseUrl').value;
 
+    // Danh sách audio hiện có để check trùng
     const EXISTING_AUDIOS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                                Model.Audios.Select(a => new { poiId = a.PoiId, languageId = a.LanguageId })
-                ));
+                Model.Audios.Select(a => new { poiId = a.PoiId, languageId = a.LanguageId })
+        ));
 
+    // Khi chọn POI → filter ngôn ngữ đã có
     function onPoiChange() {
         const poiId = parseInt(document.getElementById('aPoiId').value);
         const langSel = document.getElementById('aLangId');
@@ -259,6 +280,7 @@
                 : opt.text.replace(' ✓', '');
         });
 
+        // Reset về trống nếu ngôn ngữ đang chọn đã bị dùng
         if (usedLangIds.includes(parseInt(langSel.value))) {
             langSel.value = '';
         }
@@ -269,6 +291,7 @@
         document.getElementById('aPoiId').value = '';
         document.getElementById('aLangId').value = '';
         document.getElementById('aScript').value = '';
+        // Reset disabled options
         Array.from(document.getElementById('aLangId').options).forEach(o => {
             o.disabled = false;
             o.text = o.text.replace(' ✓', '');
@@ -281,8 +304,7 @@
     }
 
     // ── MODAL EDIT ───────────────────────────────────────────────────
-    // FIX LOGIC: Nhận trực tiếp langCode từ tham số thay vì query DOM
-    function openEditModal(id, poiId, langId, script, poiName, langDisplay, langCode) {
+    function openEditModal(id, poiId, langId, script, poiName, langDisplay) {
         document.getElementById('eId').value = id;
         document.getElementById('ePoiId').value = poiId;
         document.getElementById('eLangId').value = langId;
@@ -292,8 +314,9 @@
         document.getElementById('eScript').value = script;
         document.getElementById('editModalTitle').textContent = 'Sửa Audio — ' + poiName;
 
-        // Gán thẳng langCode truyền vào
-        document.getElementById('eLangCode').value = langCode;
+        // Lấy code ngôn ngữ để TTS
+        const opt = document.querySelector(`#aLangId option[value="${langId}"]`);
+        document.getElementById('eLangCode').value = opt ? opt.dataset.code : '';
 
         document.getElementById('editModal').style.display = 'flex';
     }
@@ -313,7 +336,7 @@
 
     // ── ROW PLAYER ───────────────────────────────────────────────────
     let _rowId = null, _rowLang = '', _rowSentences = [], _rowSentIdx = 0;
-    let _rowSession = 0;
+    let _rowSession = 0; // tăng mỗi lần play/seek/stop để cancel callback cũ
 
     function rowPlay(id, langCode, text) {
         if (_rowId && _rowId !== id) rowStop(_rowId);
@@ -326,7 +349,7 @@
     }
 
     function _rowSpeakFrom(idx, session) {
-        if (session !== _rowSession) return;
+        if (session !== _rowSession) return; // callback từ utterance cũ, bỏ qua
         if (idx >= _rowSentences.length) {
             _setRowState(_rowId, 'idle');
             return;
@@ -355,7 +378,7 @@
     }
 
     function rowStop(id) {
-        _rowSession++;
+        _rowSession++; // vô hiệu mọi callback đang chờ
         window.speechSynthesis.cancel();
         _rowId = null;
         _setRowState(id, 'idle');
@@ -406,7 +429,10 @@
                 const opt = sel.options[sel.selectedIndex];
                 code = opt?.dataset?.code || '';
             } else {
-                code = document.getElementById('eLangCode').value;
+                // hidden input chứa langId, tìm code từ select add modal
+                const langId = sel.value;
+                const opt = document.querySelector(`#aLangId option[value="${langId}"]`);
+                code = opt?.dataset?.code || '';
             }
         }
         previewTTS(code, text);
@@ -416,7 +442,21 @@
         if (!text) { alert('Chưa có script.'); return; }
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        _applyVoice(u, langCode);
+        const voiceMap = {
+            vi: ['Google Vietnamese', 'vi-VN'],
+            en: ['Google US English', 'en-US'],
+            ja: ['Google 日本語', 'ja-JP'],
+            zh: ['Google 普通话', 'zh-CN'],
+            ko: ['Google 한국의', 'ko-KR'],
+            fr: ['Google français', 'fr-FR'],
+            de: ['Google Deutsch', 'de-DE'],
+        };
+        const prefs = voiceMap[langCode] || [langCode || 'en-US'];
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find(v => prefs.some(p => v.name.includes(p) || v.lang.startsWith(p)));
+        if (voice) u.voice = voice;
+        u.lang = prefs[prefs.length - 1];
+        u.rate = 0.95;
         window.speechSynthesis.speak(u);
     }
 
@@ -428,33 +468,52 @@
     });
 
     // ── AUTO TRANSLATE ───────────────────────────────────────────────
-    async function autoTranslate(prefix) {
-        const langId = document.getElementById('aLangId').value;
-        if (!langId) { alert('Vui lòng chọn ngôn ngữ trước.'); return; }
+    function onLangChange(prefix) {
+        // Reset script khi đổi ngôn ngữ trong add modal
+        // (không reset khi edit)
+    }
 
+    async function autoTranslate() {
+        const langId = document.getElementById('aLangId').value;
+        if (!langId) { alert('Vui lòng chọn ngôn ngữ đích trước.'); return; }
+        const sourceText = document.getElementById('aScript').value.trim();
+        if (!sourceText) { alert('Vui lòng nhập script nguồn vào ô Script trước.'); return; }
+
+        const sourceLang = document.getElementById('aSourceLang').value;
         const opt = document.querySelector(`#aLangId option[value="${langId}"]`);
         const targetCode = opt?.dataset?.code || '';
-        if (targetCode === 'vi') { alert('Đã là tiếng Việt, không cần dịch.'); return; }
-
-        const sourceText = document.getElementById('aScript').value.trim();
-        if (!sourceText) { alert('Vui lòng nhập script nguồn vào ô Script trước rồi mới dịch.'); return; }
+        if (sourceLang === targetCode) { alert('Ngôn ngữ nguồn và đích giống nhau.'); return; }
 
         const btn = document.getElementById('aBtnTrans');
         btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang dịch...';
         try {
-            const translated = await translateText(sourceText, targetCode);
+            const translated = await translateText(sourceText, sourceLang, targetCode);
             document.getElementById('aScript').value = translated;
         } catch (e) {
-            alert('Lỗi dịch thuật (có thể do bị chặn API vì gửi quá nhiều yêu cầu). Vui lòng thử lại sau. Chi tiết: ' + e.message);
+            alert('Lỗi dịch: ' + e.message);
         } finally {
-            btn.disabled = false; btn.innerHTML = '<i class="bi bi-translate"></i> Dịch script';
+            btn.disabled = false; btn.innerHTML = '<i class="bi bi-translate"></i> Dịch';
         }
     }
 
-    async function translateText(text, targetLang) {
-        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=vi&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+    async function autoTranslateEdit() {
+        const sourceText = document.getElementById('eScript').value.trim();
+        if (!sourceText) { alert('Vui lòng nhập script nguồn trước.'); return; }
+        const sourceLang = document.getElementById('eSourceLang').value;
+        const targetCode = document.getElementById('eLangCode').value;
+        if (!targetCode) { alert('Không xác định được ngôn ngữ đích.'); return; }
+        if (sourceLang === targetCode) { alert('Ngôn ngữ nguồn và đích giống nhau.'); return; }
+        try {
+            const translated = await translateText(sourceText, sourceLang, targetCode);
+            document.getElementById('eScript').value = translated;
+        } catch (e) {
+            alert('Lỗi dịch: ' + e.message);
+        }
+    }
+
+    async function translateText(text, sourceLang, targetLang) {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
         const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         return data[0].map(x => x[0]).join('');
     }

@@ -21,16 +21,27 @@ public class LanguageManagerModel : PageModel
     [BindProperty] public int OrderIndex { get; set; }
     [BindProperty] public int DeleteId { get; set; }
 
+    private string Role => HttpContext.Session.GetString("Role") ?? "";
+    private bool IsAdmin => Role == "ADMIN";
     private HttpClient Api => _http.CreateClient("API");
 
-    public async Task OnGetAsync()
+    private IActionResult? GuardAdmin()
     {
+        if (!IsAdmin) return RedirectToPage("/Index");
+        return null;
+    }
+
+    public async Task<IActionResult> OnGetAsync()
+    {
+        if (GuardAdmin() is { } r) return r;
         try { Languages = await Api.GetFromJsonAsync<List<LangItem>>("languages") ?? new(); }
         catch (Exception ex) { Error = "Lỗi: " + ex.Message; }
+        return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (GuardAdmin() is { } r) return r;
         var body = new { Code = Code.Trim().ToLower(), Name, IsActive, OrderIndex };
         try
         {
@@ -53,6 +64,7 @@ public class LanguageManagerModel : PageModel
 
     public async Task<IActionResult> OnPostDeleteAsync()
     {
+        if (GuardAdmin() is { } r) return r;
         try
         {
             var res = await Api.DeleteAsync($"languages/{DeleteId}");
