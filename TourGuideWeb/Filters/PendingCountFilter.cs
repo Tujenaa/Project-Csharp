@@ -17,7 +17,8 @@ public class PendingCountFilter : IAsyncPageFilter
             {
                 var client = _http.CreateClient("API");
                 var pois = await client.GetFromJsonAsync<List<PendingItem>>("poi/pending") ?? [];
-                context.HttpContext.Items["PendingCount"] = pois.Count;
+                var tourPois = await client.GetFromJsonAsync<List<PendingItem>>("tours/pois/all-pending") ?? [];
+                context.HttpContext.Items["PendingCount"] = pois.Count + tourPois.Count;
             }
             catch { }
         }

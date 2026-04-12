@@ -1,11 +1,65 @@
 @page
 @model GPSGuide.Web.Pages.ApprovalModel
 @{
-    ViewData["Title"] = "Phê duyệt POI"; ViewData["Active"] = "approval";
+    ViewData["Title"] = "Phê duyệt"; ViewData["Active"] = "approval";
+    var pendingTourPois = Model.PendingTourPois.Count;
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/users.css" asp-append-version="true" />
+    <style>
+        #approvalTable td, #approvalTable th {
+            padding: 14px 16px;
+        }
+
+        #approvalTable tbody tr {
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+            #approvalTable tbody tr:hover {
+                background: #faf9ff;
+            }
+
+        .poi-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 3px;
+            line-height: 1.5;
+        }
+
+        .approval-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .tour-req-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background .15s;
+        }
+
+            .tour-req-card:hover {
+                background: #faf9ff;
+            }
+
+            .tour-req-card:last-child {
+                border-bottom: none;
+            }
+        /* Số đỏ cho pending */
+        .utab-count-red {
+            background: #dc2626;
+            color: #fff;
+            border-radius: 20px;
+            padding: 1px 7px;
+            font-size: 11px;
+            font-family: var(--mono);
+            font-weight: 700;
+        }
+    </style>
 }
 
 @if (!string.IsNullOrEmpty(Model.Msg))
@@ -13,13 +67,13 @@
     <div class="alert alert-success"><i class="bi bi-check-circle"></i> @Model.Msg</div>
 }
 
-<div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+<div class="page-header">
     <div>
-        <h2>Phê duyệt POI</h2>
+        <h2>Phê duyệt</h2>
     </div>
     @if (Model.AllPois.Any(p => p.Status == "REJECTED"))
     {
-        <form method="post" asp-page-handler="DeleteRejected" onsubmit="return confirm('Bạn có chắc muốn xóa vĩnh viễn tất cả POI đã bị từ chối?')">
+        <form method="post" asp-page-handler="DeleteRejected" onsubmit="return confirm('Xóa tất cả POI bị từ chối?')">
             @Html.AntiForgeryToken()
             <button type="submit" class="btn btn-danger btn-sm">
                 <i class="bi bi-trash"></i> Xóa tất cả POI bị từ chối
@@ -28,116 +82,209 @@
     }
 </div>
 
-<!-- Tabs -->
-<div class="user-tabs" style="margin-bottom:20px">
-    <button class="utab active" onclick="filterStatus('PENDING', this)">
-        ⏳ Chờ duyệt
-        <span class="utab-count">@Model.AllPois.Count(p => p.Status == "PENDING")</span>
+<!-- Tab chính -->
+<div class="user-tabs" style="margin-bottom:28px">
+    <button class="utab active" id="mainTabPoi" onclick="switchMainTab('poi', this)">
+        <i class="bi bi-geo-alt"></i> Điểm thuyết minh
+        @{
+            var pendingPoi = Model.AllPois.Count(p => p.Status == "PENDING");
+        }
+        @if (pendingPoi > 0)
+        {
+            <span class="utab-count-red">@pendingPoi</span>
+        }
+        else
+        {
+            <span class="utab-count">@Model.AllPois.Count(p => p.Status == "PENDING")</span>
+        }
     </button>
-    <button class="utab" onclick="filterStatus('APPROVED', this)">
-        ✅ Đã duyệt
-        <span class="utab-count">@Model.AllPois.Count(p => p.Status == "APPROVED")</span>
-    </button>
-    <button class="utab" onclick="filterStatus('REJECTED', this)">
-        ❌ Từ chối
-        <span class="utab-count">@Model.AllPois.Count(p => p.Status == "REJECTED")</span>
+    <button class="utab" id="mainTabTour" onclick="switchMainTab('tour', this)">
+        <i class="bi bi-map"></i> Yêu cầu tham gia Tour
+        @if (pendingTourPois > 0)
+        {
+            <span class="utab-count-red">@pendingTourPois</span>
+        }
     </button>
 </div>
 
-<div class="card">
-    <table class="tg-table" id="approvalTable">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Tên POI</th>
-                <th>Chủ sở hữu</th>
-                <th>Toạ độ</th>
-                <th>Bán kính</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var p in Model.AllPois.OrderByDescending(x => x.Id))
-            {
-                <tr data-status="@p.Status">
-                    <td style="color:#6b7280">#@p.Id</td>
-                    <td>
-                        <strong style="color:#111827">@p.Name</strong>
-                        @if (!string.IsNullOrEmpty(p.Description))
-                        {
-                            <div style="font-size:12px;color:#6b7280;margin-top:2px">
-                                @(p.Description.Length > 60 ? p.Description[..60] + "…" : p.Description)
+<!-- ── TAB POI ── -->
+<div id="sectionPoi">
+    <div class="user-tabs" style="margin-bottom:16px">
+        <button class="utab active" onclick="filterStatus('PENDING', this)">
+            ⏳ Chờ duyệt
+            <span class="utab-count">@Model.AllPois.Count(p => p.Status == "PENDING")</span>
+        </button>
+        <button class="utab" onclick="filterStatus('APPROVED', this)">
+            ✅ Đã duyệt
+            <span class="utab-count">@Model.AllPois.Count(p => p.Status == "APPROVED")</span>
+        </button>
+        <button class="utab" onclick="filterStatus('REJECTED', this)">
+            ❌ Từ chối
+            <span class="utab-count">@Model.AllPois.Count(p => p.Status == "REJECTED")</span>
+        </button>
+    </div>
+    <div class="card">
+        <table class="tg-table" id="approvalTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tên POI</th>
+                    <th>Chủ sở hữu</th>
+                    <th>Toạ độ</th>
+                    <th>Bán kính</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.AllPois.OrderByDescending(x => x.Id))
+                {
+                    <tr data-status="@p.Status">
+                        <td style="color:#9ca3af;font-size:12px;font-family:var(--mono)">#@p.Id</td>
+                        <td>
+                            <div style="font-weight:600;color:#111827">@p.Name</div>
+                            @if (!string.IsNullOrEmpty(p.Description))
+                            {
+                                <div class="poi-meta">@(p.Description.Length > 80 ? p.Description[..80] + "…" : p.Description)</div>
+                            }
+                        </td>
+                        <td>
+                            <div style="font-weight:500;color:#374151">@(p.OwnerName ?? $"#{p.OwnerId}")</div>
+                        </td>
+                        <td>
+                            <div style="font-family:var(--mono);font-size:12px;color:#5b21b6;line-height:1.8">
+                                <div>@p.Latitude.ToString("F5")</div>
+                                <div>@p.Longitude.ToString("F5")</div>
                             </div>
-                        }
-                    </td>
-                    <td style="color:#374151">@(p.OwnerName ?? $"#{p.OwnerId}")</td>
-                    <td style="font-family:var(--mono);font-size:11px;color:#5b21b6">
-                        @p.Latitude.ToString("F4"), @p.Longitude.ToString("F4")
-                    </td>
-                    <td style="color:#374151">@p.Radius m</td>
-                    <td>
-                        @if (p.Status == "PENDING")
-                        {
-                            <span class="badge badge-yellow">⏳ Chờ duyệt</span>
-                        }
-                        else if (p.Status == "APPROVED")
-                        {
-                            <span class="badge badge-green">✅ Đã duyệt</span>
-                        }
-                        else
-                        {
-                            <span class="badge badge-red" title="@p.RejectReason">❌ Từ chối</span>
-                        }
-                    </td>
-                    <td>
-                        <div class="action-group">
+                        </td>
+                        <td>
+                            <span style="background:#f5f3ff;color:#5b21b6;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600">
+                                @p.Radius m
+                            </span>
+                        </td>
+                        <td>
                             @if (p.Status == "PENDING")
                             {
-                                <form method="post" asp-page-handler="Approve" style="display:inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="PoiId" value="@p.Id" />
-                                    <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600">
-                                        <i class="bi bi-check-lg"></i> Duyệt
-                                    </button>
-                                </form>
-                                <button type="button" class="btn btn-danger btn-sm" onclick="openReject(@p.Id, '@p.Name')">
-                                    <i class="bi bi-x-lg"></i> Từ chối
-                                </button>
+                                <span class="badge badge-yellow" style="padding:4px 10px;font-size:12px">⏳ Chờ duyệt</span>
                             }
-                            else if (p.Status == "REJECTED")
+                            else if (p.Status == "APPROVED")
                             {
-                                <form method="post" asp-page-handler="Approve" style="display:inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="PoiId" value="@p.Id" />
-                                    <button type="submit" class="btn btn-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-weight:600">
-                                        <i class="bi bi-arrow-counterclockwise"></i> Duyệt lại
-                                    </button>
-                                </form>
+                                <span class="badge badge-green" style="padding:4px 10px;font-size:12px">✅ Đã duyệt</span>
                             }
                             else
                             {
-                                <form method="post" asp-page-handler="Revoke" style="display:inline">
-                                    @Html.AntiForgeryToken()
-                                    <input type="hidden" name="PoiId" value="@p.Id" />
-                                    <button type="submit" class="btn btn-ghost btn-sm">
-                                        <i class="bi bi-arrow-counterclockwise"></i> Rút duyệt
-                                    </button>
-                                </form>
+                                <span class="badge badge-red" title="@p.RejectReason" style="padding:4px 10px;font-size:12px;cursor:help">❌ Từ chối</span>
                             }
-                        </div>
-                    </td>
-                </tr>
-            }
-            @if (!Model.AllPois.Any())
-            {
-                <tr><td colspan="7" class="empty-state">Không có POI nào.</td></tr>
-            }
-        </tbody>
-    </table>
+                        </td>
+                        <td>
+                            <div class="approval-actions">
+                                @if (p.Status == "PENDING")
+                                {
+                                    <form method="post" asp-page-handler="Approve" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="PoiId" value="@p.Id" />
+                                        <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600;white-space:nowrap">
+                                            <i class="bi bi-check-lg"></i> Duyệt
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="openReject(@p.Id, '@p.Name')" style="white-space:nowrap">
+                                        <i class="bi bi-x-lg"></i> Từ chối
+                                    </button>
+                                }
+                                else if (p.Status == "REJECTED")
+                                {
+                                    <form method="post" asp-page-handler="Approve" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="PoiId" value="@p.Id" />
+                                        <button type="submit" class="btn btn-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;font-weight:600;white-space:nowrap">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Duyệt lại
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="Revoke" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="PoiId" value="@p.Id" />
+                                        <button type="submit" class="btn btn-ghost btn-sm" style="white-space:nowrap">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Rút duyệt
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.AllPois.Any())
+                {
+                    <tr><td colspan="7" class="empty-state">Không có POI nào.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<!-- Modal từ chối -->
+<!-- ── TAB TOUR POI ── -->
+<div id="sectionTour" style="display:none">
+    <div class="card" style="overflow:hidden">
+        @if (!Model.PendingTourPois.Any())
+        {
+            <div style="padding:48px;text-align:center;color:#9ca3af">
+                <i class="bi bi-check2-all" style="font-size:40px;display:block;margin-bottom:12px;color:#c4b5fd"></i>
+                <div style="font-weight:600;font-size:15px;color:#6b7280">Không có yêu cầu nào đang chờ duyệt</div>
+            </div>
+        }
+        else
+        {
+            @foreach (var tp in Model.PendingTourPois)
+            {
+                <div class="tour-req-card">
+                    <div style="display:flex;align-items:center;gap:14px;flex:1">
+                        <div style="width:40px;height:40px;border-radius:10px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            <i class="bi bi-geo-alt-fill" style="color:#7c3aed;font-size:16px"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
+                            @if (!string.IsNullOrEmpty(tp.Address))
+                            {
+                                <div style="font-size:12px;color:#9ca3af;margin-top:2px">
+                                    <i class="bi bi-pin-map"></i> @tp.Address
+                                </div>
+                            }
+                        </div>
+                        <div style="margin-left:8px;padding:0 16px;border-left:2px solid #f3f4f6">
+                            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">Xin vào tour</div>
+                            <span style="background:#ede9fe;color:#5b21b6;font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600">
+                                <i class="bi bi-map"></i> @tp.TourName
+                            </span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-shrink:0">
+                        <form method="post" asp-page-handler="ApproveTourPoi" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
+                            <input type="hidden" name="TourId" value="@tp.TourId" />
+                            <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600">
+                                <i class="bi bi-check-lg"></i> Duyệt
+                            </button>
+                        </form>
+                        <form method="post" asp-page-handler="RejectTourPoi" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
+                            <input type="hidden" name="TourId" value="@tp.TourId" />
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Từ chối yêu cầu này?')">
+                                <i class="bi bi-x-lg"></i> Từ chối
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Modal từ chối POI -->
 <div id="rejectModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeReject()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -155,7 +302,7 @@
                 <input type="hidden" name="PoiId" id="rejectPoiId" />
                 <div class="form-group">
                     <label class="form-label">Lý do từ chối</label>
-                    <textarea name="Reason" id="rejectReason" class="form-control" rows="3"
+                    <textarea name="Reason" class="form-control" rows="3"
                               placeholder="VD: Toạ độ không chính xác, thiếu mô tả..."></textarea>
                 </div>
             </div>
@@ -173,17 +320,23 @@
     function openReject(id, name) {
         document.getElementById('rejectPoiId').value = id;
         document.getElementById('rejectPoiName').textContent = name;
-        document.getElementById('rejectReason').value = '';
         document.getElementById('rejectModal').style.display = 'flex';
     }
     function closeReject() { document.getElementById('rejectModal').style.display = 'none'; }
 
     function filterStatus(status, btn) {
-        document.querySelectorAll('.utab').forEach(b => b.classList.remove('active'));
+        btn.closest('.user-tabs').querySelectorAll('.utab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         document.querySelectorAll('#approvalTable tbody tr[data-status]').forEach(row => {
             row.style.display = (row.dataset.status === status) ? '' : 'none';
         });
+    }
+
+    function switchMainTab(tab, btn) {
+        document.querySelectorAll('#mainTabPoi, #mainTabTour').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('sectionPoi').style.display  = tab === 'poi'  ? '' : 'none';
+        document.getElementById('sectionTour').style.display = tab === 'tour' ? '' : 'none';
     }
 
     document.addEventListener('DOMContentLoaded', () => {
