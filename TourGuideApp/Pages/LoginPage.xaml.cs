@@ -1,4 +1,5 @@
 using TourGuideApp.Services;
+using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.Pages;
 
@@ -72,7 +73,11 @@ public partial class LoginPage : ContentPage
             bool ok = await AuthService.LoginAsync(username, password);
 
             if (ok)
+            {
+                // Tải lịch sử ngay khi đăng nhập thành công
+                _ = HistoryStore.LoadFromApiAsync();
                 GoToShell();
+            }
             else
                 ShowLoginError("Username hoặc mật khẩu không đúng.");
         }

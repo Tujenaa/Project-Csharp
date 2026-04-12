@@ -273,3 +273,4 @@ VALUES
 
 --cập nhật Tours sang PUBLISHED
 UPDATE Tours SET Status = 'PUBLISHED' WHERE Status = 'DRAFT';
+

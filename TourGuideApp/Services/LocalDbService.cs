@@ -37,6 +37,12 @@ public class LocalDbService
         {
             await SeedDataFromJsonAsync();
         }
+        else
+        {
+            // BUG FIX: Phát hiện cache POI cũ bị hỏng (LanguageCode=null) và xóa để force re-fetch
+            // Nguyên nhân: bug deserialization cũ không map được Language.Code vào LanguageCodeFlat
+            await MigrateInvalidPOICacheAsync();
+        }
 
         var tourCount = await _db.Table<CachedTour>().CountAsync();
         if (tourCount == 0)
@@ -55,7 +61,7 @@ public class LocalDbService
             using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync();
             var pois = JsonSerializer.Deserialize<List<POI>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            
+
             if (pois != null && pois.Count > 0)
             {
                 var cached = pois.Select(p => new CachedPOI
@@ -68,7 +74,8 @@ public class LocalDbService
                     Latitude = p.Latitude,
                     Longitude = p.Longitude,
                     Radius = p.Radius,
-                    AudiosJson = JsonSerializer.Serialize(p.Audios),
+                    // BUG FIX: Normalize trước khi serialize để LanguageCodeFlat luôn có giá trị
+                    AudiosJson = JsonSerializer.Serialize(NormalizeAudios(p.Audios)),
                     ImagesJson = JsonSerializer.Serialize(p.Images),
                     CachedAt = DateTime.UtcNow
                 }).ToList();
@@ -91,7 +98,7 @@ public class LocalDbService
             using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync();
             var tours = JsonSerializer.Deserialize<List<Tour>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            
+
             if (tours != null && tours.Count > 0)
             {
                 await SaveToursAsync(tours);
@@ -113,17 +120,19 @@ public class LocalDbService
         await InitAsync();
         var cached = pois.Select(p => new CachedPOI
         {
-            Id          = p.Id,
-            Name        = p.Name ?? "",
+            Id = p.Id,
+            Name = p.Name ?? "",
             Description = p.Description ?? "",
-            Address     = p.Address ?? "",
-            Phone       = p.Phone ?? "",
-            Latitude    = p.Latitude,
-            Longitude   = p.Longitude,
-            Radius      = p.Radius,
-            AudiosJson  = JsonSerializer.Serialize(p.Audios),
-            ImagesJson  = JsonSerializer.Serialize(p.Images),
-            CachedAt    = DateTime.UtcNow
+            Address = p.Address ?? "",
+            Phone = p.Phone ?? "",
+            Latitude = p.Latitude,
+            Longitude = p.Longitude,
+            Radius = p.Radius,
+            // BUG FIX: Normalize trước khi serialize để LanguageCodeFlat luôn có giá trị
+            AudiosJson = JsonSerializer.Serialize(NormalizeAudios(p.Audios)),
+            ImagesJson = JsonSerializer.Serialize(p.Images),
+            IsApproved = p.IsApproved,
+            CachedAt = DateTime.UtcNow
         }).ToList();
 
         await _db!.DeleteAllAsync<CachedPOI>();
@@ -138,21 +147,25 @@ public class LocalDbService
         await InitAsync();
         var c = new CachedPOI
         {
-            Id          = p.Id,
-            Name        = p.Name ?? "",
+            Id = p.Id,
+            Name = p.Name ?? "",
             Description = p.Description ?? "",
-            Address     = p.Address ?? "",
-            Phone       = p.Phone ?? "",
-            Latitude    = p.Latitude,
-            Longitude   = p.Longitude,
-            Radius      = p.Radius,
-            AudiosJson  = JsonSerializer.Serialize(p.Audios),
-            ImagesJson  = JsonSerializer.Serialize(p.Images),
-            CachedAt    = DateTime.UtcNow
+            Address = p.Address ?? "",
+            Phone = p.Phone ?? "",
+            Latitude = p.Latitude,
+            Longitude = p.Longitude,
+            Radius = p.Radius,
+            // BUG FIX: Normalize trước khi serialize để LanguageCodeFlat luôn có giá trị
+            AudiosJson = JsonSerializer.Serialize(NormalizeAudios(p.Audios)),
+            ImagesJson = JsonSerializer.Serialize(p.Images),
+            IsApproved = p.IsApproved,
+            CachedAt = DateTime.UtcNow
         };
         await _db!.InsertOrReplaceAsync(c);
         System.Diagnostics.Debug.WriteLine($"[LocalDB] Updated single POI cache: {p.Id}");
     }
+
+    private static readonly JsonSerializerOptions _caseInsensitive = new() { PropertyNameCaseInsensitive = true };
 
     /// <summary>Đọc POI từ local DB (dùng khi offline).</summary>
     public async Task<List<POI>> GetCachedPOIsAsync()
@@ -162,17 +175,24 @@ public class LocalDbService
 
         return cached.Select(c => new POI
         {
-            Id          = c.Id,
-            Name        = c.Name,
+            Id = c.Id,
+            Name = c.Name,
             Description = c.Description,
-            Address     = c.Address,
-            Phone       = c.Phone,
-            Latitude    = c.Latitude,
-            Longitude   = c.Longitude,
-            Radius      = c.Radius,
-            Audios      = string.IsNullOrEmpty(c.AudiosJson) ? new List<Audio>() : JsonSerializer.Deserialize<List<Audio>>(c.AudiosJson) ?? new List<Audio>(),
-            Images      = string.IsNullOrEmpty(c.ImagesJson) ? new List<string>() : JsonSerializer.Deserialize<List<string>>(c.ImagesJson) ?? new List<string>()
-        }).ToList();
+            Address = c.Address,
+            Phone = c.Phone,
+            Latitude = c.Latitude,
+            Longitude = c.Longitude,
+            Radius = c.Radius,
+            // BUG FIX: Dùng PropertyNameCaseInsensitive để deserialize đúng nested Language object
+            // (JSON lưu trong cache có thể là camelCase "language" thay vì PascalCase "Language")
+            Audios = string.IsNullOrEmpty(c.AudiosJson)
+                ? new List<Audio>()
+                : JsonSerializer.Deserialize<List<Audio>>(c.AudiosJson, _caseInsensitive) ?? new List<Audio>(),
+            Images = string.IsNullOrEmpty(c.ImagesJson)
+                ? new List<string>()
+                : JsonSerializer.Deserialize<List<string>>(c.ImagesJson, _caseInsensitive) ?? new List<string>(),
+            IsApproved = c.IsApproved
+        }).Where(p => p.IsReady).ToList();
     }
 
     // ── Tour Cache ────────────────────────────────────────────────────────────
@@ -182,13 +202,13 @@ public class LocalDbService
         await InitAsync();
         var cached = tours.Select(t => new CachedTour
         {
-            Id           = t.Id,
-            Name         = t.Name ?? "",
-            Description  = t.Description ?? "",
+            Id = t.Id,
+            Name = t.Name ?? "",
+            Description = t.Description ?? "",
             ThumbnailUrl = t.ThumbnailUrl ?? "",
-            Status       = t.Status ?? "PUBLISHED",
-            PoisJson     = JsonSerializer.Serialize(t.POIs),
-            CachedAt     = DateTime.UtcNow
+            Status = t.Status ?? "PUBLISHED",
+            PoisJson = JsonSerializer.Serialize(t.POIs),
+            CachedAt = DateTime.UtcNow
         }).ToList();
 
         await _db!.DeleteAllAsync<CachedTour>();
@@ -203,12 +223,18 @@ public class LocalDbService
 
         return cached.Select(c => new Tour
         {
-            Id           = c.Id,
-            Name         = c.Name,
-            Description  = c.Description,
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Description,
             ThumbnailUrl = c.ThumbnailUrl,
-            Status       = c.Status,
-            POIs         = string.IsNullOrEmpty(c.PoisJson) ? new List<POI>() : JsonSerializer.Deserialize<List<POI>>(c.PoisJson) ?? new List<POI>()
+            Status = c.Status,
+            // BUG FIX: Dùng PropertyNameCaseInsensitive để deserialize đúng POI lồng trong Tour
+            POIs = string.IsNullOrEmpty(c.PoisJson)
+                ? new List<POI>()
+                : JsonSerializer.Deserialize<List<POI>>(c.PoisJson, _caseInsensitive) ?? new List<POI>()
+        }).Select(t => {
+            if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsReady).ToList();
+            return t;
         }).ToList();
     }
 
@@ -234,11 +260,11 @@ public class LocalDbService
         await InitAsync();
         await _db!.InsertAsync(new PendingHistory
         {
-            PoiId          = poiId,
-            UserId         = userId,
-            PlayTime       = DateTime.UtcNow,
+            PoiId = poiId,
+            UserId = userId,
+            PlayTime = DateTime.UtcNow,
             ListenDuration = listenDuration,
-            Synced         = false
+            Synced = false
         });
         System.Diagnostics.Debug.WriteLine($"[LocalDB] Queued pending history: poi={poiId}, duration={listenDuration}s");
     }
@@ -270,6 +296,60 @@ public class LocalDbService
         await InitAsync();
         await _db!.ExecuteAsync("DELETE FROM PendingHistory WHERE Synced = 1");
     }
+
+
+
+    /// <summary>
+    /// Xóa các bản dịch rác bị lưu nhầm từ bug cũ (text quá ngắn, không phải script thật).
+    /// Chạy một lần khi khởi động để tự heal database.
+    /// </summary>
+    /// <summary>
+    /// Đảm bảo mỗi Audio trong list có LanguageCodeFlat được set từ Language.Code.
+    /// Phải gọi trước khi serialize Audio vào SQLite để tránh mất thông tin ngôn ngữ.
+    /// </summary>
+    private static List<Audio> NormalizeAudios(List<Audio>? audios)
+    {
+        if (audios == null) return new List<Audio>();
+        foreach (var a in audios)
+        {
+            // Nếu LanguageCodeFlat chưa có giá trị, copy từ Language.Code (API nested object)
+            if (string.IsNullOrEmpty(a.LanguageCodeFlat) && !string.IsNullOrEmpty(a.Language?.Code))
+                a.LanguageCodeFlat = a.Language.Code;
+        }
+        return audios;
+    }
+
+    /// <summary>
+    /// Phát hiện cache POI cũ bị hỏng (Audio.LanguageCode = null do bug deserialization).
+    /// Nếu phát hiện → xóa toàn bộ POICache để app re-fetch khi online.
+    /// </summary>
+    private async Task MigrateInvalidPOICacheAsync()
+    {
+        try
+        {
+            var sample = await _db!.Table<CachedPOI>().FirstOrDefaultAsync();
+            if (sample == null || string.IsNullOrEmpty(sample.AudiosJson)) return;
+
+            var audios = JsonSerializer.Deserialize<List<Audio>>(sample.AudiosJson, _caseInsensitive);
+
+            // Cache bị hỏng nếu có Audio có Script nhưng LanguageCode lại null
+            bool isCorrupt = audios?.Any(a =>
+                !string.IsNullOrWhiteSpace(a.Script) && a.LanguageCode == null) ?? false;
+
+            if (isCorrupt)
+            {
+                await _db.DeleteAllAsync<CachedPOI>();
+                System.Diagnostics.Debug.WriteLine(
+                    "[LocalDB] ⚠️ Corrupt POI cache detected (LanguageCode=null). Cleared all POI cache. Will re-fetch on next online session.");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[LocalDB] MigrateInvalidPOICacheAsync error: {ex.Message}");
+        }
+    }
+
+
 }
 
 // ── SQLite table models ───────────────────────────────────────────────────────
@@ -280,16 +360,17 @@ public class CachedPOI
     [PrimaryKey]
     public int Id { get; set; }
 
-    public string Name        { get; set; } = "";
+    public string Name { get; set; } = "";
     public string Description { get; set; } = "";
-    public string Address     { get; set; } = "";
-    public string Phone       { get; set; } = "";
-    public double Latitude    { get; set; }
-    public double Longitude   { get; set; }
-    public int    Radius      { get; set; }
-    public string AudiosJson  { get; set; } = "[]";
-    public string ImagesJson  { get; set; } = "[]";
-    public DateTime CachedAt  { get; set; }
+    public string Address { get; set; } = "";
+    public string Phone { get; set; } = "";
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+    public int Radius { get; set; }
+    public string AudiosJson { get; set; } = "[]";
+    public string ImagesJson { get; set; } = "[]";
+    public bool IsApproved { get; set; } = true;
+    public DateTime CachedAt { get; set; }
 }
 
 [Table("PendingHistory")]
@@ -298,11 +379,11 @@ public class PendingHistory
     [PrimaryKey, AutoIncrement]
     public int Id { get; set; }
 
-    public int      PoiId          { get; set; }
-    public int      UserId         { get; set; }
-    public DateTime PlayTime       { get; set; }
-    public int      ListenDuration { get; set; }
-    public bool     Synced         { get; set; }
+    public int PoiId { get; set; }
+    public int UserId { get; set; }
+    public DateTime PlayTime { get; set; }
+    public int ListenDuration { get; set; }
+    public bool Synced { get; set; }
 }
 
 [Table("TourCache")]
@@ -310,10 +391,11 @@ public class CachedTour
 {
     [PrimaryKey]
     public int Id { get; set; }
-    public string Name         { get; set; } = "";
-    public string Description  { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
     public string ThumbnailUrl { get; set; } = "";
-    public string Status       { get; set; } = "PUBLISHED";
-    public string PoisJson     { get; set; } = "[]";
-    public DateTime CachedAt   { get; set; }
+    public string Status { get; set; } = "PUBLISHED";
+    public string PoisJson { get; set; } = "[]";
+    public DateTime CachedAt { get; set; }
 }
+

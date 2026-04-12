@@ -47,7 +47,8 @@ public class SettingService : INotifyPropertyChanged
             if (list != null && list.Count > 0)
             {
                 var dict = new Dictionary<string, string>();
-                foreach (var l in list)
+                // Chỉ hiển thị các ngôn ngữ đang hoạt động
+                foreach (var l in list.Where(l => l.IsActive))
                 {
                     string emoji = GetFlagEmoji(l.Code);
                     dict[l.Code] = string.IsNullOrEmpty(emoji) ? l.Name : $"{emoji}  {l.Name}";

@@ -33,12 +33,17 @@ public static class DistanceUtils
     }
 
     /// <summary>
-    /// Cập nhật DistanceText cho POI dựa trên vị trí hiện tại.
+    /// Cập nhật DistanceText và WalkingTimeText cho POI dựa trên vị trí hiện tại.
     /// </summary>
     public static double UpdatePoiDistance(POI poi, double userLat, double userLon)
     {
         double d = GetDistance(userLat, userLon, poi.Latitude, poi.Longitude);
         poi.DistanceText = FormatDistance(d);
+
+        // Tính thời gian đi bộ: 1.4 m/s (khoảng 5km/h)
+        int minutes = (int)Math.Max(1, Math.Round(d / 1.33 / 60.0));
+        poi.WalkingTimeText = $"{minutes} phút";
+
         return d;
     }
 }

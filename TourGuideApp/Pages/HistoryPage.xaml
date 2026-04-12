@@ -114,7 +114,13 @@
 		</VerticalStackLayout>
 
 		<!-- List -->
-		<ScrollView Grid.Row="1" IsVisible="{Binding IsLoggedIn}">
+		<RefreshView 
+            Grid.Row="1" 
+            IsRefreshing="{Binding IsLoading}" 
+            Command="{Binding LoadDataCommand}"
+            RefreshColor="#512BD4">
+            
+            <ScrollView IsVisible="{Binding IsLoggedIn}">
 			<VerticalStackLayout Padding="18,16,18,24" Spacing="0">
 
 				<!-- Empty state -->
@@ -245,6 +251,18 @@
 
 			</VerticalStackLayout>
 		</ScrollView>
+        </RefreshView>
+
+        <!-- Loading overlay -->
+        <ActivityIndicator
+            Grid.Row="1"
+            IsRunning="{Binding IsLoading}"
+            IsVisible="{Binding IsLoading}"
+            Color="#512BD4"
+            WidthRequest="40"
+            HeightRequest="40"
+            VerticalOptions="Center"
+            HorizontalOptions="Center"/>
 
 	</Grid>
 </ContentPage>

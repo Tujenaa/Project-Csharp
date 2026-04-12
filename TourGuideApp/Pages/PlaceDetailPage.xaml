@@ -111,25 +111,30 @@
                             </Border>
 
                             <!-- Play button -->
-                            <Border BackgroundColor="#512BD4"
-                                    WidthRequest="46" HeightRequest="46"
-                                    StrokeThickness="0">
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
-                                        <Setter Property="IsVisible" Value="False"/>
-                                    </DataTrigger>
-                                </Border.Triggers>
-                                <Border.StrokeShape>
-                                    <RoundRectangle CornerRadius="12"/>
-                                </Border.StrokeShape>
-                                <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Tapped="OnPlayTapped"/>
-                                </Border.GestureRecognizers>
-                                <Image x:Name="imgPlayIcon"
-                                       Source="ic_white_play.svg"
-                                       WidthRequest="18" HeightRequest="18"
-                                       HorizontalOptions="Center" VerticalOptions="Center"/>
-                            </Border>
+                            <Grid>
+                                <Border BackgroundColor="#512BD4"
+                                        WidthRequest="46" HeightRequest="46"
+                                        StrokeThickness="0">
+                                    <Border.Triggers>
+                                        <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
+                                            <Setter Property="IsVisible" Value="False"/>
+                                        </DataTrigger>
+                                    </Border.Triggers>
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="12"/>
+                                    </Border.StrokeShape>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPlayTapped"/>
+                                    </Border.GestureRecognizers>
+                                    <Image x:Name="imgPlayIcon"
+                                           Source="ic_white_play.svg"
+                                           WidthRequest="18" HeightRequest="18"
+                                           HorizontalOptions="Center" VerticalOptions="Center"/>
+                                </Border>
+
+                                <ActivityIndicator x:Name="loadingIndicator" IsRunning="True" Color="#512BD4"
+                                                   WidthRequest="46" HeightRequest="46" IsVisible="False"/>
+                             </Grid>
 
                             <!-- Pause button -->
                             <Border BackgroundColor="#E8E3F5"
@@ -217,7 +222,7 @@
                         <RoundRectangle CornerRadius="16"/>
                     </Border.StrokeShape>
                     <VerticalStackLayout Padding="16" Spacing="4">
-                        <Label Text="{Binding Distance}" FontSize="18" FontAttributes="Bold"
+                        <Label Text="{Binding DistanceText}" FontSize="18" FontAttributes="Bold"
                                HorizontalOptions="Center" TextColor="#1A1035"/>
                         <Label Text="Khoảng cách" FontSize="11"
                                HorizontalOptions="Center" TextColor="#6B7280"/>
@@ -228,7 +233,7 @@
                         <RoundRectangle CornerRadius="16"/>
                     </Border.StrokeShape>
                     <VerticalStackLayout Padding="16" Spacing="4">
-                        <Label Text="5 phút" FontSize="18" FontAttributes="Bold"
+                        <Label Text="{Binding WalkingTimeText}" FontSize="18" FontAttributes="Bold"
                                HorizontalOptions="Center" TextColor="#1A1035"/>
                         <Label Text="Đi bộ" FontSize="11"
                                HorizontalOptions="Center" TextColor="#6B7280"/>

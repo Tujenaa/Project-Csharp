@@ -11,6 +11,7 @@ public partial class MapPage : ContentPage
     bool poiListVisible = false;
     bool searchPanelVisible = false;
     POI? currentDetailPoi = null;
+    POI? currentRoutePoi = null;  // POI đang có đường chỉ đường trên bản đồ
 
     public MapPage()
     {
@@ -26,7 +27,7 @@ public partial class MapPage : ContentPage
         viewModel.ActiveTourChanged += OnActiveTourChanged;
         viewModel.TourSelected += OnTourSelected;
 
-        viewModel.SelectRouteDestCommand = new Command<POI>(poi => _ = OnRouteDestSelectedAsync(poi));
+        viewModel.SelectRouteDestCommand = new Command<POI>(poi => _ = OnRouteDestSelectedWithTourCheckAsync(poi));
 
         AudioPlaybackService.Instance.PlaybackStateChanged += OnPlaybackStateChanged;
     }
@@ -37,6 +38,13 @@ public partial class MapPage : ContentPage
     {
         MainThread.BeginInvokeOnMainThread(() =>
         {
+            // Đồng bộ lại reference currentDetailPoi phòng khi NearbyPOI đã rebuild
+            if (currentDetailPoi != null)
+            {
+                var fresh = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == currentDetailPoi.Id);
+                if (fresh != null) currentDetailPoi = fresh;
+            }
+
             if (currentDetailPoi == null || !poiDetailCard.IsVisible) return;
 
             var svc = AudioPlaybackService.Instance;
@@ -100,6 +108,26 @@ public partial class MapPage : ContentPage
             UpdatePOICountLabel();
             UpdateTourChipHighlight(tour);
         }
+
+        // Nếu có POI được yêu cầu focus từ HomePage
+        if (MapTourState.FocusPoiId != null)
+        {
+            int poiId = MapTourState.FocusPoiId.Value;
+            MapTourState.FocusPoiId = null;
+            var poi = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == poiId);
+            if (poi != null)
+            {
+                await Task.Delay(300);
+                ShowDetailCard(poi);
+                var lat = poi.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                var lon = poi.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (viewModel.EvalJs != null)
+                {
+                    await viewModel.EvalJs($"highlightPOI({poiId})");
+                    await viewModel.EvalJs($"flyTo({lat},{lon},16)");
+                }
+            }
+        }
     }
 
     // ── Tour chip ─────────────────────────────────────────────────────────────
@@ -154,6 +182,17 @@ public partial class MapPage : ContentPage
                 : Color.FromArgb("#512BD4");
 
         chipAll.Stroke = selectedTour == null ? Colors.Transparent : Color.FromArgb("#DDD6F3");
+
+        // Highlight tour chip con tương ứng trong BindableLayout
+        foreach (var child in tourChipsContainer.Children)
+        {
+            if (child is not Border chip) continue;
+            var isActive = chip.BindingContext is Tour t && selectedTour != null && t.Id == selectedTour.Id;
+            chip.BackgroundColor = isActive ? Color.FromArgb("#512BD4") : Color.FromArgb("#F4F2FB");
+            chip.Stroke = isActive ? Colors.Transparent : Color.FromArgb("#DDD6F3");
+            if (chip.Content is Label lbl)
+                lbl.TextColor = isActive ? Colors.White : Color.FromArgb("#512BD4");
+        }
     }
 
     // ── Route bar ─────────────────────────────────────────────────────────────
@@ -215,6 +254,34 @@ public partial class MapPage : ContentPage
 
     // ── Route dest ────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Wrapper kiểm tra tour trước khi chỉ đường.
+    /// Nếu đang trong tour mà POI không thuộc tour → hỏi người dùng có muốn hủy tour không.
+    /// </summary>
+    async Task OnRouteDestSelectedWithTourCheckAsync(POI poi)
+    {
+        if (poi == null) return;
+
+        if (viewModel.IsTourActive)
+        {
+            bool poiInTour = viewModel.NearbyPOI.Any(p => p.Id == poi.Id);
+            if (!poiInTour)
+            {
+                bool confirm = await DisplayAlert(
+                    "Ngoài lộ trình tour",
+                    $"Địa điểm \"{poi.Name}\" không thuộc tour hiện tại.\nBạn có muốn hủy tour và chỉ đường đến đây không?",
+                    "Hủy tour & Chỉ đường",
+                    "Giữ lại tour");
+
+                if (!confirm) return;
+
+                viewModel.CancelTourCommand.Execute(null);
+            }
+        }
+
+        await OnRouteDestSelectedAsync(poi);
+    }
+
     async Task OnRouteDestSelectedAsync(POI poi)
     {
         if (poi == null) return;
@@ -222,8 +289,15 @@ public partial class MapPage : ContentPage
         lblRouteDestination.TextColor = Color.FromArgb("#1A1035");
         btnClearRoute.IsVisible = true;
         CloseSearchPanel();
+
+        // Ghi nhớ POI đang được chỉ đường
+        currentRoutePoi = poi;
+
         if (viewModel.EvalJs != null)
+        {
+            // Highlight marker điểm đến khi chỉ đường
             await viewModel.EvalJs($"highlightPOI({poi.Id})");
+        }
         var loc = await viewModel.GetCurrentLocationFastAsync();
         if (loc != null && viewModel.EvalJs != null)
         {
@@ -254,6 +328,7 @@ public partial class MapPage : ContentPage
         lblRouteDestination.Text = "Chọn điểm đến...";
         lblRouteDestination.TextColor = Color.FromArgb("#94A3B8");
         btnClearRoute.IsVisible = false;
+        currentRoutePoi = null;  // Xóa route → reset về nearest
         if (viewModel.EvalJs != null)
             await viewModel.EvalJs("if(typeof routeLine !== 'undefined' && routeLine) { map.removeLayer(routeLine); routeLine = null; }");
         poiDetailCard.IsVisible = false;
@@ -325,7 +400,12 @@ public partial class MapPage : ContentPage
     {
         poiDetailCard.IsVisible = false;
         currentDetailPoi = null;
-        HighlightNearestIfNoSelection();
+
+        // Nếu vẫn đang có đường chỉ đường → giữ highlight cam cho POI đó
+        if (currentRoutePoi != null && viewModel.EvalJs != null)
+            _ = viewModel.EvalJs($"highlightPOI({currentRoutePoi.Id})");
+        else
+            HighlightNearestIfNoSelection();
     }
 
     private void OnCardPlayAudioTapped(object sender, EventArgs e)
@@ -343,7 +423,7 @@ public partial class MapPage : ContentPage
     private async void OnCardNavigateTapped(object sender, EventArgs e)
     {
         if (currentDetailPoi == null) return;
-        await OnRouteDestSelectedAsync(currentDetailPoi);
+        await OnRouteDestSelectedWithTourCheckAsync(currentDetailPoi);
     }
 
     private async void OnCardDetailTapped(object sender, EventArgs e)
@@ -383,8 +463,14 @@ public partial class MapPage : ContentPage
                 var updated = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == currentDetailPoi.Id);
                 if (updated != null)
                 {
+                    // Cập nhật reference để tránh mất sync sau khi collection rebuild
+                    currentDetailPoi = updated;
                     lblCardDistance.Text = updated.DistanceText;
-                    UpdateCardPlayButton(updated.IsPlaying);
+
+                    // Dùng AudioPlaybackService làm nguồn sự thật thay vì poi.IsPlaying
+                    var svc = AudioPlaybackService.Instance;
+                    bool isPlaying = svc.CurrentPlayingPoi?.Id == updated.Id && svc.IsPlaying;
+                    UpdateCardPlayButton(isPlaying);
                 }
             }
             else
@@ -396,6 +482,12 @@ public partial class MapPage : ContentPage
 
     void HighlightNearestIfNoSelection()
     {
+        // Nếu đang có route, ưu tiên highlight điểm đến thay vì nearest
+        if (currentRoutePoi != null && viewModel.EvalJs != null)
+        {
+            _ = viewModel.EvalJs($"highlightPOI({currentRoutePoi.Id})");
+            return;
+        }
         if (currentDetailPoi == null && viewModel.NearbyPOI.Count > 0 && viewModel.EvalJs != null)
         {
             var closest = viewModel.NearbyPOI.First();

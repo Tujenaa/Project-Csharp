@@ -13,6 +13,9 @@ public class POI : INotifyPropertyChanged
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public int Radius { get; set; }
+    public bool IsApproved { get; set; } = true;
+    public bool IsReady => IsApproved && Audios != null && Audios.Count > 0;
+
     
     public List<Audio> Audios { get; set; } = new();
     public List<string> Images { get; set; } = new();
@@ -74,6 +77,14 @@ public class POI : INotifyPropertyChanged
     {
         get => _distanceText;
         set => SetProperty(ref _distanceText, value);
+    }
+
+    // Thời gian đi bộ ước tính (VD: 5 phút, 15 phút)
+    private string _walkingTimeText = "---";
+    public string WalkingTimeText
+    {
+        get => _walkingTimeText;
+        set => SetProperty(ref _walkingTimeText, value);
     }
 
     // =============================

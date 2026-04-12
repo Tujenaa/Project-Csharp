@@ -18,7 +18,18 @@ public class HomeViewModel : INotifyPropertyChanged
     public ICommand GoToDetailCommand { get; }
     public Command<POI> PlayAudioCommand { get; }
     public Command<POI> PauseAudioCommand { get; }
+    public Command StopAudioCommand { get; }
     public Command<Tour> GoToTourMapCommand { get; }
+    public Command<POI> GoToMapWithPoiCommand { get; }
+
+    private POI? _currentPlayedPoi;
+    public POI? CurrentPlayedPoi
+    {
+        get => _currentPlayedPoi;
+        set { _currentPlayedPoi = value; OnPropertyChanged(nameof(CurrentPlayedPoi)); OnPropertyChanged(nameof(IsPoiPlaying)); }
+    }
+
+    public bool IsPoiPlaying => CurrentPlayedPoi != null;
 
     private int _tourCount;
     public int TourCount
@@ -59,12 +70,33 @@ public class HomeViewModel : INotifyPropertyChanged
             AudioPlaybackService.Instance.Pause();
         });
 
+        StopAudioCommand = new Command(() =>
+        {
+            AudioPlaybackService.Instance.Stop();
+        });
+
         GoToTourMapCommand = new Command<Tour>(async (tour) =>
         {
             if (tour == null) return;
             MapTourState.SelectedTour = tour;
             await Shell.Current.GoToAsync("//map");
         });
+
+        GoToMapWithPoiCommand = new Command<POI>(async (poi) =>
+        {
+            if (poi == null) return;
+            MapTourState.FocusPoiId = poi.Id;
+            await Shell.Current.GoToAsync("//map");
+        });
+
+        AudioPlaybackService.Instance.PlaybackStateChanged += () =>
+        {
+            CurrentPlayedPoi = AudioPlaybackService.Instance.CurrentPlayingPoi;
+            // Cập nhật lại list IsPlaying để icon UI load lại
+            foreach (var p in TopPOIs) p.IsPlaying = (CurrentPlayedPoi?.Id == p.Id && AudioPlaybackService.Instance.IsPlaying);
+            foreach (var p in AllPOIs) p.IsPlaying = (CurrentPlayedPoi?.Id == p.Id && AudioPlaybackService.Instance.IsPlaying);
+        };
+
     }
 
     public async Task LoadData()

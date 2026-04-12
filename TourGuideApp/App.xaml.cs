@@ -46,6 +46,14 @@ namespace TourGuideApp
             }
         }
 
+        protected override void OnResume()
+        {
+            base.OnResume();
+            // Reset flag để khi vào lại app (từ background) vẫn hỏi lại lân cận
+            var mapVm = Handler?.MauiContext?.Services.GetService<TourGuideApp.ViewModels.MapViewModel>();
+            mapVm?.ResetStartupFlag();
+        }
+
         protected override void CleanUp()
         {
             Connectivity.Current.ConnectivityChanged -= OnConnectivityChanged;

@@ -16,6 +16,13 @@ namespace TourGuideApp.ViewModels
 
         public ObservableCollection<HistoryGroup> HistoryGroups { get; } = new();
 
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            set { _isLoading = value; OnPropertyChanged(nameof(IsLoading)); }
+        }
+
         private int _totalListened;
         public int TotalListened
         {
@@ -23,8 +30,8 @@ namespace TourGuideApp.ViewModels
             private set { _totalListened = value; OnPropertyChanged(nameof(TotalListened)); }
         }
 
-        private int _totalDuration;
-        public int TotalDuration
+        private string _totalDuration = "0";
+        public string TotalDuration
         {
             get => _totalDuration;
             private set { _totalDuration = value; OnPropertyChanged(nameof(TotalDuration)); }
@@ -40,14 +47,32 @@ namespace TourGuideApp.ViewModels
         // ── Commands ──────────────────────────────────────────────────────────
         public ICommand ClearHistoryCommand { get; }
         public ICommand ReplayCommand { get; }
+        public ICommand LoadDataCommand { get; }
 
         public HistoryViewModel()
         {
             ClearHistoryCommand = new Command(ClearHistory);
             ReplayCommand = new Command<HistoryItem>(OnReplay);
+            LoadDataCommand = new Command(async () => await LoadDataAsync());
 
             HistoryStore.OnItemAdded += HandleItemAdded;
             Rebuild();
+        }
+
+        public async Task LoadDataAsync()
+        {
+            if (IsLoading) return;
+            IsLoading = true;
+
+            try
+            {
+                await HistoryStore.LoadFromApiAsync();
+                Rebuild();
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         // ── Public methods ────────────────────────────────────────────────────
@@ -93,7 +118,7 @@ namespace TourGuideApp.ViewModels
             }
 
             TotalListened = allItems.Count;
-            TotalDuration = allItems.Sum(i => i.ListenDuration) / 60; // Chuyển sang phút
+            TotalDuration = (allItems.Sum(i => i.ListenDuration) / 60.0).ToString("F1"); // Hiển thị 1 chữ số thập phân
             IsHistoryEmpty = allItems.Count == 0;
             
             OnPropertyChanged(nameof(IsLoggedIn));

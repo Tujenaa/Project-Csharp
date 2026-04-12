@@ -13,7 +13,7 @@ public class ApiService
     {
         public static string BaseUrl => DeviceInfo.DeviceType == DeviceType.Virtual 
             ? "http://10.0.2.2:5266/api/" 
-            : "http://192.168.1.19:5266/api/";
+            : "http://192.168.1.32:5266/api/";
     }
 
     // ── POI ──────────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ public class ApiService
                 if (pois != null && pois.Count > 0)
                 {
                     _ = LocalDbService.Instance.SavePOIsAsync(pois);
-                    return pois;
+                    return pois.Where(p => p.IsReady).ToList();
                 }
             }
             catch (Exception ex)
@@ -45,7 +45,8 @@ public class ApiService
         }
 
         System.Diagnostics.Debug.WriteLine("[API] GetPOI → using offline cache");
-        return await LocalDbService.Instance.GetCachedPOIsAsync();
+        var cached = await LocalDbService.Instance.GetCachedPOIsAsync();
+        return cached.Where(p => p.IsReady).ToList();
     }
 
     /// <summary>Lấy thông tin một POI từ API và cập nhật cache lẻ.</summary>
@@ -88,7 +89,7 @@ public class ApiService
         }
 
         var cached = await LocalDbService.Instance.GetCachedPOIsAsync();
-        return cached.Take(5).ToList();
+        return cached.Where(p => p.IsReady).Take(5).ToList();
     }
 
     public async Task<int> GetPoiCount()
@@ -99,7 +100,7 @@ public class ApiService
             catch { }
         }
         var cached = await LocalDbService.Instance.GetCachedPOIsAsync();
-        return cached.Count;
+        return cached.Count(p => p.IsReady);
     }
 
     public async Task<int> GetAudioCount()
@@ -239,6 +240,10 @@ public class ApiService
                 if (tours.Count > 0)
                 {
                     _ = LocalDbService.Instance.SaveToursAsync(tours);
+                    foreach (var t in tours)
+                    {
+                        if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsReady).ToList();
+                    }
                     return tours;
                 }
             }
@@ -249,7 +254,12 @@ public class ApiService
         }
 
         System.Diagnostics.Debug.WriteLine("[API] GetTours → using offline cache");
-        return await LocalDbService.Instance.GetCachedToursAsync();
+        var cachedTours = await LocalDbService.Instance.GetCachedToursAsync();
+        foreach (var t in cachedTours)
+        {
+            if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsReady).ToList();
+        }
+        return cachedTours;
     }
 
     public async Task<List<TourGuideApp.Models.Tour>> GetTopTours(int count = 2)
@@ -264,8 +274,13 @@ public class ApiService
         {
             try
             {
-                return await client.GetFromJsonAsync<TourGuideApp.Models.Tour>(
+                var tour = await client.GetFromJsonAsync<TourGuideApp.Models.Tour>(
                     $"{ApiConfig.BaseUrl}tours/{id}");
+                if (tour != null && tour.POIs != null)
+                {
+                    tour.POIs = tour.POIs.Where(p => p.IsReady).ToList();
+                }
+                return tour;
             }
             catch (Exception ex)
             {

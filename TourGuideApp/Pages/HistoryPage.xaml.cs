@@ -14,9 +14,12 @@ public partial class HistoryPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-
+        
         _vm = new HistoryViewModel();
         BindingContext = _vm;
+        
+        // Tải dữ liệu từ API khi vào trang
+        _ = _vm.LoadDataAsync();
     }
 
     protected override void OnDisappearing()

@@ -32,7 +32,7 @@ public class AudioPlaybackService
     private const double HistoryThresholdSeconds = 5.0;
 
     /// <summary>Thời gian chờ tối đa khi tạm dừng trước khi kết thúc phiên (120s).</summary>
-    private const int PauseTimeoutSeconds = 120;
+    private const int PauseTimeoutSeconds = 60;
 
     /// <summary>
     /// Đánh dấu người dùng đã nghe đủ ngưỡng tối thiểu (HistoryThresholdSeconds).
@@ -55,6 +55,10 @@ public class AudioPlaybackService
     private CancellationTokenSource? _pauseTimeoutCts;
 
     // ── Public state ──────────────────────────────────────────────────────────
+
+    // ── Hàng đợi phát tuần tự ────────────────────────────────────────────────
+    private readonly Queue<POI> _playQueue = new();
+    private bool _isProcessingQueue = false;
 
     public POI? CurrentPlayingPoi { get; private set; }
     public bool IsPlaying { get; private set; }
@@ -86,6 +90,48 @@ public class AudioPlaybackService
             MainThread.BeginInvokeOnMainThread(() =>
                 ListenSecondsChanged?.Invoke(ListenSeconds));
         };
+    }
+
+    /// <summary>Thêm nhiều POI vào hàng đợi và bắt đầu phát tuần tự nếu chưa phát.</summary>
+    public async Task EnqueueRangeAsync(IEnumerable<POI> pois)
+    {
+        foreach (var poi in pois)
+            _playQueue.Enqueue(poi);
+
+        await ProcessQueueAsync();
+    }
+
+    /// <summary>Thêm 1 POI vào hàng đợi và bắt đầu phát nếu chưa phát.</summary>
+    public async Task EnqueueAsync(POI poi)
+    {
+        _playQueue.Enqueue(poi);
+        await ProcessQueueAsync();
+    }
+
+    private async Task ProcessQueueAsync()
+    {
+        if (_isProcessingQueue) return;
+        _isProcessingQueue = true;
+
+        try
+        {
+            while (_playQueue.Count > 0)
+            {
+                // Nếu đang phát thủ công (không phải từ queue), dừng xử lý queue
+                if (IsPlaying) break;
+
+                var next = _playQueue.Dequeue();
+                await PlayAsync(next);
+
+                // Chờ cho đến khi POI này phát xong trước khi chuyển sang POI tiếp theo
+                while (IsPlaying)
+                    await Task.Delay(500);
+            }
+        }
+        finally
+        {
+            _isProcessingQueue = false;
+        }
     }
 
     public async Task PlayAsync(POI poi)

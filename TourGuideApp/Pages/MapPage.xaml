@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Class="TourGuideApp.Pages.MapPage"
+    xmlns:viewmodels="clr-namespace:TourGuideApp.ViewModels;assembly=TourGuideApp"
     Title="Bản đồ"
     Shell.NavBarIsVisible="False">
 
@@ -25,6 +26,34 @@
             </Border.Shadow>
 
             <VerticalStackLayout Spacing="0">
+                <!-- Banner: Đang trong Tour -->
+                <Border x:Name="activeTourBanner"
+                        BackgroundColor="#512BD4"
+                        Stroke="Transparent" StrokeThickness="0"
+                        Margin="0,0,0,0"
+                        HorizontalOptions="Fill"
+                        IsVisible="{Binding IsTourActive}">
+                    <Border.StrokeShape>
+                        <RoundRectangle CornerRadius="18,18,0,0"/>
+                    </Border.StrokeShape>
+                    <Grid ColumnDefinitions="*, Auto" Padding="14,8">
+                        <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
+                            <Ellipse Fill="#4ADE80" WidthRequest="8" HeightRequest="8"/>
+                            <Label VerticalOptions="Center">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Đang trong tour: " FontSize="12" TextColor="#E0E7FF"/>
+                                        <Span Text="{Binding ActiveTour.Name}" FontSize="12" FontAttributes="Bold" TextColor="White"/>
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </HorizontalStackLayout>
+                        <Button Grid.Column="1" Text="Hủy" 
+                                FontSize="11" HeightRequest="28" Padding="10,0"
+                                BackgroundColor="#312E81" TextColor="White"
+                                CornerRadius="8" Command="{Binding CancelTourCommand}"/>
+                    </Grid>
+                </Border>
 
                 <!-- Thanh lộ trình: bấm để mở/đóng search -->
                 <Grid ColumnSpacing="10" Padding="14,13,14,13">
@@ -299,11 +328,11 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    
+
                     <VerticalStackLayout Grid.Column="0" Spacing="2">
                         <BoxView BackgroundColor="#DDD6F3" WidthRequest="36" HeightRequest="4"
                                  CornerRadius="2" HorizontalOptions="Start"/>
-                        
+
                         <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10" Margin="0,8,10,0">
                             <VerticalStackLayout Grid.Column="0" Spacing="0">
                                 <Label x:Name="lblBottomSheetTitle" Text="Địa điểm tham quan"
@@ -313,13 +342,29 @@
                                        FontSize="12" TextColor="#94A3B8"/>
                             </VerticalStackLayout>
 
-                            <!-- Nút Bắt đầu tham quan (chỉ hiện khi chọn tour) -->
+                            <!-- Nút Bắt đầu tham quan (chỉ hiện khi chọn tour và chưa bắt đầu) -->
                             <Border Grid.Column="1" 
                                     BackgroundColor="#512BD4" 
                                     Stroke="Transparent" 
                                     Padding="12,6"
-                                    VerticalOptions="Center"
-                                    IsVisible="{Binding IsTourSelected}">
+                                    VerticalOptions="Center">
+                                <Border.Triggers>
+                                    <!-- Hiện khi IsTourSelected=true VÀ IsTourActive=false -->
+                                    <MultiTrigger TargetType="Border">
+                                        <MultiTrigger.Conditions>
+                                            <BindingCondition Binding="{Binding IsTourSelected}" Value="True"/>
+                                            <BindingCondition Binding="{Binding IsTourActive}" Value="False"/>
+                                        </MultiTrigger.Conditions>
+                                        <Setter Property="IsVisible" Value="True"/>
+                                    </MultiTrigger>
+                                    <!-- Ẩn mặc định -->
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsTourSelected}" Value="False">
+                                        <Setter Property="IsVisible" Value="False"/>
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border" Binding="{Binding IsTourActive}" Value="True">
+                                        <Setter Property="IsVisible" Value="False"/>
+                                    </DataTrigger>
+                                </Border.Triggers>
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="12"/>
                                 </Border.StrokeShape>
@@ -435,7 +480,7 @@
                                                FontSize="14" FontAttributes="Bold" TextColor="White"
                                                HorizontalOptions="Center" VerticalOptions="Center"/>
                                     </Border>
-                                    
+
                                     <Border Grid.Column="1" StrokeThickness="0" BackgroundColor="#F3F4F6" WidthRequest="36" HeightRequest="36" VerticalOptions="Center">
                                         <Border.StrokeShape>
                                             <RoundRectangle CornerRadius="8"/>
@@ -466,11 +511,14 @@
                                                HorizontalOptions="Center" VerticalOptions="Center"/>
                                     </Border>
 
-                                    <!-- Play and Pause audio -->
-                                    <HorizontalStackLayout Grid.Column="4" Spacing="8" VerticalOptions="Center">
+                                    <!-- Play / Pause audio -->
+                                    <Grid Grid.Column="4" VerticalOptions="Center"
+                                              WidthRequest="36" HeightRequest="36">
+
+                                        <!-- Nút Play (ẩn khi đang phát) -->
                                         <Border BackgroundColor="#EDE7FF"
-                                                Stroke="Transparent" StrokeThickness="0"
-                                                WidthRequest="36" HeightRequest="36">
+                                                    Stroke="Transparent" StrokeThickness="0"
+                                                    WidthRequest="36" HeightRequest="36">
                                             <Border.Triggers>
                                                 <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
                                                     <Setter Property="IsVisible" Value="False"/>
@@ -481,17 +529,18 @@
                                             </Border.StrokeShape>
                                             <Border.GestureRecognizers>
                                                 <TapGestureRecognizer
-                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
-                                                    CommandParameter="{Binding .}"/>
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayAudioCommand}"
+                                                        CommandParameter="{Binding .}"/>
                                             </Border.GestureRecognizers>
                                             <Image Source="ic_play.svg" WidthRequest="15" HeightRequest="15"
-                                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                                                       HorizontalOptions="Center" VerticalOptions="Center"/>
                                         </Border>
-                                        
+
+                                        <!-- Nút Pause (chỉ hiện khi đang phát) -->
                                         <Border BackgroundColor="#FCE7F3"
-                                                Stroke="Transparent" StrokeThickness="0"
-                                                WidthRequest="36" HeightRequest="36"
-                                                IsVisible="False">
+                                                    Stroke="Transparent" StrokeThickness="0"
+                                                    WidthRequest="36" HeightRequest="36"
+                                                    IsVisible="False">
                                             <Border.Triggers>
                                                 <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
                                                     <Setter Property="IsVisible" Value="True"/>
@@ -502,13 +551,14 @@
                                             </Border.StrokeShape>
                                             <Border.GestureRecognizers>
                                                 <TapGestureRecognizer
-                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PauseAudioCommand}"
-                                                    CommandParameter="{Binding .}"/>
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PauseAudioCommand}"
+                                                        CommandParameter="{Binding .}"/>
                                             </Border.GestureRecognizers>
                                             <Image Source="ic_pause.svg" WidthRequest="15" HeightRequest="15"
-                                                   HorizontalOptions="Center" VerticalOptions="Center" />
+                                                       HorizontalOptions="Center" VerticalOptions="Center"/>
                                         </Border>
-                                    </HorizontalStackLayout>
+
+                                    </Grid>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -575,11 +625,16 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Audio – play and pause icons -->
-                    <HorizontalStackLayout Grid.Column="0" Spacing="6" VerticalOptions="Center">
+                    <Grid Grid.Column="0" VerticalOptions="Center">
+                        <!-- Play/Pause Button -->
                         <Border x:Name="btnCardPlayAudio"
                                 BackgroundColor="#EDE7FF"
                                 Stroke="Transparent" StrokeThickness="0"
                                 WidthRequest="46" HeightRequest="46">
+                            <Border.Triggers>
+                                <!-- Bind to VM since it's the Detail Card? No, MapViewModel doesn't have IsPlaying. 
+                                     The code-behind actually controls btnCardPlayAudio and btnCardPauseAudio visibility manually it seems. -->
+                            </Border.Triggers>
                             <Border.StrokeShape>
                                 <RoundRectangle CornerRadius="14"/>
                             </Border.StrokeShape>
@@ -590,7 +645,8 @@
                                    WidthRequest="20" HeightRequest="20"
                                    HorizontalOptions="Center" VerticalOptions="Center"/>
                         </Border>
-                        
+
+                        <!-- Pause Button -->
                         <Border x:Name="btnCardPauseAudio"
                                 BackgroundColor="#FCE7F3"
                                 Stroke="Transparent" StrokeThickness="0"
@@ -606,7 +662,7 @@
                                    WidthRequest="20" HeightRequest="20"
                                    HorizontalOptions="Center" VerticalOptions="Center"/>
                         </Border>
-                    </HorizontalStackLayout>
+                    </Grid>
 
                     <!-- Chỉ đường – icon only -->
                     <Border Grid.Column="1" BackgroundColor="#DBEAFE"

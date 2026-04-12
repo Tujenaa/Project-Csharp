@@ -64,8 +64,27 @@ public partial class PlaceDetailPage : ContentPage
         });
     }
 
+
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
     // Logic OnTtsProgress đã chuyển sang AudioPlaybackService
+
+    readonly LocationService locationService = new();
+
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        
+        // Cập nhật vị trí và khoảng cách khi load trang
+        if (_currentPoi != null)
+        {
+            var loc = await locationService.GetCurrentLocationAsync();
+            if (loc != null)
+            {
+                DistanceUtils.UpdatePoiDistance(_currentPoi, loc.Latitude, loc.Longitude);
+            }
+        }
+    }
 
     protected override void OnDisappearing()
     {
@@ -116,9 +135,13 @@ public partial class PlaceDetailPage : ContentPage
         _currentPoi.IsPlaying = playing;
 
         if (!playing && _currentPoi.AudioProgress >= 0.99)
+        {
             lblAudioStatus.Text = "Nghe lại";
+        }
         else
+        {
             lblAudioStatus.Text = playing ? "Đang phát âm thanh..." : "Nghe thuyết minh";
+        }
     }
 
 

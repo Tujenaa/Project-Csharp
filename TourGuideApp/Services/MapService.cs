@@ -173,6 +173,16 @@ async function drawRoute(lat1, lon1, lat2, lon2) {
     map.removeLayer(routeLine);
   }
 
+  // Tìm POI marker gần điểm đến nhất để highlight
+  let destPoiId = null;
+  let minDist = Infinity;
+  poiMarkers.forEach(m => {
+    const ll = m.getLatLng();
+    const d = Math.abs(ll.lat - lat2) + Math.abs(ll.lng - lon2);
+    if (d < minDist) { minDist = d; destPoiId = m.poiId; }
+  });
+  if (destPoiId !== null) highlightPOI(destPoiId);
+
   try {
     const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=full&geometries=geojson`;
 
