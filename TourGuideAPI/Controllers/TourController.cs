@@ -57,7 +57,7 @@ namespace TourGuideAPI.Controllers
                 .ToListAsync();
 
             var tours = await _context.Tours
-                .Where(t => tourIds.Contains(t.Id) && t.Status == "PUBLISHED")
+                .Where(t => tourIds.Contains(t.Id))
                 .ToListAsync();
 
             var result = await BuildTourDtos(tours);
@@ -148,7 +148,7 @@ namespace TourGuideAPI.Controllers
         public async Task<IActionResult> AddPoi(int id, [FromBody] AddPoiRequest req)
         {
             if (await _context.TourPOI.AnyAsync(tp => tp.TourId == id && tp.PoiId == req.PoiId
-                && (tp.Status == "APPROVED" || tp.Status == "PENDING")))
+                && (tp.Status == "APPROVED" || tp.Status == "PENDING" || tp.Status == "REMOVE_PENDING")))
                 return BadRequest("POI đã có hoặc đang chờ duyệt trong tour.");
 
             var isAdmin = Request.Headers.TryGetValue("X-Role", out var role) && role == "ADMIN";
@@ -172,7 +172,15 @@ namespace TourGuideAPI.Controllers
         {
             var tp = await _context.TourPOI.FirstOrDefaultAsync(x => x.Id == tpId && x.TourId == id);
             if (tp == null) return NotFound();
-            tp.Status = "APPROVED";
+            if (tp.Status == "REMOVE_PENDING")
+            {
+                // Admin đồng ý cho rời tour → xóa thật sự
+                _context.TourPOI.Remove(tp);
+            }
+            else
+            {
+                tp.Status = "APPROVED";
+            }
             await _context.SaveChangesAsync();
             return Ok();
         }
@@ -183,9 +191,79 @@ namespace TourGuideAPI.Controllers
         {
             var tp = await _context.TourPOI.FirstOrDefaultAsync(x => x.Id == tpId && x.TourId == id);
             if (tp == null) return NotFound();
-            _context.TourPOI.Remove(tp);
+            if (tp.Status == "REMOVE_PENDING")
+            {
+                // Admin từ chối cho rời tour → giữ nguyên APPROVED
+                tp.Status = "APPROVED";
+            }
+            else
+            {
+                // Từ chối yêu cầu vào tour → xóa bản ghi
+                _context.TourPOI.Remove(tp);
+            }
             await _context.SaveChangesAsync();
             return Ok();
+        }
+
+        // GET /api/tours/pois/all-approved
+        [HttpGet("pois/all-approved")]
+        public async Task<IActionResult> GetAllApprovedPois()
+        {
+            var list = await _context.TourPOI.Where(tp => tp.Status == "APPROVED").ToListAsync();
+            var result = new List<object>();
+            foreach (var tp in list)
+            {
+                var poi = await _context.POI.FindAsync(tp.PoiId);
+                var tour = await _context.Tours.FindAsync(tp.TourId);
+                result.Add(new
+                {
+                    TourPOIId = tp.Id,
+                    tp.TourId,
+                    TourName = tour?.Name,
+                    tp.PoiId,
+                    PoiName = poi?.Name,
+                    Address = poi?.Address,
+                    tp.OrderIndex,
+                    tp.Status
+                });
+            }
+            return Ok(result);
+        }
+
+        // GET /api/tours/pois/all-rejected
+        [HttpGet("pois/all-rejected")]
+        public async Task<IActionResult> GetAllRejectedPois()
+        {
+            var list = await _context.TourPOI.Where(tp => tp.Status == "REJECTED").ToListAsync();
+            var result = new List<object>();
+            foreach (var tp in list)
+            {
+                var poi = await _context.POI.FindAsync(tp.PoiId);
+                var tour = await _context.Tours.FindAsync(tp.TourId);
+                result.Add(new
+                {
+                    TourPOIId = tp.Id,
+                    tp.TourId,
+                    TourName = tour?.Name,
+                    tp.PoiId,
+                    PoiName = poi?.Name,
+                    Address = poi?.Address,
+                    tp.OrderIndex,
+                    tp.Status
+                });
+            }
+            return Ok(result);
+        }
+
+        // DELETE /api/tours/pois/rejected — xóa tất cả TourPOI bị từ chối
+        [HttpDelete("pois/rejected")]
+        public async Task<IActionResult> DeleteAllRejectedTourPois()
+        {
+            var list = _context.TourPOI.Where(tp => tp.Status == "REJECTED");
+            var count = await list.CountAsync();
+            _context.TourPOI.RemoveRange(list);
+            await _context.SaveChangesAsync();
+            return Ok($"Đã xóa {count} yêu cầu bị từ chối.");
         }
 
         // GET /api/tours/pois/all-pending
@@ -193,6 +271,51 @@ namespace TourGuideAPI.Controllers
         public async Task<IActionResult> GetAllPendingPois()
         {
             var list = await _context.TourPOI.Where(tp => tp.Status == "PENDING").ToListAsync();
+            var result = new List<object>();
+            foreach (var tp in list)
+            {
+                var poi = await _context.POI.FindAsync(tp.PoiId);
+                var tour = await _context.Tours.FindAsync(tp.TourId);
+                result.Add(new
+                {
+                    TourPOIId = tp.Id,
+                    tp.TourId,
+                    TourName = tour?.Name,
+                    tp.PoiId,
+                    PoiName = poi?.Name,
+                    Address = poi?.Address,
+                    tp.OrderIndex,
+                    tp.Status
+                });
+            }
+            return Ok(result);
+        }
+
+        // PUT /api/tours/{id}/pois/{poiId}/request-remove — owner xin rời tour (chờ admin duyệt)
+        [HttpPut("{id}/pois/{poiId}/request-remove")]
+        public async Task<IActionResult> RequestRemovePoi(int id, int poiId)
+        {
+            var isAdmin = Request.Headers.TryGetValue("X-Role", out var role) && role == "ADMIN";
+            var tp = await _context.TourPOI.FirstOrDefaultAsync(x => x.TourId == id && x.PoiId == poiId && x.Status == "APPROVED");
+            if (tp == null) return NotFound();
+            if (isAdmin)
+            {
+                // Admin xóa thẳng, không cần duyệt
+                _context.TourPOI.Remove(tp);
+            }
+            else
+            {
+                tp.Status = "REMOVE_PENDING";
+            }
+            await _context.SaveChangesAsync();
+            return Ok(new { status = isAdmin ? "REMOVED" : "REMOVE_PENDING" });
+        }
+
+        // GET /api/tours/pois/all-remove-pending
+        [HttpGet("pois/all-remove-pending")]
+        public async Task<IActionResult> GetAllRemovePendingPois()
+        {
+            var list = await _context.TourPOI.Where(tp => tp.Status == "REMOVE_PENDING").ToListAsync();
             var result = new List<object>();
             foreach (var tp in list)
             {
@@ -237,7 +360,7 @@ namespace TourGuideAPI.Controllers
         private async Task<TourDto> BuildTourDto(Tour tour)
         {
             var tourPois = await _context.TourPOI
-                .Where(tp => tp.TourId == tour.Id && tp.Status == "APPROVED")
+                .Where(tp => tp.TourId == tour.Id && (tp.Status == "APPROVED" || tp.Status == "REMOVE_PENDING"))
                 .Join(_context.POI.Where(p => p.Status == "APPROVED"),
                     tp => tp.PoiId,
                     p => p.Id,

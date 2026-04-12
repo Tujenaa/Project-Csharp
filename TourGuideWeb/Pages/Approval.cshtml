@@ -2,7 +2,7 @@
 @model GPSGuide.Web.Pages.ApprovalModel
 @{
     ViewData["Title"] = "Phê duyệt"; ViewData["Active"] = "approval";
-    var pendingTourPois = Model.PendingTourPois.Count;
+    var pendingTourPois = Model.PendingTourPois.Count + Model.RemovePendingTourPois.Count;
 }
 
 @section Styles {
@@ -226,7 +226,57 @@
 
 <!-- ── TAB TOUR POI ── -->
 <div id="sectionTour" style="display:none">
-    <div class="card" style="overflow:hidden">
+
+    <!-- Sub-tabs Tour -->
+    <div class="user-tabs" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+        <div style="display:flex;gap:0">
+            <button class="utab active" id="tourSubTabPending" onclick="switchTourTab('pending', this)">
+                ⏳ Xin vào tour
+                @if (Model.PendingTourPois.Count > 0)
+                {
+                    <span class="utab-count-red">@Model.PendingTourPois.Count</span>
+                }
+                else
+                {
+                    <span class="utab-count">0</span>
+                }
+            </button>
+            <button class="utab" id="tourSubTabRemove" onclick="switchTourTab('remove', this)">
+                🚪 Xin rời tour
+                @if (Model.RemovePendingTourPois.Count > 0)
+                {
+                    <span class="utab-count-red">@Model.RemovePendingTourPois.Count</span>
+                }
+                else
+                {
+                    <span class="utab-count">0</span>
+                }
+            </button>
+            <button class="utab" id="tourSubTabApproved" onclick="switchTourTab('approved', this)">
+                ✅ Đã duyệt
+                <span class="utab-count">@Model.ApprovedTourPois.Count</span>
+            </button>
+            <button class="utab" id="tourSubTabRejected" onclick="switchTourTab('rejected', this)">
+                ❌ Từ chối
+                <span class="utab-count">@Model.RejectedTourPois.Count</span>
+            </button>
+        </div>
+        @if (Model.RejectedTourPois.Any())
+        {
+            <form method="post" asp-page-handler="DeleteRejectedTourPois"
+                  id="deleteTourRejectedForm"
+                  onsubmit="return confirm('Xóa tất cả yêu cầu bị từ chối?')"
+                  style="display:none">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger btn-sm">
+                    <i class="bi bi-trash"></i> Xóa tất cả bị từ chối
+                </button>
+            </form>
+        }
+    </div>
+
+    <!-- Pending -->
+    <div id="tourSectionPending" class="card" style="overflow:hidden">
         @if (!Model.PendingTourPois.Any())
         {
             <div style="padding:48px;text-align:center;color:#9ca3af">
@@ -277,6 +327,150 @@
                                 <i class="bi bi-x-lg"></i> Từ chối
                             </button>
                         </form>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Remove Pending (xin rời tour) -->
+    <div id="tourSectionRemove" class="card" style="overflow:hidden;display:none">
+        @if (!Model.RemovePendingTourPois.Any())
+        {
+            <div style="padding:48px;text-align:center;color:#9ca3af">
+                <i class="bi bi-door-open" style="font-size:40px;display:block;margin-bottom:12px;color:#c4b5fd"></i>
+                <div style="font-weight:600;font-size:15px;color:#6b7280">Không có yêu cầu rời tour nào</div>
+            </div>
+        }
+        else
+        {
+            @foreach (var tp in Model.RemovePendingTourPois)
+            {
+                <div class="tour-req-card">
+                    <div style="display:flex;align-items:center;gap:14px;flex:1">
+                        <div style="width:40px;height:40px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            <i class="bi bi-box-arrow-right" style="color:#d97706;font-size:16px"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
+                            @if (!string.IsNullOrEmpty(tp.Address))
+                            {
+                                <div style="font-size:12px;color:#9ca3af;margin-top:2px">
+                                    <i class="bi bi-pin-map"></i> @tp.Address
+                                </div>
+                            }
+                        </div>
+                        <div style="margin-left:8px;padding:0 16px;border-left:2px solid #f3f4f6">
+                            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">Xin rời khỏi tour</div>
+                            <span style="background:#fef3c7;color:#92400e;font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600">
+                                <i class="bi bi-map"></i> @tp.TourName
+                            </span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-shrink:0">
+                        <form method="post" asp-page-handler="ApproveTourPoi" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
+                            <input type="hidden" name="TourId" value="@tp.TourId" />
+                            <button type="submit" class="btn btn-sm"
+                                    style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600"
+                                    onclick="return confirm('Đồng ý cho POI rời khỏi tour này?')">
+                                <i class="bi bi-check-lg"></i> Đồng ý xóa
+                            </button>
+                        </form>
+                        <form method="post" asp-page-handler="RejectTourPoi" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
+                            <input type="hidden" name="TourId" value="@tp.TourId" />
+                            <button type="submit" class="btn btn-ghost btn-sm"
+                                    onclick="return confirm('Từ chối — POI sẽ được giữ lại trong tour?')">
+                                <i class="bi bi-arrow-counterclockwise"></i> Giữ lại
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Approved -->
+    <div id="tourSectionApproved" class="card" style="overflow:hidden;display:none">
+        @if (!Model.ApprovedTourPois.Any())
+        {
+            <div style="padding:48px;text-align:center;color:#9ca3af">
+                <i class="bi bi-map" style="font-size:40px;display:block;margin-bottom:12px;color:#86efac"></i>
+                <div style="font-weight:600;font-size:15px;color:#6b7280">Chưa có yêu cầu nào được duyệt</div>
+            </div>
+        }
+        else
+        {
+            @foreach (var tp in Model.ApprovedTourPois)
+            {
+                <div class="tour-req-card">
+                    <div style="display:flex;align-items:center;gap:14px;flex:1">
+                        <div style="width:40px;height:40px;border-radius:10px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            <i class="bi bi-geo-alt-fill" style="color:#16a34a;font-size:16px"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
+                            @if (!string.IsNullOrEmpty(tp.Address))
+                            {
+                                <div style="font-size:12px;color:#9ca3af;margin-top:2px">
+                                    <i class="bi bi-pin-map"></i> @tp.Address
+                                </div>
+                            }
+                        </div>
+                        <div style="margin-left:8px;padding:0 16px;border-left:2px solid #f3f4f6">
+                            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">Thuộc tour</div>
+                            <span style="background:#dcfce7;color:#166534;font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600">
+                                <i class="bi bi-map"></i> @tp.TourName
+                            </span>
+                        </div>
+                        <div style="margin-left:auto">
+                            <span class="badge badge-green" style="padding:4px 10px;font-size:12px">✅ Đã duyệt</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Rejected -->
+    <div id="tourSectionRejected" class="card" style="overflow:hidden;display:none">
+        @if (!Model.RejectedTourPois.Any())
+        {
+            <div style="padding:48px;text-align:center;color:#9ca3af">
+                <i class="bi bi-x-circle" style="font-size:40px;display:block;margin-bottom:12px;color:#fca5a5"></i>
+                <div style="font-weight:600;font-size:15px;color:#6b7280">Không có yêu cầu nào bị từ chối</div>
+            </div>
+        }
+        else
+        {
+            @foreach (var tp in Model.RejectedTourPois)
+            {
+                <div class="tour-req-card">
+                    <div style="display:flex;align-items:center;gap:14px;flex:1">
+                        <div style="width:40px;height:40px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            <i class="bi bi-geo-alt-fill" style="color:#dc2626;font-size:16px"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
+                            @if (!string.IsNullOrEmpty(tp.Address))
+                            {
+                                <div style="font-size:12px;color:#9ca3af;margin-top:2px">
+                                    <i class="bi bi-pin-map"></i> @tp.Address
+                                </div>
+                            }
+                        </div>
+                        <div style="margin-left:8px;padding:0 16px;border-left:2px solid #f3f4f6">
+                            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">Tour</div>
+                            <span style="background:#fee2e2;color:#991b1b;font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600">
+                                <i class="bi bi-map"></i> @tp.TourName
+                            </span>
+                        </div>
+                        <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+                            <span class="badge badge-red" style="padding:4px 10px;font-size:12px">❌ Từ chối</span>
+                        </div>
                     </div>
                 </div>
             }
@@ -337,6 +531,18 @@
         btn.classList.add('active');
         document.getElementById('sectionPoi').style.display  = tab === 'poi'  ? '' : 'none';
         document.getElementById('sectionTour').style.display = tab === 'tour' ? '' : 'none';
+    }
+
+    function switchTourTab(tab, btn) {
+        btn.closest('.user-tabs').querySelectorAll('.utab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tourSectionPending').style.display  = tab === 'pending' ? '' : 'none';
+        document.getElementById('tourSectionRemove').style.display   = tab === 'remove'  ? '' : 'none';
+        document.getElementById('tourSectionApproved').style.display = tab === 'approved'? '' : 'none';
+        document.getElementById('tourSectionRejected').style.display = tab === 'rejected'? '' : 'none';
+
+        const deleteBtn = document.getElementById('deleteTourRejectedForm');
+        if (deleteBtn) deleteBtn.style.display = tab === 'rejected' ? '' : 'none';
     }
 
     document.addEventListener('DOMContentLoaded', () => {

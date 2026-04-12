@@ -13,6 +13,9 @@ public class ApprovalModel : PageModel
     [TempData] public string Msg { get; set; } = "";
     public List<POI> AllPois { get; set; } = [];
     public List<TourPoiPending> PendingTourPois { get; set; } = [];
+    public List<TourPoiPending> RemovePendingTourPois { get; set; } = [];
+    public List<TourPoiPending> ApprovedTourPois { get; set; } = [];
+    public List<TourPoiPending> RejectedTourPois { get; set; } = [];
 
     [BindProperty] public int PoiId { get; set; }
     [BindProperty] public string Reason { get; set; } = "";
@@ -30,8 +33,11 @@ public class ApprovalModel : PageModel
         {
             AllPois = await Api.GetFromJsonAsync<List<POI>>("poi/all") ?? [];
             PendingTourPois = await Api.GetFromJsonAsync<List<TourPoiPending>>("tours/pois/all-pending") ?? [];
+            RemovePendingTourPois = await Api.GetFromJsonAsync<List<TourPoiPending>>("tours/pois/all-remove-pending") ?? [];
+            ApprovedTourPois = await Api.GetFromJsonAsync<List<TourPoiPending>>("tours/pois/all-approved") ?? [];
+            RejectedTourPois = await Api.GetFromJsonAsync<List<TourPoiPending>>("tours/pois/all-rejected") ?? [];
         }
-        catch { AllPois = []; PendingTourPois = []; }
+        catch { AllPois = []; PendingTourPois = []; RemovePendingTourPois = []; ApprovedTourPois = []; RejectedTourPois = []; }
         return Page();
     }
 
@@ -91,6 +97,14 @@ public class ApprovalModel : PageModel
         if (!IsAdmin) return RedirectToPage("/Index");
         var resp = await Api.PutAsJsonAsync($"tours/{TourId}/pois/{TourPOIId}/reject", new { });
         Msg = resp.IsSuccessStatusCode ? "Đã từ chối yêu cầu tham gia tour." : "Từ chối thất bại.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteRejectedTourPoisAsync()
+    {
+        if (!IsAdmin) return RedirectToPage("/Index");
+        var resp = await Api.DeleteAsync("tours/pois/rejected");
+        Msg = resp.IsSuccessStatusCode ? await resp.Content.ReadAsStringAsync() : "Lỗi khi xóa dữ liệu.";
         return RedirectToPage();
     }
 
