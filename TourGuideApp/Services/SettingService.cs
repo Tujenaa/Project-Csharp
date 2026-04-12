@@ -46,16 +46,30 @@ public class SettingService : INotifyPropertyChanged
             
             if (list != null && list.Count > 0)
             {
+                // 1. Lấy danh sách POI để kiểm tra ngôn ngữ nào thực tế có script
+                var pois = await LocalDbService.Instance.GetCachedPOIsAsync();
+                var usedLanguageCodes = pois
+                    .SelectMany(p => p.Audios)
+                    .Where(a => !string.IsNullOrWhiteSpace(a.Script))
+                    .Select(a => a.LanguageCode?.ToLowerInvariant())
+                    .Where(code => code != null)
+                    .ToHashSet();
+
                 var dict = new Dictionary<string, string>();
-                // Chỉ hiển thị các ngôn ngữ đang hoạt động
+                
+                // 2. Chỉ hiển thị các ngôn ngữ đang hoạt động VÀ có ít nhất 1 script
                 foreach (var l in list.Where(l => l.IsActive))
                 {
+                    string normalizedCode = l.Code.ToLowerInvariant();
+                    if (!usedLanguageCodes.Contains(normalizedCode)) continue;
+
                     string emoji = GetFlagEmoji(l.Code);
                     dict[l.Code] = string.IsNullOrEmpty(emoji) ? l.Name : $"{emoji}  {l.Name}";
                 }
+
                 AvailableLanguages = dict;
                 OnPropertyChanged(nameof(LanguageDisplayName));
-                System.Diagnostics.Debug.WriteLine($"[SettingService] Loaded {dict.Count} languages from API");
+                System.Diagnostics.Debug.WriteLine($"[SettingService] Loaded {dict.Count} languages (filtered by scripts)");
             }
         }
         catch (Exception ex)
