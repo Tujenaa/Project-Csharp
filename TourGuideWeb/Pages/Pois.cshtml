@@ -173,6 +173,12 @@
                     <button type="button" class="tab-btn" id="btnTabLoc" onclick="showTab('tab-loc','btnTabLoc')">
                         <i class="bi bi-geo-alt"></i> Vị trí
                     </button>
+                    @if (Model.IsAdmin)
+                    {
+                        <button type="button" class="tab-btn" id="btnTabTour" onclick="showTab('tab-tour','btnTabTour')">
+                            <i class="bi bi-map"></i> Tour
+                        </button>
+                    }
                 </div>
                 <div id="tab-basic" class="tab-pane">
                     <div class="form-group">
@@ -251,6 +257,74 @@
                     </div>
                     <div id="pickMap" style="height:280px;border-radius:8px;border:1px solid var(--border);margin-top:10px;overflow:hidden"></div>
                 </div>
+
+                @if (Model.IsAdmin)
+                {
+                    <div id="tab-tour" class="tab-pane" style="display:none">
+                        <div style="font-size:13px;color:#6b7280;margin-bottom:12px">
+                            Chọn tour để thêm điểm này vào (không bắt buộc):
+                        </div>
+                        @if (!Model.AllTours.Any())
+                        {
+                            <div style="color:#9ca3af;font-size:13px">Chưa có tour nào.</div>
+                        }
+                        else
+                        {
+                            <div style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto">
+                                @foreach (var t in Model.AllTours)
+                                {
+                                    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background .15s"
+                                           onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background=''">
+                                        <input type="checkbox" name="TourIds" value="@t.Id"
+                                               style="width:15px;height:15px;accent-color:var(--accent)" />
+                                        <div>
+                                            <div style="font-size:13px;font-weight:500">@t.Name</div>
+                                            <div style="font-size:11px;color:#9ca3af">
+                                                @if (t.Status == "PUBLISHED") { <span>✅ Công khai</span> }
+                                                else if (t.Status == "DRAFT") { <span>📝 Nháp</span> }
+                                                else { <span>🗄️ Lưu trữ</span> }
+                                            </div>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                @if (Model.IsAdmin)
+                {
+                    <div id="tab-tour" class="tab-pane" style="display:none">
+                        <div style="font-size:13px;color:#6b7280;margin-bottom:12px">
+                            Chọn tour để thêm điểm này vào (không bắt buộc):
+                        </div>
+                        @if (!Model.AllTours.Any())
+                        {
+                            <div style="color:#9ca3af;font-size:13px;padding:12px 0">Chưa có tour nào.</div>
+                        }
+                        else
+                        {
+                            <div style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto">
+                                @foreach (var t in Model.AllTours)
+                                {
+                                    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:background .15s"
+                                           onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background=''">
+                                        <input type="checkbox" name="TourIds" value="@t.Id"
+                                               style="width:15px;height:15px;accent-color:var(--accent)" />
+                                        <div>
+                                            <div style="font-size:13px;font-weight:500">@t.Name</div>
+                                            <div style="font-size:11px;color:#9ca3af">
+                                                @if (t.Status == "PUBLISHED") { <span>✅ Công khai</span> }
+                                                else if (t.Status == "DRAFT") { <span>📝 Nháp</span> }
+                                                else { <span>🗄️ Lưu trữ</span> }
+                                            </div>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
@@ -512,6 +586,8 @@
         document.getElementById('imageUploadArea').style.borderColor = '#d1d5db';
         document.getElementById('currentImagesWrap').style.display = 'none';
         document.getElementById('currentImagesGrid').innerHTML = '';
+        // Reset tour checkboxes
+        document.querySelectorAll('input[name="TourIds"]').forEach(cb => cb.checked = false);
         showTab('tab-basic','btnTabBasic');
         document.getElementById('poiModal').style.display='flex';
         setTimeout(()=>initPickMap(10.7769,106.7009,5),150);

@@ -20,6 +20,7 @@ public class PoisModel : PageModel
 
     public IList<POI> Pois { get; private set; } = new List<POI>();
     public IList<OwnerItem> Owners { get; private set; } = new List<OwnerItem>();
+    public IList<TourItem> AllTours { get; private set; } = new List<TourItem>(); // ← mới
     public string ApiBaseUrl => _config["ApiBaseUrl"] ?? "http://localhost:5266";
 
     [BindProperty] public int Id { get; set; }
@@ -33,6 +34,7 @@ public class PoisModel : PageModel
     [BindProperty] public int DeleteId { get; set; }
     [BindProperty] public int ImageIdToDelete { get; set; }
     [BindProperty] public List<IFormFile> ImageFiles { get; set; } = [];
+    [BindProperty] public List<int> TourIds { get; set; } = []; // ← mới
 
     private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
     public bool IsAdmin => Role == "ADMIN";
@@ -56,10 +58,12 @@ public class PoisModel : PageModel
             {
                 Pois = await client.GetFromJsonAsync<List<POI>>("poi/all") ?? [];
                 Owners = await client.GetFromJsonAsync<List<OwnerItem>>("users/owners") ?? [];
+                AllTours = await client.GetFromJsonAsync<List<TourItem>>("tours") ?? [];
             }
             else
             {
                 Pois = await client.GetFromJsonAsync<List<POI>>($"poi/owner/{MyUserId}") ?? [];
+                AllTours = await client.GetFromJsonAsync<List<TourItem>>("tours/published") ?? [];
             }
             foreach (var p in Pois)
                 p.Images = await client.GetFromJsonAsync<List<POIImage>>($"poi/{p.Id}/images") ?? [];
@@ -122,6 +126,16 @@ public class PoisModel : PageModel
                 Msg = IsAdmin ? $"Đã cập nhật \"{Name}\" thành công." : $"Đã gửi cập nhật \"{Name}\" — đang chờ Admin phê duyệt.";
             }
 
+            // Gán POI vào các tour đã chọn (chỉ admin, và chỉ khi thêm mới)
+            if (IsAdmin && savedId > 0 && TourIds.Any())
+            {
+                foreach (var tourId in TourIds)
+                {
+                    await client.PostAsJsonAsync($"tours/{tourId}/pois", new { PoiId = savedId });
+                }
+            }
+
+            // Upload ảnh
             foreach (var file in ImageFiles.Where(f => f.Length > 0).Take(5))
             {
                 using var form = new MultipartFormDataContent();
@@ -161,8 +175,7 @@ public class PoisModel : PageModel
     {
         try
         {
-            var client = ApiWithRole();
-            var resp = await client.DeleteAsync($"poi/image/{ImageIdToDelete}");
+            var resp = await ApiWithRole().DeleteAsync($"poi/image/{ImageIdToDelete}");
             if (resp.IsSuccessStatusCode) Msg = "Đã xóa ảnh thành công.";
             else Error = "Xóa ảnh thất bại.";
         }
@@ -174,8 +187,7 @@ public class PoisModel : PageModel
     {
         try
         {
-            var client = ApiWithRole();
-            var resp = await client.PutAsync($"poi/image/{imageId}/thumbnail", null);
+            var resp = await ApiWithRole().PutAsync($"poi/image/{imageId}/thumbnail", null);
             if (resp.IsSuccessStatusCode) Msg = "Đã đổi ảnh đại diện.";
             else Error = "Đặt ảnh đại diện thất bại.";
         }
@@ -184,4 +196,5 @@ public class PoisModel : PageModel
     }
 
     public record OwnerItem(int Id, string Username);
+    public record TourItem(int Id, string? Name, string? Status);
 }
