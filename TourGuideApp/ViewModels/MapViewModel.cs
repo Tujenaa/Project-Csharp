@@ -211,10 +211,12 @@ public class MapViewModel : INotifyPropertyChanged
 
     private void RefreshNearbyOrder()
     {
-        // LỌC: Chỉ lấy các POI đã được duyệt và có ít nhất 1 audio (Sử dụng IsReady)
-        var sourceList = (ActiveTour != null ? (ActiveTour.POIs ?? new List<POI>()) : allPOIs)
-            .Where(p => p.IsReady)
-            .ToList();
+        // LỌC:
+        // - Nếu có Tour: Dùng IsApprovedInTour (Check cả trạng thái POI và trạng thái trong Tour)
+        // - Nếu không có Tour: Dùng IsReady (Check trạng thái POI và audio)
+        var sourceList = (ActiveTour != null)
+            ? (ActiveTour.POIs ?? new List<POI>()).Where(p => p.IsApprovedInTour).ToList()
+            : allPOIs.Where(p => p.IsReady).ToList();
 
         if (sourceList.Count == 0)
         {
@@ -301,10 +303,10 @@ public class MapViewModel : INotifyPropertyChanged
     // ── Auto-play ─────────────────────────────────────────────────────────────
     void CheckNearbyPOI(double lat, double lon)
     {
-        // 1. Xác định nguồn POI: Nếu đang trong Tour ACTIVE thì chỉ xét POI của tour
+        // 1. Xác định nguồn POI: Nếu đang trong Tour ACTIVE thì chỉ xét POI của tour đã duyệt
         var sourceList = IsTourActive && ActiveTour != null
-            ? (ActiveTour.POIs ?? new List<POI>())
-            : allPOIs;
+            ? (ActiveTour.POIs ?? new List<POI>()).Where(p => p.IsApprovedInTour).ToList()
+            : allPOIs.Where(p => p.IsReady).ToList();
 
         var newlyDetected = new List<POI>();
 

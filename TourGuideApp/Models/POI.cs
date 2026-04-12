@@ -13,8 +13,12 @@ public class POI : INotifyPropertyChanged
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public int Radius { get; set; }
-    public bool IsApproved { get; set; } = true;
+    public string Status { get; set; } = "APPROVED";
+    public string? TourRelationshipStatus { get; set; }
+
+    public bool IsApproved => Status == "APPROVED";
     public bool IsReady => IsApproved && Audios != null && Audios.Count > 0;
+    public bool IsApprovedInTour => IsReady && (string.IsNullOrEmpty(TourRelationshipStatus) || TourRelationshipStatus == "APPROVED");
 
     
     public List<Audio> Audios { get; set; } = new();

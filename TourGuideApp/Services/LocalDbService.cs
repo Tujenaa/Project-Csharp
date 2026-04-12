@@ -77,6 +77,7 @@ public class LocalDbService
                     // BUG FIX: Normalize trước khi serialize để LanguageCodeFlat luôn có giá trị
                     AudiosJson = JsonSerializer.Serialize(NormalizeAudios(p.Audios)),
                     ImagesJson = JsonSerializer.Serialize(p.Images),
+                    Status = p.Status,
                     CachedAt = DateTime.UtcNow
                 }).ToList();
 
@@ -131,7 +132,7 @@ public class LocalDbService
             // BUG FIX: Normalize trước khi serialize để LanguageCodeFlat luôn có giá trị
             AudiosJson = JsonSerializer.Serialize(NormalizeAudios(p.Audios)),
             ImagesJson = JsonSerializer.Serialize(p.Images),
-            IsApproved = p.IsApproved,
+            Status = p.Status,
             CachedAt = DateTime.UtcNow
         }).ToList();
 
@@ -158,7 +159,7 @@ public class LocalDbService
             // BUG FIX: Normalize trước khi serialize để LanguageCodeFlat luôn có giá trị
             AudiosJson = JsonSerializer.Serialize(NormalizeAudios(p.Audios)),
             ImagesJson = JsonSerializer.Serialize(p.Images),
-            IsApproved = p.IsApproved,
+            Status = p.Status,
             CachedAt = DateTime.UtcNow
         };
         await _db!.InsertOrReplaceAsync(c);
@@ -191,7 +192,7 @@ public class LocalDbService
             Images = string.IsNullOrEmpty(c.ImagesJson)
                 ? new List<string>()
                 : JsonSerializer.Deserialize<List<string>>(c.ImagesJson, _caseInsensitive) ?? new List<string>(),
-            IsApproved = c.IsApproved
+            Status = c.Status
         }).Where(p => p.IsReady).ToList();
     }
 
@@ -233,9 +234,9 @@ public class LocalDbService
                 ? new List<POI>()
                 : JsonSerializer.Deserialize<List<POI>>(c.PoisJson, _caseInsensitive) ?? new List<POI>()
         }).Select(t => {
-            if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsReady).ToList();
+            if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsApprovedInTour).ToList();
             return t;
-        }).ToList();
+        }).Where(t => t.POIs != null && t.POIs.Count > 0).ToList();
     }
 
     public async Task<bool> HasCachedPOIsAsync()
@@ -369,7 +370,7 @@ public class CachedPOI
     public int Radius { get; set; }
     public string AudiosJson { get; set; } = "[]";
     public string ImagesJson { get; set; } = "[]";
-    public bool IsApproved { get; set; } = true;
+    public string Status { get; set; } = "APPROVED";
     public DateTime CachedAt { get; set; }
 }
 

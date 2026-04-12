@@ -39,6 +39,7 @@ namespace TourGuideAPI.Controllers
                 Latitude = p.Latitude,
                 Longitude = p.Longitude,
                 Radius = p.Radius,
+                Status = p.Status,
                 Audios = p.Audios.Select(a => new AudioDto
                 {
                     Id = a.Id,
@@ -81,6 +82,7 @@ namespace TourGuideAPI.Controllers
                 Latitude = p.Latitude,
                 Longitude = p.Longitude,
                 Radius = p.Radius,
+                Status = p.Status,
                 Audios = p.Audios.Select(a => new AudioDto
                 {
                     Id = a.Id,
@@ -143,6 +145,7 @@ namespace TourGuideAPI.Controllers
                 Latitude = p.Latitude,
                 Longitude = p.Longitude,
                 Radius = p.Radius,
+                Status = p.Status,
                 Audios = p.Audios.Select(a => new AudioDto
                 {
                     Id = a.Id,

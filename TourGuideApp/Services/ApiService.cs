@@ -242,9 +242,9 @@ public class ApiService
                     _ = LocalDbService.Instance.SaveToursAsync(tours);
                     foreach (var t in tours)
                     {
-                        if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsReady).ToList();
+                        if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsApprovedInTour).ToList();
                     }
-                    return tours;
+                    return tours.Where(t => t.POIs != null && t.POIs.Count > 0).ToList();
                 }
             }
             catch (Exception ex)
@@ -257,9 +257,9 @@ public class ApiService
         var cachedTours = await LocalDbService.Instance.GetCachedToursAsync();
         foreach (var t in cachedTours)
         {
-            if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsReady).ToList();
+            if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsApprovedInTour).ToList();
         }
-        return cachedTours;
+        return cachedTours.Where(t => t.POIs != null && t.POIs.Count > 0).ToList();
     }
 
     public async Task<List<TourGuideApp.Models.Tour>> GetTopTours(int count = 2)
@@ -278,7 +278,7 @@ public class ApiService
                     $"{ApiConfig.BaseUrl}tours/{id}");
                 if (tour != null && tour.POIs != null)
                 {
-                    tour.POIs = tour.POIs.Where(p => p.IsReady).ToList();
+                    tour.POIs = tour.POIs.Where(p => p.IsApprovedInTour).ToList();
                 }
                 return tour;
             }

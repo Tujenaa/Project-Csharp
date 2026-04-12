@@ -17,6 +17,7 @@ namespace TourGuideAPI.Models
         public int TourId { get; set; }
         public int PoiId { get; set; }
         public int OrderIndex { get; set; }
+        public string Status { get; set; } = "APPROVED";
     }
 
     public class TourDto

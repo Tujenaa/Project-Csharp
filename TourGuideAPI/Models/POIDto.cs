@@ -10,6 +10,8 @@ namespace TourGuideAPI.Models
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public int Radius { get; set; }
+        public string? Status { get; set; }
+        public string? TourRelationshipStatus { get; set; }
         public List<AudioDto> Audios { get; set; } = new();
         public List<string> Images { get; set; } = new();
     }
