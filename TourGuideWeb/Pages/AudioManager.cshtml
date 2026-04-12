@@ -129,17 +129,14 @@
             <h4>Thêm Audio</h4>
             <button class="btn btn-ghost btn-icon" onclick="closeAddModal()"><i class="bi bi-x-lg"></i></button>
         </div>
-        @if (Model.AllCovered)
-        {
-            <div class="modal-body" style="text-align:center;padding:40px 20px">
-                <div style="font-size:48px;color:#cbd5e1;margin-bottom:12px"><i class="bi bi-check-circle"></i></div>
-                <h3 style="margin-bottom:8px">Đã có đủ audio!</h3>
-                <p style="color:#64748b">Tất cả các điểm thuyết minh đã có audio cho mọi ngôn ngữ đang hoạt động.</p>
-                <button type="button" class="btn btn-ghost" style="margin-top:16px" onclick="closeAddModal()">Đóng</button>
-            </div>
-        }
-        else
-        {
+        <!-- Thông báo đủ audio (ẩn mặc định, JS bật nếu AllCovered) -->
+        <div id="allCoveredMsg" style="display:none;text-align:center;padding:40px 20px">
+            <div style="font-size:48px;color:#cbd5e1;margin-bottom:12px"><i class="bi bi-check-circle"></i></div>
+            <h3 style="margin-bottom:8px">Đã có đủ audio!</h3>
+            <p style="color:#64748b">Tất cả các điểm thuyết minh đã có audio cho mọi ngôn ngữ đang hoạt động.</p>
+            <button type="button" class="btn btn-ghost" style="margin-top:16px" onclick="closeAddModal()">Đóng</button>
+        </div>
+        <div id="addForm">
             <form method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="Id" value="0" />
@@ -187,7 +184,7 @@
                             </div>
                         </div>
                         <textarea name="Script" id="aScript" class="form-control" rows="4"
-                              placeholder="Nhập script rồi chọn ngôn ngữ nguồn và bấm Dịch..." required></textarea>
+                                  placeholder="Nhập script rồi chọn ngôn ngữ nguồn và bấm Dịch..." required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -195,7 +192,7 @@
                     <button type="submit" class="btn btn-primary" id="aBtnSubmit"><i class="bi bi-check-lg"></i> Lưu</button>
                 </div>
             </form>
-        }
+        </div>
     </div>
 </div>
 
@@ -305,15 +302,24 @@
     }
 
     // ── MODAL ADD ────────────────────────────────────────────────────
+    const ALL_COVERED = @Html.Raw(Model.AllCovered.ToString().ToLower());
+
     function openAddModal() {
-        document.getElementById('aPoiId').value = '';
-        document.getElementById('aLangId').value = '';
-        document.getElementById('aScript').value = '';
-        // Reset disabled options
-        Array.from(document.getElementById('aLangId').options).forEach(o => {
-            o.disabled = false;
-            o.text = o.text.replace(' ✓', '');
-        });
+        // Luôn mở modal, nhưng hiện thông báo hoặc form tùy trạng thái
+        if (ALL_COVERED) {
+            document.getElementById('allCoveredMsg').style.display = '';
+            document.getElementById('addForm').style.display = 'none';
+        } else {
+            document.getElementById('allCoveredMsg').style.display = 'none';
+            document.getElementById('addForm').style.display = '';
+            document.getElementById('aPoiId').value = '';
+            document.getElementById('aLangId').value = '';
+            document.getElementById('aScript').value = '';
+            Array.from(document.getElementById('aLangId').options).forEach(o => {
+                o.disabled = false;
+                o.text = o.text.replace(' ✓', '');
+            });
+        }
         document.getElementById('addModal').style.display = 'flex';
     }
     function closeAddModal() {

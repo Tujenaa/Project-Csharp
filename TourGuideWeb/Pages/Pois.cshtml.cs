@@ -126,13 +126,24 @@ public class PoisModel : PageModel
                 Msg = IsAdmin ? $"Đã cập nhật \"{Name}\" thành công." : $"Đã gửi cập nhật \"{Name}\" — đang chờ Admin phê duyệt.";
             }
 
-            // Gán POI vào các tour đã chọn (chỉ admin, và chỉ khi thêm mới)
-            if (IsAdmin && savedId > 0 && TourIds.Any())
+            // Gán POI vào các tour đã chọn
+            if (savedId > 0 && TourIds.Any())
             {
+                int tourOk = 0, tourPending = 0;
                 foreach (var tourId in TourIds)
                 {
-                    await client.PostAsJsonAsync($"tours/{tourId}/pois", new { PoiId = savedId });
+                    var res = await client.PostAsJsonAsync($"tours/{tourId}/pois", new { PoiId = savedId });
+                    if (res.IsSuccessStatusCode)
+                    {
+                        var content = await res.Content.ReadAsStringAsync();
+                        if (content.Contains("PENDING")) tourPending++;
+                        else tourOk++;
+                    }
                 }
+                if (tourPending > 0)
+                    Msg += $" Đã gửi yêu cầu tham gia {tourPending} tour — chờ Admin duyệt.";
+                if (tourOk > 0)
+                    Msg += $" Đã thêm vào {tourOk} tour.";
             }
 
             // Upload ảnh
