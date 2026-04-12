@@ -52,7 +52,7 @@ namespace TourGuideAPI.Controllers
         public async Task<IActionResult> GetToursByPoi(int poiId)
         {
             var tourIds = await _context.TourPOI
-                .Where(tp => tp.PoiId == poiId)
+                .Where(tp => tp.PoiId == poiId && tp.Status == "APPROVED")  // ← thêm vào đây
                 .Select(tp => tp.TourId)
                 .ToListAsync();
 
