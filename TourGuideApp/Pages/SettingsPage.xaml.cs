@@ -40,9 +40,12 @@ public partial class SettingsPage : ContentPage
         var languages = SettingService.Instance.AvailableLanguages;
         var names = languages.Values.ToArray();
 
-        var chosen = await DisplayActionSheet("Chọn ngôn ngữ", "Huỷ", null, names);
+        var chosen = await DisplayActionSheet(
+            LocalizationService.Get("choose_language"), 
+            LocalizationService.Get("cancel"), 
+            null, names);
 
-        if (chosen == null || chosen == "Huỷ") return;
+        if (chosen == null || chosen == LocalizationService.Get("cancel")) return;
 
         var pair = languages.FirstOrDefault(kv => kv.Value == chosen);
 
@@ -55,7 +58,10 @@ public partial class SettingsPage : ContentPage
     private async void OnLogoutClicked(object sender, EventArgs e)
     {
         bool confirm = await DisplayAlert(
-            "Xác nhận", "Bạn có muốn đăng xuất không?", "Có", "Không");
+            LocalizationService.Get("confirm_title"), 
+            LocalizationService.Get("logout_msg"), 
+            LocalizationService.Get("yes"), 
+            LocalizationService.Get("no"));
 
         if (!confirm) return;
 

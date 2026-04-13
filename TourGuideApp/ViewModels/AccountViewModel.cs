@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TourGuideApp.Services;
 
@@ -38,7 +38,7 @@ public partial class AccountViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(Name))
         {
-            StatusMessage = "Họ tên không được để trống.";
+            StatusMessage = LocalizationService.Get("name_required");
             IsError = true;
             return;
         }
@@ -47,16 +47,22 @@ public partial class AccountViewModel : ObservableObject
 
         if (!ok)
         {
-            StatusMessage = "Cập nhật thất bại!";
+            StatusMessage = LocalizationService.Get("failed");
             IsError = true;
 
-            await Application.Current.MainPage.DisplayAlert("Lỗi", "Cập nhật thất bại!", "OK");
+            await Application.Current.MainPage.DisplayAlert(
+                LocalizationService.Get("error"), 
+                LocalizationService.Get("failed"), 
+                LocalizationService.Get("ok"));
             return;
         }
 
-        StatusMessage = "Đã lưu thành công!";
+        StatusMessage = LocalizationService.Get("saved");
         IsError = false;
-        await Application.Current.MainPage.DisplayAlert("Thành công", "Cập nhật thông tin thành công 🎉", "OK");
+        await Application.Current.MainPage.DisplayAlert(
+            LocalizationService.Get("success"), 
+            LocalizationService.Get("profile_updated"), 
+            LocalizationService.Get("ok"));
 
         await Task.Delay(2000);
         StatusMessage = string.Empty;

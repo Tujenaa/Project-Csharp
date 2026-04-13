@@ -1,4 +1,5 @@
-﻿using TourGuideApp.ViewModels;
+using TourGuideApp.Services;
+using TourGuideApp.ViewModels;
 
 namespace TourGuideApp.Pages;
 
@@ -15,6 +16,9 @@ public partial class AccountPage : ContentPage
 
     private async void OnChangePasswordTapped(object sender, EventArgs e)
     {
-        await DisplayAlert("Thông báo", "Chức năng đổi mật khẩu đang phát triển", "OK");
+        await DisplayAlert(
+            LocalizationService.Get("notification"), 
+            LocalizationService.Get("feature_under_development"), 
+            LocalizationService.Get("ok"));
     }
 }

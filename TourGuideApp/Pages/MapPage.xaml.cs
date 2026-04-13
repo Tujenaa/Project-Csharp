@@ -264,17 +264,32 @@ public partial class MapPage : ContentPage
 
         if (viewModel.IsTourActive)
         {
+            // Kiểm tra POI có trong danh sách tour hiện tại hay không
             bool poiInTour = viewModel.NearbyPOI.Any(p => p.Id == poi.Id);
-            if (!poiInTour)
+            if (poiInTour)
             {
+                // Reroute thông minh: Ưu tiên điểm vừa chọn nhưng vẫn giữ tour
+                await viewModel.RerouteTourToPOI(poi);
+                lblRouteDestination.Text = poi.Name;
+                lblRouteDestination.TextColor = Color.FromArgb("#1A1035");
+                btnClearRoute.IsVisible = true;
+                CloseSearchPanel();
+                ShowDetailCard(poi);
+                return;
+            }
+            else
+            {
+                // Điểm nằm ngoài tour -> Hỏi ý kiến người dùng
                 bool confirm = await DisplayAlert(
-                    "Ngoài lộ trình tour",
-                    $"Địa điểm \"{poi.Name}\" không thuộc tour hiện tại.\nBạn có muốn hủy tour và chỉ đường đến đây không?",
-                    "Hủy tour & Chỉ đường",
-                    "Giữ lại tour");
+                    LocalizationService.Get("out_of_route_title"),
+                    LocalizationService.Get("out_of_route_msg", poi.Name),
+                    LocalizationService.Get("cancel_tour_and_route"),
+                    LocalizationService.Get("keep_tour"));
 
                 if (!confirm) return;
 
+                // Reset về trạng thái "Tất cả" để hiện đầy đủ Marker trước khi dẫn đường
+                viewModel.SelectTourCommand.Execute(null);
                 viewModel.CancelTourCommand.Execute(null);
             }
         }
@@ -367,7 +382,7 @@ public partial class MapPage : ContentPage
         }
         catch (Exception ex)
         {
-            await DisplayAlert("Lỗi", ex.Message, "OK");
+            await DisplayAlert(LocalizationService.Get("error"), ex.Message, LocalizationService.Get("ok"));
         }
     }
 

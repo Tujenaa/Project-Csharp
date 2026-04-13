@@ -44,7 +44,10 @@ public partial class QrScannerPage : ContentPage
 
         if (status != PermissionStatus.Granted)
         {
-            await DisplayAlert("Quyền truy cập", "Ứng dụng cần quyền Camera để quét mã QR.", "OK");
+            await DisplayAlert(
+                LocalizationService.Get("permission_title"), 
+                LocalizationService.Get("camera_permission_msg"), 
+                LocalizationService.Get("ok"));
             await Navigation.PopAsync();
         }
         else
@@ -116,7 +119,10 @@ public partial class QrScannerPage : ContentPage
         }
         else
         {
-            await DisplayAlert("Không tìm thấy", "Không có thông tin cho mã QR này.", "OK");
+            await DisplayAlert(
+                LocalizationService.Get("not_found_title"), 
+                LocalizationService.Get("qr_not_recognized_msg"), 
+                LocalizationService.Get("ok"));
             ResetScanner();
         }
     }

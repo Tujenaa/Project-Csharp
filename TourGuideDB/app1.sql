@@ -128,8 +128,12 @@ CREATE TABLE TourPOI (
 
     Status NVARCHAR(20)
         NOT NULL
-        CHECK (Status IN ('PENDING', 'APPROVED', 'REJECTED'))
-        DEFAULT 'PENDING',             -- mặc định chờ admin duyệt
+        CHECK (Status IN ('PENDING', 'APPROVED', 'REJECTED', 'REMOVE_PENDING'))
+        DEFAULT 'PENDING',
+        -- PENDING        : owner xin vào tour, chờ admin duyệt
+        -- APPROVED       : đã có trong tour
+        -- REJECTED       : bị từ chối vào tour
+        -- REMOVE_PENDING : owner xin rời tour, chờ admin duyệt xóa
 
     FOREIGN KEY (TourId) REFERENCES Tours(Id) ON DELETE CASCADE,
     FOREIGN KEY (PoiId)  REFERENCES POI(Id)   ON DELETE CASCADE,

@@ -207,10 +207,12 @@ public class AudioPlaybackService
 
             if (!string.IsNullOrEmpty(message))
             {
-                // Hiển thị Alert lên màn hình ngay lập tức
                 if (Application.Current?.MainPage != null)
                 {
-                    await Application.Current.MainPage.DisplayAlert("Notification / Thông báo", message, "OK");
+                    await Application.Current.MainPage.DisplayAlert(
+                        LocalizationService.Get("notification"), 
+                        message, 
+                        LocalizationService.Get("ok"));
                 }
             }
         });
