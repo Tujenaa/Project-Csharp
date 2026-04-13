@@ -114,6 +114,23 @@ public static class AuthService
             return false;
         }
     }
+
+    public static async Task<bool> ChangePasswordAsync(string oldPassword, string newPassword)
+    {
+        try
+        {
+            var api = new ApiService();
+            var userId = Preferences.Get("user_id", 0);
+
+            if (userId == 0) return false;
+
+            return await api.ChangePassword(userId, oldPassword, newPassword);
+        }
+        catch
+        {
+            return false;
+        }
+    }
     // Đăng xuất
     public static void Logout()
     {

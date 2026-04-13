@@ -37,7 +37,13 @@ namespace TourGuideApp.Services
                 ["out_of_route_title"] = "Ngoài lộ trình tour",
                 ["out_of_route_msg"] = "Địa điểm \"{0}\" không thuộc tour hiện tại.\nBạn có muốn hủy tour và chỉ đường đến đây không?",
                 ["cancel_tour_and_route"] = "Hủy tour & Chỉ đường",
-                ["keep_tour"] = "Giữ lại tour"
+                ["keep_tour"] = "Giữ lại tour",
+                ["password_too_short"] = "Mật khẩu phải có ít nhất 6 ký tự.",
+                ["password_not_match"] = "Mật khẩu xác nhận không khớp.",
+                ["updating_password"] = "Đang cập nhật mật khẩu...",
+                ["password_changed_success"] = "Cập nhật mật khẩu thành công 🎉",
+                ["change_password_failed"] = "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ.",
+                ["old_password_required"] = "Vui lòng nhập mật khẩu cũ."
             },
             ["en"] = new()
             {
@@ -69,7 +75,13 @@ namespace TourGuideApp.Services
                 ["out_of_route_title"] = "Out of Route",
                 ["out_of_route_msg"] = "Location \"{0}\" is not part of the current tour.\nDo you want to cancel the tour and get directions here?",
                 ["cancel_tour_and_route"] = "Cancel Tour & Get Directions",
-                ["keep_tour"] = "Keep Tour"
+                ["keep_tour"] = "Keep Tour",
+                ["password_too_short"] = "Password must be at least 6 characters.",
+                ["password_not_match"] = "Passwords do not match.",
+                ["updating_password"] = "Updating password...",
+                ["password_changed_success"] = "Password updated successfully 🎉",
+                ["change_password_failed"] = "Password change failed. Please check your old password.",
+                ["old_password_required"] = "Old password is required."
             }
         };
 

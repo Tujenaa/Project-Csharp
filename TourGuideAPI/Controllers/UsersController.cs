@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourGuideAPI.Data;
 using TourGuideAPI.Models;
@@ -130,6 +130,26 @@ namespace TourGuideAPI.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(user);
+        }
+
+        // ── APP: PUT /api/users/change-password/{id} ── Đổi mật khẩu
+        [HttpPut("change-password/{id}")]
+        public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordRequest req)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound("Người dùng không tồn tại");
+
+            // Kiểm tra mật khẩu cũ (So sánh trực tiếp vì đang lưu plain text dạng PasswordHash)
+            if (user.PasswordHash != req.OldPassword)
+                return BadRequest("Mật khẩu cũ không chính xác");
+
+            if (string.IsNullOrWhiteSpace(req.NewPassword))
+                return BadRequest("Mật khẩu mới không được để trống");
+
+            user.PasswordHash = req.NewPassword;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Đổi mật khẩu thành công" });
         }
     }
 }

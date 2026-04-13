@@ -225,6 +225,14 @@ public class ApiService
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<bool> ChangePassword(int userId, string oldPassword, string newPassword)
+    {
+        var response = await client.PutAsJsonAsync(
+            $"{ApiConfig.BaseUrl}users/change-password/{userId}",
+            new { OldPassword = oldPassword, NewPassword = newPassword });
+        return response.IsSuccessStatusCode;
+    }
+
     // ── Tours ─────────────────────────────────────────────────────────────────
 
     public async Task<List<TourGuideApp.Models.Tour>> GetTours()
