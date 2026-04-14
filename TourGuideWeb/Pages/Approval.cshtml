@@ -286,50 +286,198 @@
         }
         else
         {
-            @foreach (var tp in Model.PendingTourPois)
-            {
-                <div class="tour-req-card">
-                    <div style="display:flex;align-items:center;gap:14px;flex:1">
-                        <div style="width:40px;height:40px;border-radius:10px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                            <i class="bi bi-geo-alt-fill" style="color:#7c3aed;font-size:16px"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
-                            @if (!string.IsNullOrEmpty(tp.Address))
-                            {
-                                <div style="font-size:12px;color:#9ca3af;margin-top:2px">
-                                    <i class="bi bi-pin-map"></i> @tp.Address
+            <table class="tg-table" id="approvalTourTable">
+                <thead>
+                    <tr>
+                        <th>Điểm thuyết minh</th>
+                        <th>Yêu cầu</th>
+                        <th>Tour</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tp in Model.PendingTourPois)
+                    {
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:12px">
+                                    <div style="width:36px;height:36px;border-radius:8px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                        <i class="bi bi-geo-alt-fill" style="color:#7c3aed;font-size:16px"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
+                                        @if (!string.IsNullOrEmpty(tp.Address))
+                                        {
+                                            <div style="font-size:12px;color:#9ca3af;margin-top:2px"><i class="bi bi-pin-map"></i> @tp.Address</div>
+                                        }
+                                    </div>
                                 </div>
-                            }
-                        </div>
-                        <div style="margin-left:8px;padding:0 16px;border-left:2px solid #f3f4f6">
-                            <div style="font-size:11px;color:#9ca3af;margin-bottom:3px">Xin vào tour</div>
-                            <span style="background:#ede9fe;color:#5b21b6;font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600">
-                                <i class="bi bi-map"></i> @tp.TourName
-                            </span>
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:8px;flex-shrink:0">
-                        <form method="post" asp-page-handler="ApproveTourPoi" style="display:inline">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
-                            <input type="hidden" name="TourId" value="@tp.TourId" />
-                            <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600">
-                                <i class="bi bi-check-lg"></i> Duyệt
-                            </button>
-                        </form>
-                        <form method="post" asp-page-handler="RejectTourPoi" style="display:inline">
-                            @Html.AntiForgeryToken()
-                            <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
-                            <input type="hidden" name="TourId" value="@tp.TourId" />
-                            <button type="submit" class="btn btn-danger btn-sm"
-                                    onclick="return confirm('Từ chối yêu cầu này?')">
-                                <i class="bi bi-x-lg"></i> Từ chối
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            }
+                            </td>
+                            <td><span style="background:#fef3c7;color:#92400e;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600">⏳ Xin vào tour</span></td>
+                            <td><span style="background:#ede9fe;color:#5b21b6;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600"><i class="bi bi-map"></i> @tp.TourName</span></td>
+                            <td>
+                                <div style="display:flex;gap:6px">
+                                    <form method="post" asp-page-handler="ApproveTourPoi" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
+                                        <input type="hidden" name="TourId" value="@tp.TourId" />
+                                        <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600">
+                                            <i class="bi bi-check-lg"></i> Duyệt
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="RejectTourPoi" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
+                                        <input type="hidden" name="TourId" value="@tp.TourId" />
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Từ chối yêu cầu này?')">
+                                            <i class="bi bi-x-lg"></i> Từ chối
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div id="tourSectionRemove" class="card" style="overflow:hidden;display:none">
+        @if (!Model.RemovePendingTourPois.Any())
+        {
+            <div style="padding:48px;text-align:center;color:#9ca3af">
+                <i class="bi bi-door-open" style="font-size:40px;display:block;margin-bottom:12px;color:#c4b5fd"></i>
+                <div style="font-weight:600;font-size:15px;color:#6b7280">Không có yêu cầu rời tour nào</div>
+            </div>
+        }
+        else
+        {
+            <table class="tg-table">
+                <thead>
+                    <tr><th>Điểm thuyết minh</th><th>Yêu cầu</th><th>Tour</th><th>Hành động</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var tp in Model.RemovePendingTourPois)
+                    {
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:12px">
+                                    <div style="width:36px;height:36px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-box-arrow-right" style="color:#d97706;font-size:16px"></i></div>
+                                    <div>
+                                        <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
+                                        @if (!string.IsNullOrEmpty(tp.Address))
+                                        {
+                                            <div style="font-size:12px;color:#9ca3af;margin-top:2px"><i class="bi bi-pin-map"></i> @tp.Address</div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span style="background:#fff7ed;color:#c2410c;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600">🚪 Xin rời tour</span></td>
+                            <td><span style="background:#fef3c7;color:#92400e;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600"><i class="bi bi-map"></i> @tp.TourName</span></td>
+                            <td>
+                                <div style="display:flex;gap:6px">
+                                    <form method="post" asp-page-handler="ApproveTourPoi" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
+                                        <input type="hidden" name="TourId" value="@tp.TourId" />
+                                        <button type="submit" class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:600" onclick="return confirm('Đồng ý cho POI rời khỏi tour này?')">
+                                            <i class="bi bi-check-lg"></i> Đồng ý xóa
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="RejectTourPoi" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="TourPOIId" value="@tp.TourPOIId" />
+                                        <input type="hidden" name="TourId" value="@tp.TourId" />
+                                        <button type="submit" class="btn btn-ghost btn-sm" onclick="return confirm('Từ chối — POI sẽ được giữ lại trong tour?')">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Giữ lại
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div id="tourSectionApproved" class="card" style="overflow:hidden;display:none">
+        @if (!Model.ApprovedTourPois.Any())
+        {
+            <div style="padding:48px;text-align:center;color:#9ca3af">
+                <i class="bi bi-map" style="font-size:40px;display:block;margin-bottom:12px;color:#86efac"></i>
+                <div style="font-weight:600;font-size:15px;color:#6b7280">Chưa có yêu cầu nào được duyệt</div>
+            </div>
+        }
+        else
+        {
+            <table class="tg-table">
+                <thead>
+                    <tr><th>Điểm thuyết minh</th><th>Trạng thái</th><th>Tour</th><th>Hành động</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var tp in Model.ApprovedTourPois)
+                    {
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:12px">
+                                    <div style="width:36px;height:36px;border-radius:8px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-geo-alt-fill" style="color:#16a34a;font-size:16px"></i></div>
+                                    <div>
+                                        <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
+                                        @if (!string.IsNullOrEmpty(tp.Address))
+                                        {
+                                            <div style="font-size:12px;color:#9ca3af;margin-top:2px"><i class="bi bi-pin-map"></i> @tp.Address</div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span style="background:#dcfce7;color:#166534;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600">✅ Thành viên</span></td>
+                            <td><span style="background:#dcfce7;color:#166534;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600"><i class="bi bi-map"></i> @tp.TourName</span></td>
+                            <td><span class="badge badge-green" style="padding:6px 12px;font-size:12px">✅ Đã duyệt</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div id="tourSectionRejected" class="card" style="overflow:hidden;display:none">
+        @if (!Model.RejectedTourPois.Any())
+        {
+            <div style="padding:48px;text-align:center;color:#9ca3af">
+                <i class="bi bi-x-circle" style="font-size:40px;display:block;margin-bottom:12px;color:#fca5a5"></i>
+                <div style="font-weight:600;font-size:15px;color:#6b7280">Không có yêu cầu nào bị từ chối</div>
+            </div>
+        }
+        else
+        {
+            <table class="tg-table">
+                <thead>
+                    <tr><th>Điểm thuyết minh</th><th>Trạng thái</th><th>Tour</th><th>Hành động</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var tp in Model.RejectedTourPois)
+                    {
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:12px">
+                                    <div style="width:36px;height:36px;border-radius:8px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="bi bi-geo-alt-fill" style="color:#dc2626;font-size:16px"></i></div>
+                                    <div>
+                                        <div style="font-weight:600;font-size:14px;color:#111827">@tp.PoiName</div>
+                                        @if (!string.IsNullOrEmpty(tp.Address))
+                                        {
+                                            <div style="font-size:12px;color:#9ca3af;margin-top:2px"><i class="bi bi-pin-map"></i> @tp.Address</div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span style="background:#fee2e2;color:#991b1b;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600">❌ Từ chối</span></td>
+                            <td><span style="background:#fee2e2;color:#991b1b;font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600"><i class="bi bi-map"></i> @tp.TourName</span></td>
+                            <td><span class="badge badge-red" style="padding:6px 12px;font-size:12px">❌ Từ chối</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         }
     </div>
 

@@ -16,9 +16,18 @@ public class PendingCountFilter : IAsyncPageFilter
             try
             {
                 var client = _http.CreateClient("API");
+
+                // 1. Lấy danh sách POI chờ duyệt mới
                 var pois = await client.GetFromJsonAsync<List<PendingItem>>("poi/pending") ?? [];
+
+                // 2. Lấy danh sách xin VÀO tour
                 var tourPois = await client.GetFromJsonAsync<List<PendingItem>>("tours/pois/all-pending") ?? [];
-                context.HttpContext.Items["PendingCount"] = pois.Count + tourPois.Count;
+
+                // 3. Lấy danh sách xin RỜI tour (Thêm dòng này)
+                var removeTourPois = await client.GetFromJsonAsync<List<PendingItem>>("tours/pois/all-remove-pending") ?? [];
+
+                // 4. Cộng tổng cả 3 loại lại
+                context.HttpContext.Items["PendingCount"] = pois.Count + tourPois.Count + removeTourPois.Count;
             }
             catch { }
         }

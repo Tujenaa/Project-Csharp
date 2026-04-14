@@ -18,8 +18,6 @@
 }
 
 <div class="poi-shell">
-
-    <!-- ── LEFT: MAP ── -->
     <div class="poi-map-wrap">
         <div class="map-topbar">
             <span class="map-count"><i class="bi bi-geo-alt-fill"></i> @Model.Pois.Count điểm thuyết minh</span>
@@ -30,10 +28,7 @@
         <div id="mainMap"></div>
     </div>
 
-    <!-- ── RIGHT PANEL: WRAPS LIST & DETAIL ── -->
     <div class="poi-right-panel" id="poiRightPanel">
-        
-        <!-- ── DANH SÁCH ── -->
         <div class="poi-list-wrap">
             <div class="poi-list-header">
                 <div style="display:flex;gap:6px;align-items:center">
@@ -48,16 +43,10 @@
             <div class="poi-list" id="poiList">
                 @foreach (var p in Model.Pois)
                 {
-                    <div class="poi-item" id="item-@p.Id"
-                         data-id="@p.Id"
-                         data-name-lower="@p.Name.ToLower()"
-                         onclick="selectPoiById(@p.Id)">
-                        
+                    <div class="poi-item" id="item-@p.Id" data-id="@p.Id" onclick="selectPoiById(@p.Id)">
                         @{
-                            var thumb = p.ImageUrl ?? (p.Images.FirstOrDefault(i => i.IsThumbnail)?.ImageUrl ?? p.Images.FirstOrDefault()?.ImageUrl);
-                            var fullThumb = string.IsNullOrEmpty(thumb) 
-                                ? "" 
-                                : "/img-proxy?url=" + System.Net.WebUtility.UrlEncode(thumb);
+                            var thumb = p.Status == "REJECTED" ? null : (p.ImageUrl ?? (p.Images.FirstOrDefault(i => i.IsThumbnail)?.ImageUrl ?? p.Images.FirstOrDefault()?.ImageUrl));
+                            var fullThumb = string.IsNullOrEmpty(thumb) ? "" : "/img-proxy?url=" + System.Net.WebUtility.UrlEncode(thumb);
                         }
                         <img class="poi-item-thumb" src="@fullThumb" />
 
@@ -89,13 +78,9 @@
             </div>
         </div>
 
-        <!-- ── CHI TIẾT (Overlay) ── -->
         <div class="poi-detail" id="poiDetail">
-            <!-- Nút back (Mobile-style) -->
             <div class="detail-nav">
-                <button class="btn-back" onclick="closeDetail()" title="Quay lại danh sách">
-                    <i class="bi bi-arrow-left"></i>
-                </button>
+                <button class="btn-back" onclick="closeDetail()" title="Quay lại danh sách"><i class="bi bi-arrow-left"></i></button>
                 <h4 id="detailNavTitle">Chi tiết địa điểm</h4>
             </div>
 
@@ -115,33 +100,16 @@
                     <h3 id="detailName"></h3>
                     <p class="detail-desc" id="detailDesc"></p>
                     <div class="detail-info-grid">
-                        <div class="detail-info-item">
-                            <span class="dii-label">Vĩ độ</span>
-                            <span class="dii-val mono" id="detailLat"></span>
-                        </div>
-                        <div class="detail-info-item">
-                            <span class="dii-label">Kinh độ</span>
-                            <span class="dii-val mono" id="detailLng"></span>
-                        </div>
-                        <div class="detail-info-item">
-                            <span class="dii-label">Bán kính</span>
-                            <span class="dii-val" id="detailR"></span>
-                        </div>
-                        <div class="detail-info-item">
-                            <span class="dii-label">Chủ sở hữu</span>
-                            <span class="dii-val" id="detailOwner"></span>
-                        </div>
+                        <div class="detail-info-item"><span class="dii-label">Vĩ độ</span><span class="dii-val mono" id="detailLat"></span></div>
+                        <div class="detail-info-item"><span class="dii-label">Kinh độ</span><span class="dii-val mono" id="detailLng"></span></div>
+                        <div class="detail-info-item"><span class="dii-label">Bán kính</span><span class="dii-val" id="detailR"></span></div>
+                        <div class="detail-info-item"><span class="dii-label">Chủ sở hữu</span><span class="dii-val" id="detailOwner"></span></div>
                     </div>
                     <div class="detail-actions">
-                        <button class="btn btn-outline btn-sm" onclick="editCurrentPoi()">
-                            <i class="bi bi-pencil"></i> Sửa
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteCurrentPoi()">
-                            <i class="bi bi-trash"></i> Xoá
-                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="editCurrentPoi()"><i class="bi bi-pencil"></i> Sửa</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteCurrentPoi()"><i class="bi bi-trash"></i> Xoá</button>
                     </div>
 
-                    <!-- TOURS CỦA POI NÀY -->
                     <div id="poiToursPanel" style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;display:none">
                         <div style="font-size:11px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">
                             <i class="bi bi-map"></i> Tour có điểm này
@@ -154,7 +122,6 @@
     </div>
 </div>
 
-<!-- ===== MODAL TẠO / SỬA ===== -->
 <div id="poiModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeModal()">
     <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -166,56 +133,39 @@
             <input type="hidden" name="Id" id="fId" value="0" />
             <div class="modal-body">
                 <div class="tab-nav">
-                    <button type="button" class="tab-btn active" id="btnTabBasic" onclick="showTab('tab-basic','btnTabBasic')">
-                        <i class="bi bi-info-circle"></i> Thông tin
-                    </button>
-                    <button type="button" class="tab-btn" id="btnTabLoc" onclick="showTab('tab-loc','btnTabLoc')">
-                        <i class="bi bi-geo-alt"></i> Vị trí
-                    </button>
-                    @if (Model.AllTours.Any())
-                    {
-                        <button type="button" class="tab-btn" id="btnTabTour" onclick="showTab('tab-tour','btnTabTour')">
-                            <i class="bi bi-map"></i> Tour
-                        </button>
-                    }
+                    <button type="button" class="tab-btn active" id="btnTabBasic" onclick="showTab('tab-basic','btnTabBasic')"><i class="bi bi-info-circle"></i> Thông tin</button>
+                    <button type="button" class="tab-btn" id="btnTabLoc" onclick="showTab('tab-loc','btnTabLoc')"><i class="bi bi-geo-alt"></i> Vị trí</button>
+                    @if (Model.AllTours.Any()) { <button type="button" class="tab-btn" id="btnTabTour" onclick="showTab('tab-tour','btnTabTour')"><i class="bi bi-map"></i> Tour</button> }
                 </div>
+                
                 <div id="tab-basic" class="tab-pane">
                     <div class="form-group">
                         <label class="form-label">Tên điểm <span class="req">*</span></label>
-                        <input type="text" name="Name" id="fName" class="form-control" placeholder="VD: Phở Hòa Pasteur" required maxlength="255" />
+                        <input type="text" name="Name" id="fName" class="form-control" required maxlength="255" />
                     </div>
                     <div class="form-group">
                         <label class="form-label">Mô tả</label>
-                        <textarea name="Description" id="fDescription" class="form-control" rows="3" placeholder="Mô tả ngắn..."></textarea>
+                        <textarea name="Description" id="fDescription" class="form-control" rows="3"></textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Hình ảnh POI
-                            <span style="font-size:11px;color:#9ca3af;font-weight:400;margin-left:4px">tối đa 5 ảnh, mỗi ảnh 5MB</span>
-                        </label>
+                        <label class="form-label">Hình ảnh POI <span style="font-size:11px;color:#9ca3af;font-weight:400;margin-left:4px">tối đa 5 ảnh, mỗi ảnh 5MB</span></label>
+                        
                         <div id="currentImagesWrap" style="display:none;margin-bottom:10px">
                             <div style="font-size:12px;color:#6b7280;margin-bottom:6px">Ảnh hiện tại:</div>
                             <div id="currentImagesGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(80px, 1fr));gap:8px"></div>
                         </div>
+
                         <div id="previewGrid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
-                        <div id="imageUploadArea"
-                             style="border:2px dashed #d1d5db;border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:border-color .2s;background:#fafafa"
-                             onclick="document.getElementById('imageFileInput').click()"
-                             ondragover="event.preventDefault();this.style.borderColor='#7c3aed'"
-                             ondragleave="this.style.borderColor='#d1d5db'"
-                             ondrop="handleDrop(event)">
+                        <div id="imageUploadArea" style="border:2px dashed #d1d5db;border-radius:8px;padding:14px;text-align:center;cursor:pointer;background:#fafafa" onclick="document.getElementById('imageFileInput').click()">
                             <i class="bi bi-cloud-upload" style="font-size:22px;color:#9ca3af;display:block;margin-bottom:4px"></i>
                             <span style="font-size:13px;color:#6b7280">Click hoặc kéo thả ảnh vào đây</span><br/>
-                            <span style="font-size:11px;color:#9ca3af">JPG, PNG, WebP</span>
                         </div>
-                        <input type="file" name="ImageFiles" id="imageFileInput"
-                               accept="image/jpeg,image/png,image/webp"
-                               multiple style="display:none" onchange="previewImages(this)" />
+                        <input type="file" name="ImageFiles" id="imageFileInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="previewImages(this)" />
                     </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label class="form-label">Bán kính (m) <span class="req">*</span></label>
                             <input type="number" name="Radius" id="fRadius" class="form-control" min="1" max="5000" value="5" required />
-                            <div class="form-hint">Vùng kích hoạt thuyết minh</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Chủ sở hữu</label>
@@ -223,10 +173,7 @@
                             {
                                 <select name="OwnerId" id="fOwnerId" class="form-control">
                                     <option value="">-- Không có --</option>
-                                    @foreach (var o in Model.Owners)
-                                    {
-                                        <option value="@o.Id">@o.Username (#@o.Id)</option>
-                                    }
+                                    @foreach (var o in Model.Owners) { <option value="@o.Id">@o.Username (#@o.Id)</option> }
                                 </select>
                             }
                             else
@@ -237,22 +184,14 @@
                         </div>
                     </div>
                 </div>
+
                 <div id="tab-loc" class="tab-pane" style="display:none">
                     <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Vĩ độ <span class="req">*</span></label>
-                            <input type="number" name="Latitude" id="fLat" class="form-control" step="0.000001" min="-90" max="90" placeholder="VD: 10.7812" required />
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Kinh độ <span class="req">*</span></label>
-                            <input type="number" name="Longitude" id="fLng" class="form-control" step="0.000001" min="-180" max="180" placeholder="VD: 106.6880" required />
-                        </div>
+                        <div class="form-group"><label class="form-label">Vĩ độ <span class="req">*</span></label><input type="number" name="Latitude" id="fLat" class="form-control" step="0.000001" required /></div>
+                        <div class="form-group"><label class="form-label">Kinh độ <span class="req">*</span></label><input type="number" name="Longitude" id="fLng" class="form-control" step="0.000001" required /></div>
                     </div>
                     <div class="map-toolbar">
-                        <button type="button" class="btn btn-sm btn-outline" onclick="getMyLocation()">
-                            <i class="bi bi-crosshair"></i> Vị trí hiện tại
-                        </button>
-                        <span class="form-hint" style="margin:0">Hoặc click bản đồ để chọn</span>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="getMyLocation()"><i class="bi bi-crosshair"></i> Vị trí hiện tại</button>
                     </div>
                     <div id="pickMap" style="height:280px;border-radius:8px;border:1px solid var(--border);margin-top:10px;overflow:hidden"></div>
                 </div>
@@ -260,31 +199,13 @@
                 @if (Model.AllTours.Any())
                 {
                     <div id="tab-tour" class="tab-pane" style="display:none">
-                        @if (!Model.IsAdmin)
-                        {
-                            <div style="font-size:12px;color:#6b7280;background:#f5f3ff;border:1px solid #ede9fe;border-radius:7px;padding:8px 10px;margin-bottom:10px;display:flex;gap:6px;align-items:flex-start">
-                                <i class="bi bi-info-circle" style="color:#7c3aed;margin-top:1px;flex-shrink:0"></i>
-                                <span>Tick/bỏ tick tour sẽ gửi yêu cầu cho admin phê duyệt. Thay đổi chưa được duyệt sẽ hiển thị trạng thái <strong>⏳ chờ duyệt</strong>.</span>
-                            </div>
-                        }
                         <div style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto" id="tourCheckList">
                             @foreach (var t in Model.AllTours)
                             {
-                                <label data-tourid="@t.Id"
-                                       style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:background .15s;position:relative"
-                                       onmouseover="this.style.background='#f5f3ff'" onmouseout="this.style.background=''">
-                                    <input type="checkbox" name="TourIds" value="@t.Id"
-                                           style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0" />
+                                <label data-tourid="@t.Id" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;cursor:pointer">
+                                    <input type="checkbox" name="TourIds" value="@t.Id" style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0" />
                                     <div style="flex:1;min-width:0">
-                                        <div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-                                            @t.Name
-                                            <span class="tour-status-badge" data-tourid="@t.Id" style="display:none"></span>
-                                        </div>
-                                        <div style="font-size:11px;color:#9ca3af;margin-top:1px">
-                                            @if (t.Status == "PUBLISHED") { <span>✅ Công khai</span> }
-                                            else if (t.Status == "DRAFT") { <span>📝 Nháp</span> }
-                                            else { <span>🗄️ Lưu trữ</span> }
-                                        </div>
+                                        <div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:5px">@t.Name<span class="tour-status-badge" data-tourid="@t.Id" style="display:none"></span></div>
                                     </div>
                                 </label>
                             }
@@ -300,17 +221,10 @@
     </div>
 </div>
 
-<!-- ===== MODAL XOÁ POI ===== -->
 <div id="deleteModal" class="modal-backdrop" style="display:none" onclick="closeDelete()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <h4>Xác nhận xoá</h4>
-            <button class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="modal-body">
-            <p>Bạn có chắc muốn xoá <strong id="delName"></strong>?</p>
-            <p class="text-muted" style="font-size:13px;margin-top:6px">Thao tác này không thể hoàn tác.</p>
-        </div>
+        <div class="modal-header"><h4>Xác nhận xoá</h4><button class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button></div>
+        <div class="modal-body"><p>Bạn có chắc muốn xoá <strong id="delName"></strong>?</p></div>
         <div class="modal-footer">
             <button class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
             <form method="post" asp-page-handler="Delete" style="display:inline">
@@ -322,12 +236,6 @@
     </div>
 </div>
 
-<!-- ===== FORM XOÁ ẢNH (hidden, dùng submit thay fetch để tránh SameSite cookie) ===== -->
-<form id="deleteImageForm" method="post" asp-page-handler="DeleteImage" style="display:none">
-    @Html.AntiForgeryToken()
-    <input type="hidden" name="ImageIdToDelete" id="deleteImageId" />
-</form>
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -335,11 +243,31 @@
     const API_BASE  = '@Model.ApiBaseUrl';
     const IS_ADMIN   = @(Model.IsAdmin ? "true" : "false");
     const ROLE_HDR   = { 'Content-Type': 'application/json', 'X-Role': IS_ADMIN ? 'ADMIN' : 'OWNER' };
+    
+    // BIẾN THEO DÕI THAY ĐỔI FORM (Chống gửi nhầm POI PENDING)
+    let isPoiDirty = false;
 
-    function toAbsUrl(url) {
-        if (!url) return '';
-        return '/img-proxy?url=' + encodeURIComponent(url);
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('poiForm').addEventListener('input', function(e) {
+            if (e.target.name !== 'TourIds') isPoiDirty = true;
+        });
+        const imgInput = document.getElementById('imageFileInput');
+        if(imgInput) imgInput.addEventListener('change', () => isPoiDirty = true);
+
+        let clat=10.7769, clng=106.7009;
+        if(POIS.length){ clat=POIS.reduce((s,p)=>s+p.lat,0)/POIS.length; clng=POIS.reduce((s,p)=>s+p.lng,0)/POIS.length; }
+        mainMap=L.map('mainMap').setView([clat,clng],14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(mainMap);
+        POIS.forEach(p=>{
+            const m=L.marker([p.lat,p.lng],{icon:mkIcon(false)}).addTo(mainMap);
+            m.bindTooltip(`<b>${p.name}</b>`,{direction:'top',offset:[0,-20]});
+            m.on('click',()=>selectPoiById(p.id));
+            markers[p.id]=m;
+            circles[p.id]=L.circle([p.lat,p.lng],{radius:p.radius,color:'#e94560',fillColor:'#e94560',fillOpacity:.08,weight:1.5}).addTo(mainMap);
+        });
+    });
+
+    function toAbsUrl(url) { return url ? '/img-proxy?url=' + encodeURIComponent(url) : ''; }
 
     const POIS = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pois.Select(p => new {
         id     = p.Id,
@@ -357,31 +285,11 @@
         images = p.Images.Select(i => new { id = i.Id, imageUrl = i.ImageUrl, isThumbnail = i.IsThumbnail })
     })).Replace("'", "\\'"))');
 
-    const PLH_IMG = '';
-
     let mainMap, markers={}, circles={}, selectedId=null;
 
     function mkIcon(active){
-        return L.divIcon({
-            className:'',
-            html:`<div class="poi-pin${active?' active':''}"></div>`,
-            iconSize:[22,22], iconAnchor:[11,22], popupAnchor:[0,-24]
-        });
+        return L.divIcon({className:'',html:`<div class="poi-pin${active?' active':''}"></div>`,iconSize:[22,22],iconAnchor:[11,22],popupAnchor:[0,-24]});
     }
-
-    document.addEventListener('DOMContentLoaded',()=>{
-        let clat=10.7769, clng=106.7009;
-        if(POIS.length){ clat=POIS.reduce((s,p)=>s+p.lat,0)/POIS.length; clng=POIS.reduce((s,p)=>s+p.lng,0)/POIS.length; }
-        mainMap=L.map('mainMap').setView([clat,clng],14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(mainMap);
-        POIS.forEach(p=>{
-            const m=L.marker([p.lat,p.lng],{icon:mkIcon(false)}).addTo(mainMap);
-            m.bindTooltip(`<b>${p.name}</b>`,{direction:'top',offset:[0,-20]});
-            m.on('click',()=>selectPoiById(p.id));
-            markers[p.id]=m;
-            circles[p.id]=L.circle([p.lat,p.lng],{radius:p.radius,color:'#e94560',fillColor:'#e94560',fillOpacity:.08,weight:1.5}).addTo(mainMap);
-        });
-    });
 
     function selectPoiById(id){
         const poi=POIS.find(p=>p.id===id); if(!poi) return;
@@ -412,34 +320,24 @@
         document.getElementById('detailPlaceholder').style.display='none';
         document.getElementById('detailContent').style.display='flex';
 
-        let thumb = poi.images && poi.images.length > 0
+        let thumb = (poi.status !== 'REJECTED' && poi.images && poi.images.length > 0)
             ? (poi.images.find(i => i.isThumbnail) || poi.images[0])
             : null;
 
-        let finalImgUrl = PLH_IMG;
-        if (thumb && thumb.imageUrl) {
-            finalImgUrl = toAbsUrl(thumb.imageUrl);
-        } else if (poi.img) {
-            finalImgUrl = toAbsUrl(poi.img);
-        }
+        let finalImgUrl = '';
+        if (thumb && thumb.imageUrl) finalImgUrl = toAbsUrl(thumb.imageUrl);
+        else if (poi.status !== 'REJECTED' && poi.img) finalImgUrl = toAbsUrl(poi.img);
 
         document.getElementById('detailImg').src = finalImgUrl;
-        document.getElementById('detailImg').onerror = null;
-        document.getElementById('detailImg').alt = poi.name;
-
-        // Thumbnail strip
+        
         const thumbsWrap = document.getElementById('detailThumbs');
-        if (poi.images && poi.images.length > 1) {
+        if (poi.status !== 'REJECTED' && poi.images && poi.images.length > 1) {
             thumbsWrap.style.display = 'flex';
-            thumbsWrap.innerHTML = poi.images.map(img => {
-                const url = toAbsUrl(img.imageUrl);
-                return `<img src="${url}" onclick="switchDetailImg('${url}', this)"
-                    style="width:52px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:2px solid ${img.isThumbnail ? '#7c3aed' : '#e5e7eb'};flex-shrink:0" />`;
-            }).join('');
+            thumbsWrap.innerHTML = poi.images.map(img => `<img src="${toAbsUrl(img.imageUrl)}" onclick="document.getElementById('detailImg').src='${toAbsUrl(img.imageUrl)}'" style="width:52px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:2px solid ${img.isThumbnail ? '#7c3aed' : '#e5e7eb'};flex-shrink:0" />`).join('');
         } else {
             thumbsWrap.style.display = 'none';
-            thumbsWrap.innerHTML = '';
         }
+
         document.getElementById('detailRadius').textContent = poi.radius + ' m';
         document.getElementById('detailName').textContent = poi.name;
         document.getElementById('detailNavTitle').textContent = poi.name;
@@ -454,20 +352,29 @@
     function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg,p.img); }
     function deleteCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) confirmDelete(p.id,p.name); }
 
-    // ── TOUR PANEL ────────────────────────────────────────────────────
-    const TOUR_STATUS_CFG = {
-        'APPROVED':       { label: '✅ Thành viên',   bg: '#dcfce7', color: '#166534', border: '#86efac' },
-        'PENDING':        { label: '⏳ Chờ vào tour', bg: '#fef3c7', color: '#92400e', border: '#fcd34d' },
-        'REMOVE_PENDING': { label: '🚪 Chờ rời tour', bg: '#fff7ed', color: '#c2410c', border: '#fdba74' },
-        'REJECTED':       { label: '❌ Bị từ chối',   bg: '#fee2e2', color: '#991b1b', border: '#fca5a5' },
-    };
+    // XÓA ẢNH - KHÔNG CẦN CONFIRM
+    async function deleteImage(imageId) {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const formData = new FormData();
+        formData.append('ImageIdToDelete', imageId);
+        formData.append('__RequestVerificationToken', token);
+        try {
+            const res = await fetch(window.location.pathname + '?handler=DeleteImage', { method: 'POST', body: formData });
+            if (res.ok) {
+                const imgWrap = document.getElementById('imgwrap-' + imageId);
+                if (imgWrap) imgWrap.remove();
+                const poi = POIS.find(p => p.id === selectedId);
+                if (poi && poi.images) poi.images = poi.images.filter(i => i.id !== imageId);
+                const grid = document.getElementById('currentImagesGrid');
+                if (grid && grid.children.length === 0) document.getElementById('currentImagesWrap').style.display = 'none';
+            } else alert('Lỗi từ server khi xoá ảnh.');
+        } catch (err) { alert('Lỗi kết nối.'); }
+    }
 
     async function loadPoiTours(poiId) {
         const panel = document.getElementById('poiToursPanel');
         const list  = document.getElementById('poiToursList');
         panel.style.display = 'none';
-        list.innerHTML = '<div style="padding:6px 0;color:#9ca3af;font-size:12px">Đang tải...</div>';
-
         try {
             const [toursRes, pendRes, approvedRes, removeRes, rejectedRes] = await Promise.all([
                 fetch(`${API_BASE}/api/tours/by-poi/${poiId}`),
@@ -476,136 +383,72 @@
                 fetch(`${API_BASE}/api/tours/pois/all-remove-pending`),
                 fetch(`${API_BASE}/api/tours/pois/all-rejected`)
             ]);
+            const approvedTours = toursRes.ok ? await toursRes.json() : [];
+            const allPending = pendRes.ok ? await pendRes.json() : [];
+            const allApproved = approvedRes.ok ? await approvedRes.json() : [];
+            const allRemove = removeRes.ok ? await removeRes.json() : [];
+            const allRejected = rejectedRes.ok ? await rejectedRes.json() : [];
 
-            const approvedTours = toursRes.ok   ? await toursRes.json()    : [];
-            const allPending    = pendRes.ok     ? await pendRes.json()     : [];
-            const allApproved   = approvedRes.ok ? await approvedRes.json() : [];
-            const allRemove     = removeRes.ok   ? await removeRes.json()   : [];
-            const allRejected   = rejectedRes.ok ? await rejectedRes.json() : [];
+            const statusMap = {};
+            allApproved.filter(tp => tp.poiId === poiId).forEach(tp => statusMap[tp.tourId] = { name: tp.tourName, status: 'APPROVED' });
+            allPending.filter(tp => tp.poiId === poiId).forEach(tp => statusMap[tp.tourId] = { name: tp.tourName, status: 'PENDING' });
+            allRemove.filter(tp => tp.poiId === poiId).forEach(tp => statusMap[tp.tourId] = { name: tp.tourName, status: 'REMOVE_PENDING' });
+            allRejected.filter(tp => tp.poiId === poiId).forEach(tp => statusMap[tp.tourId] = { name: tp.tourName, status: 'REJECTED' });
 
-            // tourId -> { name, status }
-            const tourStatusMap = {};
-            allApproved.filter(tp => tp.poiId === poiId)
-                .forEach(tp => tourStatusMap[tp.tourId] = { name: tp.tourName, status: 'APPROVED' });
-            allPending.filter(tp => tp.poiId === poiId)
-                .forEach(tp => tourStatusMap[tp.tourId] = { name: tp.tourName, status: 'PENDING' });
-            allRemove.filter(tp => tp.poiId === poiId)
-                .forEach(tp => tourStatusMap[tp.tourId] = { name: tp.tourName, status: 'REMOVE_PENDING' });
-            allRejected.filter(tp => tp.poiId === poiId)
-                .forEach(tp => tourStatusMap[tp.tourId] = { name: tp.tourName, status: 'REJECTED' });
-
-            // tourId -> [poi, ...] để hiển thị điểm cùng tour
-            const tourPoiMap = {};
-            approvedTours.forEach(t => { tourPoiMap[t.id] = t.pOIs || t.POIs || []; });
-
-            const entries = Object.entries(tourStatusMap);
+            const entries = Object.entries(statusMap);
             list.innerHTML = '';
-            if (entries.length === 0) { panel.style.display = 'none'; return; }
+            if (entries.length === 0) return;
 
             panel.style.display = 'block';
             list.innerHTML = entries.map(([tourId, info]) => {
-                const cfg      = TOUR_STATUS_CFG[info.status] || TOUR_STATUS_CFG['APPROVED'];
-                const pois     = tourPoiMap[tourId] || [];
-                const showPois = (info.status === 'APPROVED' || info.status === 'REMOVE_PENDING') && pois.length > 0;
-                return `
-                <div style="background:#f9f8ff;border:1px solid ${cfg.border};border-radius:8px;padding:10px 12px;margin-bottom:8px">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;${showPois ? 'margin-bottom:8px' : ''}">
-                        <div style="font-weight:600;font-size:13px;color:#4c1d95">
-                            <i class="bi bi-signpost-2"></i> ${info.name ?? 'Tour #' + tourId}
-                        </div>
-                        <span style="background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border};
-                                     font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap">
-                            ${cfg.label}
-                        </span>
-                    </div>
-                    ${showPois ? `
-                    <div style="display:flex;flex-wrap:wrap;gap:4px">
-                        ${pois.map(p => `
-                            <span style="background:${p.id === poiId ? '#6d28d9' : '#ede9fe'};
-                                         color:${p.id === poiId ? '#fff' : '#5b21b6'};
-                                         font-size:11px;padding:2px 8px;border-radius:8px;
-                                         cursor:${p.id === poiId ? 'default' : 'pointer'};font-weight:500"
-                                  ${p.id !== poiId ? `onclick="selectPoiById(${p.id})"` : ''}>
-                                ${p.name}
-                            </span>
-                        `).join('')}
-                    </div>` : ''}
-                </div>`;
+                const label = info.status === 'APPROVED' ? '✅ Thành viên' : (info.status === 'PENDING' ? '⏳ Chờ vào tour' : '🚪 Chờ rời tour');
+                const bg = info.status === 'APPROVED' ? '#dcfce7' : '#fef3c7';
+                const col = info.status === 'APPROVED' ? '#166534' : '#92400e';
+                return `<div style="background:#f9f8ff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between">
+                            <strong style="color:#4c1d95;font-size:13px">${info.name}</strong>
+                            <span style="background:${bg};color:${col};font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700">${label}</span>
+                        </div>`;
             }).join('');
-        } catch (e) { console.error('loadPoiTours:', e); list.innerHTML = ''; }
-    }
-
-    function removeDiacritics(str){
-        return str.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-    }
-
-    function filterList(q){
-        const nq = removeDiacritics(q);
-        document.querySelectorAll('.poi-item').forEach(el=>{
-            const name = removeDiacritics(el.querySelector('.poi-item-name').textContent);
-            el.classList.toggle('hidden', nq.length > 0 && !name.includes(nq));
-        });
-    }
-
-    function resetMap(){
-        document.getElementById('poiSearch').value = '';
-        filterList('');
-        document.getElementById('poiRightPanel').classList.remove('detail-active');
-        document.getElementById('detailPlaceholder').style.display = '';
-        document.getElementById('detailContent').style.display = 'none';
-        if(mainMap && POIS.length){
-            if(POIS.length === 1){
-                mainMap.setView([POIS[0].lat, POIS[0].lng], 15);
-            } else {
-                const bounds = POIS.map(p=>[p.lat, p.lng]);
-                mainMap.fitBounds(bounds, {padding:[40,40]});
-            }
-        }
+        } catch (e) {}
     }
 
     var _pm=null,_pmk=null,_pmc=null;
     function initPickMap(lat,lng,r){
         if(_pm){_pm.remove();_pm=null;_pmk=null;_pmc=null;}
         _pm=L.map('pickMap').setView([lat,lng],15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_pm);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(_pm);
         placeMarker(lat,lng,r);
         _pm.on('click',e=>placeMarker(e.latlng.lat,e.latlng.lng,parseFloat(document.getElementById('fRadius').value)||5));
-        document.getElementById('fRadius').addEventListener('input',function(){if(_pmk){const ll=_pmk.getLatLng();drawCircle(ll.lat,ll.lng,parseFloat(this.value)||5);}});
     }
+    
     function placeMarker(lat,lng,r){
-        if(_pmk)_pm.removeLayer(_pmk);
-        drawCircle(lat,lng,r);
+        if(_pmk)_pm.removeLayer(_pmk); drawCircle(lat,lng,r);
         _pmk=L.marker([lat,lng],{draggable:true}).addTo(_pm);
-        document.getElementById('fLat').value=lat.toFixed(6);
-        document.getElementById('fLng').value=lng.toFixed(6);
-        _pmk.on('dragend',e=>{const p=e.target.getLatLng();document.getElementById('fLat').value=p.lat.toFixed(6);document.getElementById('fLng').value=p.lng.toFixed(6);drawCircle(p.lat,p.lng,parseFloat(document.getElementById('fRadius').value)||5);});
+        document.getElementById('fLat').value=lat.toFixed(6); document.getElementById('fLng').value=lng.toFixed(6);
+        _pmk.on('dragend',e=>{
+            isPoiDirty = true; // Cập nhật biến theo dõi
+            const p=e.target.getLatLng();
+            document.getElementById('fLat').value=p.lat.toFixed(6);
+            document.getElementById('fLng').value=p.lng.toFixed(6);
+            drawCircle(p.lat,p.lng,parseFloat(document.getElementById('fRadius').value)||5);
+        });
     }
     function drawCircle(lat,lng,r){if(_pmc)_pm.removeLayer(_pmc);_pmc=L.circle([lat,lng],{radius:r,color:'#e94560',fillColor:'#e94560',fillOpacity:.2}).addTo(_pm);}
-    function getMyLocation(){
-        if(!navigator.geolocation){alert('Không hỗ trợ định vị.');return;}
-        navigator.geolocation.getCurrentPosition(pos=>{const r=parseFloat(document.getElementById('fRadius').value)||5;placeMarker(pos.coords.latitude,pos.coords.longitude,r);_pm.setView([pos.coords.latitude,pos.coords.longitude],16);showTab('tab-loc','btnTabLoc');},err=>alert('Lỗi: '+err.message));
-    }
 
     function openModal(){
+        isPoiDirty = false;
         document.getElementById('poiForm').reset();
         document.getElementById('fId').value='0';
-        document.getElementById('fRadius').value=5;
         document.getElementById('modalTitle').textContent='Thêm điểm thuyết minh';
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Lưu';
         _selectedFiles = new DataTransfer();
         document.getElementById('imageFileInput').files = _selectedFiles.files;
         document.getElementById('previewGrid').innerHTML = '';
-        document.getElementById('imageUploadArea').style.borderColor = '#d1d5db';
         document.getElementById('currentImagesWrap').style.display = 'none';
-        document.getElementById('currentImagesGrid').innerHTML = '';
-        // Reset tour checkboxes + badges + trạng thái gốc
-        document.querySelectorAll('input[name="TourIds"]').forEach(cb => {
-            cb.checked = false;
-            cb.indeterminate = false;
-            cb.disabled = false;
-            cb.dataset.origStatus = '';
-        });
-        document.querySelectorAll('.tour-status-badge').forEach(b => { b.style.display='none'; b.textContent=''; });
+        
+        document.querySelectorAll('input[name="TourIds"]').forEach(cb => { cb.checked=false; cb.disabled=false; cb.dataset.origStatus=''; });
+        document.querySelectorAll('.tour-status-badge').forEach(b => { b.style.display='none'; });
+
         showTab('tab-basic','btnTabBasic');
         document.getElementById('poiModal').style.display='flex';
         setTimeout(()=>initPickMap(10.7769,106.7009,5),150);
@@ -613,6 +456,7 @@
     function closeModal(){document.getElementById('poiModal').style.display='none';}
 
     async function editPoi(id,name,desc,lat,lng,radius,ownerId,imageUrl){
+        isPoiDirty = false;
         document.getElementById('fId').value=id;
         document.getElementById('fName').value=name;
         document.getElementById('fDescription').value=desc;
@@ -623,261 +467,147 @@
         document.getElementById('modalTitle').textContent='Chỉnh sửa: '+name;
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Cập nhật';
 
-        // Reset tất cả checkbox + badge trước
-        document.querySelectorAll('input[name="TourIds"]').forEach(cb => {
-            cb.checked = false;
-            cb.indeterminate = false;
-            cb.disabled = false;
-            cb.dataset.origStatus = '';
-        });
-        document.querySelectorAll('.tour-status-badge').forEach(b => { b.style.display='none'; b.textContent=''; });
-
-        // Load trạng thái TourPOI của POI này (gồm cả pending/rejected/remove_pending)
-        try {
-            const [pendRes, approvedRes, rejectedRes, removeRes] = await Promise.all([
-                fetch(`${API_BASE}/api/tours/pois/all-pending`),
-                fetch(`${API_BASE}/api/tours/pois/all-approved`),
-                fetch(`${API_BASE}/api/tours/pois/all-rejected`),
-                fetch(`${API_BASE}/api/tours/pois/all-remove-pending`)
-            ]);
-            const allPending       = pendRes.ok     ? await pendRes.json()    : [];
-            const allApproved      = approvedRes.ok ? await approvedRes.json(): [];
-            const allRejected      = rejectedRes.ok ? await rejectedRes.json(): [];
-            const allRemovePending = removeRes.ok   ? await removeRes.json()  : [];
-
-            // Lọc chỉ các bản ghi thuộc POI đang edit
-            const statusMap = {}; // tourId -> {status, tpId}
-            allApproved     .filter(tp => tp.poiId === id).forEach(tp => statusMap[tp.tourId] = {status:'APPROVED',       tpId: tp.tourPOIId});
-            allPending      .filter(tp => tp.poiId === id).forEach(tp => statusMap[tp.tourId] = {status:'PENDING',        tpId: tp.tourPOIId});
-            allRejected     .filter(tp => tp.poiId === id).forEach(tp => statusMap[tp.tourId] = {status:'REJECTED',       tpId: tp.tourPOIId});
-            allRemovePending.filter(tp => tp.poiId === id).forEach(tp => statusMap[tp.tourId] = {status:'REMOVE_PENDING', tpId: tp.tourPOIId});
-
-            document.querySelectorAll('input[name="TourIds"]').forEach(cb => {
-                const tid = parseInt(cb.value);
-                const info = statusMap[tid];
-                const badge = document.querySelector(`.tour-status-badge[data-tourid="${tid}"]`);
-
-                if (!info) {
-                    cb.checked = false;
-                    cb.dataset.origStatus = '';
-                } else if (info.status === 'APPROVED') {
-                    cb.checked = true;
-                    cb.dataset.origStatus = 'APPROVED';
-                    if (badge) { badge.style.display='inline'; badge.textContent='✅ Đã duyệt'; badge.style.cssText+='background:#dcfce7;color:#166534;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600'; }
-                } else if (info.status === 'PENDING') {
-                    cb.checked = false;
-                    cb.indeterminate = true;
-                    cb.dataset.origStatus = 'PENDING';
-                    if (badge) { badge.style.display='inline'; badge.textContent='⏳ Chờ vào tour'; badge.style.cssText+='background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600'; }
-                } else if (info.status === 'REMOVE_PENDING') {
-                    // Đang chờ admin duyệt rời tour — checkbox bỏ tick, không cho thao tác
-                    cb.checked = false;
-                    cb.indeterminate = true;
-                    cb.disabled = true;
-                    cb.dataset.origStatus = 'REMOVE_PENDING';
-                    if (badge) { badge.style.display='inline'; badge.textContent='🚪 Chờ duyệt rời'; badge.style.cssText+='background:#fef3c7;color:#b45309;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600'; }
-                } else if (info.status === 'REJECTED') {
-                    cb.checked = false;
-                    cb.dataset.origStatus = 'REJECTED';
-                    if (badge) { badge.style.display='inline'; badge.textContent='❌ Bị từ chối'; badge.style.cssText+='background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600'; }
-                }
-            });
-        } catch (e) { console.error('Lỗi tải trạng thái tour của POI:', e); }
-
         const poi = POIS.find(p => p.id === id);
+        const imgGrid = document.getElementById('currentImagesGrid');
         if (poi && poi.images && poi.images.length > 0) {
             document.getElementById('currentImagesWrap').style.display = 'block';
             let html = '';
+            if (poi.status === 'REJECTED') {
+                html += `<div style="grid-column: 1/-1; background: #fee2e2; color: #991b1b; padding: 8px; border-radius: 6px; font-size: 12px; margin-bottom: 8px;">
+                            <i class="bi bi-exclamation-triangle"></i> Cảnh báo: Ảnh dưới đây đã bị từ chối. Vui lòng thêm ảnh hợp lệ để gửi duyệt lại.
+                         </div>`;
+            }
             poi.images.forEach(img => {
                 const absUrl = toAbsUrl(img.imageUrl);
-                html += `
-                    <div style="position:relative;width:80px;height:80px" id="imgwrap-${img.id}">
-                        <img src="${absUrl}"
-                             style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid ${img.isThumbnail ? 'var(--accent)' : '#e5e7eb'}" />
-                        <button type="button" onclick="event.preventDefault();event.stopPropagation();deleteImage(${img.id})"
-                            style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center">
-                            ✕
-                        </button>
-                    </div>`;
+                const imgStyle = poi.status === 'REJECTED' ? 'filter: grayscale(1) opacity(0.5);' : '';
+                html += `<div style="position:relative;width:80px;height:80px" id="imgwrap-${img.id}">
+                            <img src="${absUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid ${img.isThumbnail ? 'var(--accent)' : '#e5e7eb'}; ${imgStyle}" />
+                            <button type="button" onclick="event.preventDefault();deleteImage(${img.id})"
+                                style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center">✕</button>
+                        </div>`;
             });
-            document.getElementById('currentImagesGrid').innerHTML = html;
+            imgGrid.innerHTML = html;
         } else {
             document.getElementById('currentImagesWrap').style.display = 'none';
         }
 
+        document.querySelectorAll('input[name="TourIds"]').forEach(cb => { cb.checked=false; cb.disabled=false; cb.dataset.origStatus=''; });
+        try {
+            const [pRes, aRes, rRes, rmRes] = await Promise.all([
+                fetch(`${API_BASE}/api/tours/pois/all-pending`), fetch(`${API_BASE}/api/tours/pois/all-approved`),
+                fetch(`${API_BASE}/api/tours/pois/all-rejected`), fetch(`${API_BASE}/api/tours/pois/all-remove-pending`)
+            ]);
+            const pend=pRes.ok?await pRes.json():[], appr=aRes.ok?await aRes.json():[], rej=rRes.ok?await rRes.json():[], rem=rmRes.ok?await rmRes.json():[];
+            const sMap = {};
+            appr.filter(x=>x.poiId===id).forEach(x=>sMap[x.tourId]={s:'APPROVED'});
+            pend.filter(x=>x.poiId===id).forEach(x=>sMap[x.tourId]={s:'PENDING'});
+            rej.filter(x=>x.poiId===id).forEach(x=>sMap[x.tourId]={s:'REJECTED'});
+            rem.filter(x=>x.poiId===id).forEach(x=>sMap[x.tourId]={s:'REMOVE_PENDING'});
+
+            document.querySelectorAll('input[name="TourIds"]').forEach(cb => {
+                const info = sMap[parseInt(cb.value)];
+                if(!info) return;
+                cb.dataset.origStatus = info.s;
+                if(info.s==='APPROVED'){ cb.checked=true; }
+                else if(info.s==='PENDING' || info.s==='REMOVE_PENDING'){ cb.indeterminate=true; if(info.s==='REMOVE_PENDING') cb.disabled=true; }
+            });
+        } catch (e) {}
+
         _selectedFiles = new DataTransfer();
         document.getElementById('imageFileInput').files = _selectedFiles.files;
         document.getElementById('previewGrid').innerHTML = '';
-
+        
         showTab('tab-basic','btnTabBasic');
         document.getElementById('poiModal').style.display='flex';
         setTimeout(()=>initPickMap(parseFloat(lat),parseFloat(lng),parseInt(radius)),150);
     }
 
-    // Xóa ảnh dùng form submit (tránh SameSite cookie issue với fetch)
-    function deleteImage(imageId) {
-        if (!confirm('Xóa ảnh này?')) return;
-        closeModal();
-        document.getElementById('deleteImageId').value = imageId;
-        document.getElementById('deleteImageForm').submit();
-    }
-
     function showTab(tabId,btnId){
         document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
         document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-        document.getElementById(tabId).style.display='block';
-        if(btnId)document.getElementById(btnId).classList.add('active');
+        document.getElementById(tabId).style.display='block'; document.getElementById(btnId).classList.add('active');
         if(tabId==='tab-loc')setTimeout(()=>{if(_pm)_pm.invalidateSize();},80);
     }
 
     function confirmDelete(id,name){document.getElementById('fDelId').value=id;document.getElementById('delName').textContent=name;document.getElementById('deleteModal').style.display='flex';}
     function closeDelete(){document.getElementById('deleteModal').style.display='none';}
 
-    // ── Multi-image upload ──
     let _selectedFiles = new DataTransfer();
-
     function previewImages(input) {
         for (const file of input.files) {
             if (_selectedFiles.items.length >= 5) { alert('Tối đa 5 ảnh.'); break; }
-            if (file.size > 5 * 1024 * 1024) { alert(file.name + ': ảnh tối đa 5MB'); continue; }
+            if (file.size > 5*1024*1024) { alert(file.name + ': quá 5MB'); continue; }
             _selectedFiles.items.add(file);
         }
         document.getElementById('imageFileInput').files = _selectedFiles.files;
         renderPreviewGrid();
     }
-
     function renderPreviewGrid() {
-        const grid = document.getElementById('previewGrid');
-        grid.innerHTML = '';
+        const grid = document.getElementById('previewGrid'); grid.innerHTML = '';
         Array.from(_selectedFiles.files).forEach((file, i) => {
             const reader = new FileReader();
             reader.onload = e => {
                 const wrap = document.createElement('div');
                 wrap.style.cssText = 'position:relative;width:80px;height:80px;flex-shrink:0';
-                wrap.innerHTML = `
-                    <img src="${e.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb" />
-                    <button type="button" onclick="removeFile(${i})"
-                        style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
-                `;
+                wrap.innerHTML = `<img src="${e.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb" />
+                                  <button type="button" onclick="removeFile(${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center">✕</button>`;
                 grid.appendChild(wrap);
             };
             reader.readAsDataURL(file);
         });
-        document.getElementById('imageUploadArea').style.borderColor =
-            _selectedFiles.files.length > 0 ? '#7c3aed' : '#d1d5db';
     }
-
     function removeFile(index) {
         const dt = new DataTransfer();
         Array.from(_selectedFiles.files).forEach((f, i) => { if (i !== index) dt.items.add(f); });
-        _selectedFiles = dt;
-        document.getElementById('imageFileInput').files = _selectedFiles.files;
-        renderPreviewGrid();
+        _selectedFiles = dt; document.getElementById('imageFileInput').files = _selectedFiles.files; renderPreviewGrid();
     }
 
-    function handleDrop(e) {
-        e.preventDefault();
-        previewImages({ files: e.dataTransfer.files });
-        document.getElementById('imageUploadArea').style.borderColor = '#d1d5db';
-    }
-
-    function switchDetailImg(url, el) {
-        document.getElementById('detailImg').src = url;
-        document.querySelectorAll('#detailThumbs img').forEach(img => {
-            img.style.borderColor = '#e5e7eb';
-        });
-        el.style.borderColor = '#7c3aed';
-    }
-
-    // ── XỬ LÝ SUBMIT: diff tour checkboxes và gọi API riêng ─────────────
+    // NATIVE SUBMIT FIX CHỐNG GỬI KÉP POI
     document.getElementById('poiForm').addEventListener('submit', async function(e) {
+        e.preventDefault(); 
         const poiId = parseInt(document.getElementById('fId').value);
-        if (poiId === 0) return; // Thêm mới: cho phép submit bình thường (backend sẽ tạo TourPOI)
+        
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang xử lý...';
+        submitBtn.disabled = true;
 
-        // Chặn form gửi tour IDs lên PageModel (tránh duplicate)
-        // Chúng ta xử lý tour diff trực tiếp qua API ở đây
-        e.preventDefault();
-
-        // Thu thập trạng thái mới từ checkbox
-        const changes = [];
-        document.querySelectorAll('input[name="TourIds"]').forEach(cb => {
-            if (cb.disabled) return; // REMOVE_PENDING — đang chờ admin, không thao tác
-            const tourId = parseInt(cb.value);
-            const origStatus = cb.dataset.origStatus || '';  // '', 'APPROVED', 'PENDING', 'REJECTED'
-            const isNowChecked = cb.checked;
-
-            // Xác định action cần thực hiện
-            if (origStatus === '' && isNowChecked) {
-                // Chưa có → tick → gửi yêu cầu thêm vào tour
-                changes.push({ tourId, action: 'add' });
-            } else if ((origStatus === 'APPROVED') && !isNowChecked) {
-                // Đã có (approved) → bỏ tick → gửi yêu cầu xóa khỏi tour
-                changes.push({ tourId, action: 'remove' });
-            } else if (origStatus === 'REJECTED' && isNowChecked) {
-                // Bị từ chối → tick lại → gửi lại yêu cầu
-                changes.push({ tourId, action: 'add' });
-            } else if (origStatus === 'PENDING' && !isNowChecked) {
-                // Đang pending → bỏ tick → hủy yêu cầu (reject)
-                changes.push({ tourId, action: 'cancel' });
-            }
-            // PENDING + checked: không đổi (giữ nguyên indeterminate)
-            // APPROVED + checked: không đổi
-            // REJECTED + unchecked: không đổi
-        });
-
-        // Xóa tạm name="TourIds" để form backend không xử lý tour
-        document.querySelectorAll('input[name="TourIds"]').forEach(cb => cb.removeAttribute('name'));
-
-        // Submit form thông tin POI bình thường
-        const formData = new FormData(this);
-        const submitPromise = fetch(window.location.href, {
-            method: 'POST',
-            body: formData
-        });
-
-        // Gọi API cho từng thay đổi tour
-        const apiCalls = changes.map(async ({ tourId, action }) => {
-            try {
-                if (action === 'add') {
-                    // Admin: approve ngay; Owner: tạo PENDING (backend tự xử lý qua X-Role)
-                    await fetch(`${API_BASE}/api/tours/${tourId}/pois`, {
-                        method: 'POST',
-                        headers: ROLE_HDR,
-                        body: JSON.stringify({ poiId })
-                    });
-                } else if (action === 'remove') {
-                    if (IS_ADMIN) {
-                        // Admin: xóa thẳng, không cần duyệt
-                        await fetch(`${API_BASE}/api/tours/${tourId}/pois/${poiId}`, {
-                            method: 'DELETE',
-                            headers: ROLE_HDR
-                        });
-                    } else {
-                        // Owner: gửi yêu cầu rời tour, chờ admin duyệt
-                        await fetch(`${API_BASE}/api/tours/${tourId}/pois/${poiId}/request-remove`, {
-                            method: 'PUT',
-                            headers: ROLE_HDR
-                        });
+        if (poiId > 0) {
+            const changes = [];
+            document.querySelectorAll('input[name="TourIds"]').forEach(cb => {
+                if (cb.disabled) return; 
+                const orig = cb.dataset.origStatus || '';
+                if (orig === '' && cb.checked) changes.push({ tourId: cb.value, action: 'add' });
+                else if (orig === 'APPROVED' && !cb.checked) changes.push({ tourId: cb.value, action: 'remove' });
+                else if (orig === 'REJECTED' && cb.checked) changes.push({ tourId: cb.value, action: 'add' });
+                else if (orig === 'PENDING' && !cb.checked) changes.push({ tourId: cb.value, action: 'cancel' });
+            });
+            
+            let tourChanged = changes.length > 0;
+            
+            const apiCalls = changes.map(async ({ tourId, action }) => {
+                try {
+                    if (action === 'add') await fetch(`${API_BASE}/api/tours/${tourId}/pois`, { method: 'POST', headers: ROLE_HDR, body: JSON.stringify({ poiId }) });
+                    else if (action === 'remove') {
+                        if (IS_ADMIN) await fetch(`${API_BASE}/api/tours/${tourId}/pois/${poiId}`, { method: 'DELETE', headers: ROLE_HDR });
+                        else await fetch(`${API_BASE}/api/tours/${tourId}/pois/${poiId}/request-remove`, { method: 'PUT', headers: ROLE_HDR });
                     }
-                } else if (action === 'cancel') {
-                    // Hủy yêu cầu PENDING (xin vào) → xóa thẳng (cả admin lẫn owner)
-                    await fetch(`${API_BASE}/api/tours/${tourId}/pois/${poiId}`, {
-                        method: 'DELETE',
-                        headers: ROLE_HDR
-                    });
+                    else if (action === 'cancel') await fetch(`${API_BASE}/api/tours/${tourId}/pois/${poiId}`, { method: 'DELETE', headers: ROLE_HDR });
+                } catch (err) {}
+            });
+            await Promise.all(apiCalls);
+
+            // Chỉ load lại trang nếu POI KHÔNG hề bị sửa chữ/ảnh
+            if (!isPoiDirty) {
+                if (tourChanged) {
+                    alert('Đã gửi yêu cầu tham gia/rời Tour thành công!');
                 }
-            } catch (err) { console.error(`Lỗi tour ${tourId} action ${action}:`, err); }
-        });
+                window.location.reload();
+                return;
+            }
+        }
 
-        await Promise.all([submitPromise, ...apiCalls]);
-
-        // Restore tên attribute (để không bị lỗi nếu người dùng mở lại modal)
-        document.querySelectorAll('input[value]').forEach(cb => {
-            if (cb.type === 'checkbox' && cb.closest('#tab-tour')) cb.setAttribute('name', 'TourIds');
-        });
-
-        window.location.reload();
+        // Nếu isPoiDirty = true, cho phép Browser Native Submit để gửi ảnh + text
+        document.querySelectorAll('input[name="TourIds"]').forEach(cb => cb.removeAttribute('name'));
+        HTMLFormElement.prototype.submit.call(this); 
     });
-
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeDelete();}});
 </script>

@@ -23,7 +23,6 @@
 </div>
 
 <div class="card">
-    <!-- Thanh tìm kiếm -->
     <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center">
         <div style="position:relative;flex:1">
             <i class="bi bi-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:13px"></i>
@@ -78,7 +77,8 @@
                     <td style="white-space:nowrap">
                         <div style="display:flex;align-items:center;gap:2px" id="player-@a.Id">
                             <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Phát"
-                                    onclick="rowPlay(@a.Id,'@a.LanguageCode',`@Html.Raw(a.Script.Replace("`", "\\`"))`)"
+                                    data-id="@a.Id" data-code="@a.LanguageCode" data-script="@a.Script"
+                                    onclick="handlePlayClick(this)"
                                     id="btn-play-@a.Id">
                                 <i class="bi bi-play-fill"></i>
                             </button>
@@ -99,7 +99,13 @@
                     <td>
                         <div class="action-group">
                             <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Sửa"
-                                    onclick='openEditModal(@a.Id, @a.PoiId, @a.LanguageId, `@Html.Raw(a.Script.Replace("`", "\\`"))`, "@(a.PoiName ?? "")", "@a.LanguageCode @a.LanguageName")'>
+                                    data-id="@a.Id"
+                                    data-poiid="@a.PoiId"
+                                    data-langid="@a.LanguageId"
+                                    data-poiname="@(a.PoiName ?? "")"
+                                    data-langdisplay="@a.LanguageCode @a.LanguageName"
+                                    data-script="@a.Script"
+                                    onclick="handleEditClick(this)">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" title="Xóa"
@@ -114,14 +120,12 @@
     </table>
 </div>
 
-<!-- MODAL THÊM -->
-<div id="addModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeAddModal()">
-    <div class="modal-box" onclick="event.stopPropagation()">
+<div id="addModal" class="modal-backdrop" style="display:none">
+    <div class="modal-box">
         <div class="modal-header">
             <h4>Thêm Audio</h4>
-            <button class="btn btn-ghost btn-icon" onclick="closeAddModal()"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeAddModal()"><i class="bi bi-x-lg"></i></button>
         </div>
-        <!-- Thông báo đủ audio (ẩn mặc định, JS bật nếu AllCovered) -->
         <div id="allCoveredMsg" style="display:none;text-align:center;padding:40px 20px">
             <div style="font-size:48px;color:#cbd5e1;margin-bottom:12px"><i class="bi bi-check-circle"></i></div>
             <h3 style="margin-bottom:8px">Đã có đủ audio!</h3>
@@ -188,12 +192,11 @@
     </div>
 </div>
 
-<!-- MODAL SỬA -->
-<div id="editModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeEditModal()">
-    <div class="modal-box" onclick="event.stopPropagation()">
+<div id="editModal" class="modal-backdrop" style="display:none">
+    <div class="modal-box">
         <div class="modal-header">
             <h4 id="editModalTitle">Sửa Audio</h4>
-            <button class="btn btn-ghost btn-icon" onclick="closeEditModal()"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeEditModal()"><i class="bi bi-x-lg"></i></button>
         </div>
         <form method="post">
             @Html.AntiForgeryToken()
@@ -241,18 +244,17 @@
     </div>
 </div>
 
-<!-- MODAL XÓA -->
 <div id="deleteModal" class="modal-backdrop" style="display:none" onclick="closeDelete()">
     <div class="modal-box modal-sm" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h4>Xác nhận xóa</h4>
-            <button class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeDelete()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
             <p>Xóa audio <strong id="delLang"></strong> của <strong id="delPoi"></strong>?</p>
         </div>
         <div class="modal-footer">
-            <button class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDelete()">Huỷ</button>
             <form method="post" asp-page-handler="Delete" style="display:inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="DeleteId" id="fDelId" />
@@ -265,12 +267,10 @@
 <script>
     const API_BASE = document.getElementById('apiBaseUrl').value;
 
-    // Danh sách audio hiện có để check trùng
     const EXISTING_AUDIOS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                Model.Audios.Select(a => new { poiId = a.PoiId, languageId = a.LanguageId })
-        ));
+                                Model.Audios.Select(a => new { poiId = a.PoiId, languageId = a.LanguageId })
+                ));
 
-    // Khi chọn POI → filter ngôn ngữ đã có
     function onPoiChange() {
         const poiId = parseInt(document.getElementById('aPoiId').value);
         const langSel = document.getElementById('aLangId');
@@ -287,17 +287,14 @@
                 : opt.text.replace(' ✓', '');
         });
 
-        // Reset về trống nếu ngôn ngữ đang chọn đã bị dùng
         if (usedLangIds.includes(parseInt(langSel.value))) {
             langSel.value = '';
         }
     }
 
-    // ── MODAL ADD ────────────────────────────────────────────────────
     const ALL_COVERED = @Html.Raw(Model.AllCovered.ToString().ToLower());
 
     function openAddModal() {
-        // Luôn mở modal, nhưng hiện thông báo hoặc form tùy trạng thái
         if (ALL_COVERED) {
             document.getElementById('allCoveredMsg').style.display = '';
             document.getElementById('addForm').style.display = 'none';
@@ -314,12 +311,29 @@
         }
         document.getElementById('addModal').style.display = 'flex';
     }
+
+    // Đã thêm lại cancel() để tắt TTS khi đóng form
     function closeAddModal() {
         window.speechSynthesis.cancel();
         document.getElementById('addModal').style.display = 'none';
     }
 
-    // ── MODAL EDIT ───────────────────────────────────────────────────
+    // Các hàm hỗ trợ click an toàn qua thẻ data-*
+    function handlePlayClick(btn) {
+        rowPlay(btn.dataset.id, btn.dataset.code, btn.dataset.script);
+    }
+
+    function handleEditClick(btn) {
+        openEditModal(
+            btn.dataset.id,
+            btn.dataset.poiid,
+            btn.dataset.langid,
+            btn.dataset.script,
+            btn.dataset.poiname,
+            btn.dataset.langdisplay
+        );
+    }
+
     function openEditModal(id, poiId, langId, script, poiName, langDisplay) {
         document.getElementById('eId').value = id;
         document.getElementById('ePoiId').value = poiId;
@@ -330,18 +344,18 @@
         document.getElementById('eScript').value = script;
         document.getElementById('editModalTitle').textContent = 'Sửa Audio — ' + poiName;
 
-        // Lấy code ngôn ngữ để TTS
         const opt = document.querySelector(`#aLangId option[value="${langId}"]`);
         document.getElementById('eLangCode').value = opt ? opt.dataset.code : '';
 
         document.getElementById('editModal').style.display = 'flex';
     }
+
+    // Đã thêm lại cancel() để tắt TTS khi đóng form
     function closeEditModal() {
         window.speechSynthesis.cancel();
         document.getElementById('editModal').style.display = 'none';
     }
 
-    // ── DELETE ───────────────────────────────────────────────────────
     function confirmDelete(id, poiName, langName) {
         document.getElementById('fDelId').value = id;
         document.getElementById('delPoi').textContent = poiName;
@@ -350,9 +364,8 @@
     }
     function closeDelete() { document.getElementById('deleteModal').style.display = 'none'; }
 
-    // ── ROW PLAYER ───────────────────────────────────────────────────
     let _rowId = null, _rowLang = '', _rowSentences = [], _rowSentIdx = 0;
-    let _rowSession = 0; // tăng mỗi lần play/seek/stop để cancel callback cũ
+    let _rowSession = 0;
 
     function rowPlay(id, langCode, text) {
         if (_rowId && _rowId !== id) rowStop(_rowId);
@@ -365,7 +378,7 @@
     }
 
     function _rowSpeakFrom(idx, session) {
-        if (session !== _rowSession) return; // callback từ utterance cũ, bỏ qua
+        if (session !== _rowSession) return;
         if (idx >= _rowSentences.length) {
             _setRowState(_rowId, 'idle');
             return;
@@ -394,7 +407,7 @@
     }
 
     function rowStop(id) {
-        _rowSession++; // vô hiệu mọi callback đang chờ
+        _rowSession++;
         window.speechSynthesis.cancel();
         _rowId = null;
         _setRowState(id, 'idle');
@@ -437,7 +450,6 @@
                 const opt = sel.options[sel.selectedIndex];
                 code = opt?.dataset?.code || '';
             } else {
-                // hidden input chứa langId, tìm code từ select add modal
                 const langId = sel.value;
                 const opt = document.querySelector(`#aLangId option[value="${langId}"]`);
                 code = opt?.dataset?.code || '';
@@ -475,11 +487,7 @@
         }
     });
 
-    // ── AUTO TRANSLATE ───────────────────────────────────────────────
-    function onLangChange(prefix) {
-        // Reset script khi đổi ngôn ngữ trong add modal
-        // (không reset khi edit)
-    }
+    function onLangChange(prefix) { }
 
     async function autoTranslate() {
         const langId = document.getElementById('aLangId').value;
@@ -526,7 +534,6 @@
         return data[0].map(x => x[0]).join('');
     }
 
-    // ── SEARCH / FILTER ──────────────────────────────────────────────
     function filterAudio() {
         const poi  = document.getElementById('searchPoi').value.trim().toLowerCase();
         const lang = document.getElementById('searchLang').value.toLowerCase();

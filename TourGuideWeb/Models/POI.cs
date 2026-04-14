@@ -1,4 +1,6 @@
-﻿namespace GPSGuide.Web.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace GPSGuide.Web.Models;
 public class POI
 {
     public int Id { get; set; }
@@ -14,6 +16,7 @@ public class POI
     public string? ImageUrl { get; set; }
     public string Status { get; set; } = "APPROVED";
     public string? RejectReason { get; set; }
+    [JsonIgnore]
     public List<POIImage> Images { get; set; } = new();
 }
 

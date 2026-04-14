@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using GPSGuide.Web.Models;
 using System.Net.Http.Json;
+using System.Globalization;
 
 namespace GPSGuide.Web.Pages;
 
@@ -20,7 +21,7 @@ public class PoisModel : PageModel
 
     public IList<POI> Pois { get; private set; } = new List<POI>();
     public IList<OwnerItem> Owners { get; private set; } = new List<OwnerItem>();
-    public IList<TourItem> AllTours { get; private set; } = new List<TourItem>(); // ← mới
+    public IList<TourItem> AllTours { get; private set; } = new List<TourItem>();
     public string ApiBaseUrl => _config["ApiBaseUrl"] ?? "http://localhost:5266";
 
     [BindProperty] public int Id { get; set; }
@@ -34,7 +35,7 @@ public class PoisModel : PageModel
     [BindProperty] public int DeleteId { get; set; }
     [BindProperty] public int ImageIdToDelete { get; set; }
     [BindProperty] public List<IFormFile> ImageFiles { get; set; } = [];
-    [BindProperty] public List<int> TourIds { get; set; } = []; // ← mới
+    [BindProperty] public List<int> TourIds { get; set; } = [];
 
     private string Role => HttpContext.Session.GetString("Role") ?? "OWNER";
     public bool IsAdmin => Role == "ADMIN";
@@ -75,13 +76,11 @@ public class PoisModel : PageModel
     {
         var latStr = Request.Form["Latitude"].ToString().Replace(',', '.');
         var lngStr = Request.Form["Longitude"].ToString().Replace(',', '.');
-        double lat = double.TryParse(latStr, System.Globalization.NumberStyles.Any,
-                         System.Globalization.CultureInfo.InvariantCulture, out var lv) ? lv : Latitude;
-        double lng = double.TryParse(lngStr, System.Globalization.NumberStyles.Any,
-                         System.Globalization.CultureInfo.InvariantCulture, out var lgv) ? lgv : Longitude;
+        double lat = double.TryParse(latStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var lv) ? lv : Latitude;
+        double lng = double.TryParse(lngStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var lgv) ? lgv : Longitude;
 
         var ownerId = IsAdmin ? (OwnerId > 0 ? OwnerId : null) : MyUserId;
-        var status = (Id == 0 && !IsAdmin) ? "PENDING" : "APPROVED";
+        var status = IsAdmin ? "APPROVED" : "PENDING";
 
         var body = new POI
         {
@@ -116,7 +115,7 @@ public class PoisModel : PageModel
                 if (!IsAdmin)
                 {
                     var existing = await client.GetFromJsonAsync<POI>($"poi/{Id}");
-                    if (existing?.OwnerId != MyUserId)
+                    if (existing != null && existing.OwnerId.HasValue && existing.OwnerId > 0 && existing.OwnerId != MyUserId)
                     { Error = "Bạn không có quyền sửa điểm này."; return RedirectToPage(); }
                 }
                 resp = await client.PutAsJsonAsync($"poi/{Id}", body);
@@ -126,7 +125,7 @@ public class PoisModel : PageModel
                 Msg = IsAdmin ? $"Đã cập nhật \"{Name}\" thành công." : $"Đã gửi cập nhật \"{Name}\" — đang chờ Admin phê duyệt.";
             }
 
-            // Gán POI vào các tour đã chọn
+            // Gán Tour
             if (savedId > 0 && TourIds.Any())
             {
                 int tourOk = 0, tourPending = 0;
@@ -140,27 +139,28 @@ public class PoisModel : PageModel
                         else tourOk++;
                     }
                 }
-                if (tourPending > 0)
-                    Msg += $" Đã gửi yêu cầu tham gia {tourPending} tour — chờ Admin duyệt.";
-                if (tourOk > 0)
-                    Msg += $" Đã thêm vào {tourOk} tour.";
+                if (tourPending > 0) Msg += $" Đã xin vào {tourPending} tour.";
+                if (tourOk > 0) Msg += $" Đã thêm vào {tourOk} tour.";
             }
 
             // Upload ảnh
-            foreach (var file in ImageFiles.Where(f => f.Length > 0).Take(5))
+            if (ImageFiles != null)
             {
-                using var form = new MultipartFormDataContent();
-                var ms = new MemoryStream();
-                await file.CopyToAsync(ms);
-                ms.Position = 0;
-                form.Add(new StreamContent(ms), "file", file.FileName);
-                var imgResp = await client.PostAsync($"poi/{savedId}/image", form);
-                if (!imgResp.IsSuccessStatusCode)
-                    Msg += $" (Lỗi upload '{file.FileName}': {await imgResp.Content.ReadAsStringAsync()})";
-                await Task.Delay(50);
+                foreach (var file in ImageFiles.Where(f => f.Length > 0).Take(5))
+                {
+                    using var form = new MultipartFormDataContent();
+                    var ms = new MemoryStream();
+                    await file.CopyToAsync(ms);
+                    ms.Position = 0;
+                    form.Add(new StreamContent(ms), "file", file.FileName);
+                    var imgResp = await client.PostAsync($"poi/{savedId}/image", form);
+                    if (!imgResp.IsSuccessStatusCode) Msg += $" (Lỗi upload '{file.FileName}')";
+                    await Task.Delay(50);
+                }
             }
         }
         catch (Exception ex) { Error = "Lỗi kết nối API: " + ex.Message; }
+
         return RedirectToPage();
     }
 
@@ -172,7 +172,7 @@ public class PoisModel : PageModel
             if (!IsAdmin)
             {
                 var existing = await client.GetFromJsonAsync<POI>($"poi/{DeleteId}");
-                if (existing?.OwnerId != MyUserId)
+                if (existing != null && existing.OwnerId.HasValue && existing.OwnerId > 0 && existing.OwnerId != MyUserId)
                 { Error = "Bạn không có quyền xóa điểm này."; return RedirectToPage(); }
             }
             await client.DeleteAsync($"poi/{DeleteId}");
@@ -187,23 +187,10 @@ public class PoisModel : PageModel
         try
         {
             var resp = await ApiWithRole().DeleteAsync($"poi/image/{ImageIdToDelete}");
-            if (resp.IsSuccessStatusCode) Msg = "Đã xóa ảnh thành công.";
-            else Error = "Xóa ảnh thất bại.";
+            if (!resp.IsSuccessStatusCode) return StatusCode((int)resp.StatusCode);
+            return new JsonResult(new { success = true });
         }
-        catch (Exception ex) { Error = "Lỗi: " + ex.Message; }
-        return RedirectToPage();
-    }
-
-    public async Task<IActionResult> OnPostSetThumbnailAsync(int imageId)
-    {
-        try
-        {
-            var resp = await ApiWithRole().PutAsync($"poi/image/{imageId}/thumbnail", null);
-            if (resp.IsSuccessStatusCode) Msg = "Đã đổi ảnh đại diện.";
-            else Error = "Đặt ảnh đại diện thất bại.";
-        }
-        catch (Exception ex) { Error = "Lỗi: " + ex.Message; }
-        return RedirectToPage();
+        catch (Exception) { return StatusCode(500); }
     }
 
     public record OwnerItem(int Id, string Username);
