@@ -55,36 +55,15 @@ public partial class HomePage : ContentPage
         try
         {
             var status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
-            if (status != PermissionStatus.Granted)
+            if (status == PermissionStatus.Granted)
             {
-                LocationLabel.Text = "Chưa cấp quyền";
-                return;
-            }
-
-            var location = await Geolocation.GetLocationAsync(
-                new GeolocationRequest(GeolocationAccuracy.Medium));
-
-            if (location != null)
-            {
-                var placemarks = await Geocoding.GetPlacemarksAsync(location);
-                var place = placemarks?.FirstOrDefault();
-
-                if (place != null)
-                {
-                    string street = place.Thoroughfare ?? "";
-                    string ward = place.SubLocality ?? "";
-                    string city = place.Locality ?? "";
-
-                    var parts = new List<string> { street, ward, city }
-                        .Where(s => !string.IsNullOrWhiteSpace(s));
-
-                    LocationLabel.Text = string.Join(", ", parts);
-                }
+                // Gọi lại LoadData để VM lấy được location thật sau khi đã có quyền
+                await _vm.LoadData();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            LocationLabel.Text = "Lỗi GPS";
+            System.Diagnostics.Debug.WriteLine($"Permission check error: {ex.Message}");
         }
     }
 }

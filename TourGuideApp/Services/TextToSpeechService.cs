@@ -26,10 +26,14 @@ public partial class TextToSpeechService
     // Độ ưu tiên giọng đọc theo ngôn ngữ
     private static readonly Dictionary<string, string[]> LocalePriority = new()
     {
-        ["vi"] = new[] { "Google Vietnamese", "Microsoft HoaiMy", "vi-VN" },
-        ["en"] = new[] { "Google US English", "Microsoft Aria", "en-US" },
-        ["ja"] = new[] { "Google 日本語", "Microsoft Nanami", "ja-JP" },
-        ["zh"] = new[] { "Google 普通话", "Microsoft Xiaoxiao", "zh-CN" },
+        ["vi"] = new[] { "Microsoft HoaiMy", "Google Vietnamese", "vi-VN" },
+        ["en"] = new[] { "Microsoft Aria", "Google US English", "en-US" },
+        ["ja"] = new[] { "Microsoft Nanami", "Google 日本語", "ja-JP" },
+        ["zh"] = new[] { "Microsoft Xiaoxiao", "Google 普通话", "zh-CN" },
+        ["ko"] = new[] { "Microsoft SunHi", "Google 한국의", "ko-KR" },
+        ["fr"] = new[] { "Microsoft Denise", "Google français", "fr-FR" },
+        ["de"] = new[] { "Microsoft Katja", "Google Deutsch", "de-DE" },
+        ["th"] = new[] { "Microsoft Premwadee", "Google ไทย", "th-TH" },
     };
 
     // ── PUBLIC API ────────────────────────────────────────────────────────────

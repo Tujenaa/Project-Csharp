@@ -48,6 +48,12 @@ public partial class AccountViewModel : ObservableObject
         Name = AuthService.Name;
         Email = AuthService.Email;
         Phone = AuthService.Phone;
+
+        // Tự động làm mới các thông báo (như StatusMessage) khi đổi ngôn ngữ
+        LocalizationDataManager.Instance.PropertyChanged += (s, e) => 
+        {
+            OnPropertyChanged(string.Empty); // Làm mới toàn bộ các property đang bind
+        };
     }
     public bool HasMessage => !string.IsNullOrEmpty(StatusMessage);
 

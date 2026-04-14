@@ -56,6 +56,13 @@ namespace TourGuideApp.ViewModels
             LoadDataCommand = new Command(async () => await LoadDataAsync());
 
             HistoryStore.OnItemAdded += HandleItemAdded;
+
+            // Làm mới bản dịch khi ngôn ngữ thay đổi
+            LocalizationDataManager.Instance.PropertyChanged += (s, e) => 
+            {
+                Rebuild(); // Gọi Rebuild để tính toán lại DateLabel
+            };
+
             Rebuild();
         }
 
@@ -128,8 +135,8 @@ namespace TourGuideApp.ViewModels
         static string DateLabel(DateTime date)
         {
             var today = DateTime.Today;
-            if (date == today) return "HÔM NAY";
-            if (date == today.AddDays(-1)) return "HÔM QUA";
+            if (date == today) return LocalizationService.Get("today").ToUpper();
+            if (date == today.AddDays(-1)) return LocalizationService.Get("yesterday").ToUpper();
             return date.ToString("dd/MM/yyyy");
         }
 

@@ -55,7 +55,7 @@ public partial class LoginPage : ContentPage
 
         if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
         {
-            ShowLoginError("Vui lòng nhập username và mật khẩu.");
+            ShowLoginError(LocalizationService.Get("login_fields_required"));
             return;
         }
 
@@ -64,7 +64,7 @@ public partial class LoginPage : ContentPage
         if (!await ConnectivityService.CanReachApiAsync())
         {
             SetLoginLoading(false);
-            ShowLoginError("Bạn đang offline. Không thể kết nối đến máy chủ.");
+            ShowLoginError(LocalizationService.Get("offline_error"));
             return;
         }
 
@@ -79,11 +79,11 @@ public partial class LoginPage : ContentPage
                 GoToShell();
             }
             else
-                ShowLoginError("Username hoặc mật khẩu không đúng.");
+                ShowLoginError(LocalizationService.Get("login_failed_msg"));
         }
         catch (Exception ex)
         {
-            ShowLoginError("Đăng nhập thất bại. Vui lòng thử lại.");
+            ShowLoginError(LocalizationService.Get("failed"));
             System.Diagnostics.Debug.WriteLine(ex.Message);
         }
         finally
@@ -104,27 +104,27 @@ public partial class LoginPage : ContentPage
 
         if (string.IsNullOrEmpty(username))
         {
-            ShowRegError("Vui lòng nhập username."); return;
+            ShowRegError(LocalizationService.Get("username_required")); return;
         }
 
         if (string.IsNullOrEmpty(name))
         {
-            ShowRegError("Vui lòng nhập họ tên."); return;
+            ShowRegError(LocalizationService.Get("name_required")); return;
         }
 
         if (string.IsNullOrEmpty(email))
         {
-            ShowRegError("Vui lòng nhập email."); return;
+            ShowRegError(LocalizationService.Get("email_required")); return;
         }
 
         if (string.IsNullOrEmpty(password) || password.Length < 6)
         {
-            ShowRegError("Mật khẩu phải ít nhất 6 ký tự."); return;
+            ShowRegError(LocalizationService.Get("password_too_short")); return;
         }
 
         if (password != confirm)
         {
-            ShowRegError("Mật khẩu xác nhận không khớp."); return;
+            ShowRegError(LocalizationService.Get("password_not_match")); return;
         }
 
         SetRegisterLoading(true);
@@ -132,7 +132,7 @@ public partial class LoginPage : ContentPage
         if (!await ConnectivityService.CanReachApiAsync())
         {
             SetRegisterLoading(false);
-            ShowRegError("Bạn đang offline. Không thể kết nối đến máy chủ.");
+            ShowRegError(LocalizationService.Get("offline_error"));
             return;
         }
 
@@ -143,11 +143,11 @@ public partial class LoginPage : ContentPage
             if (ok)
                 GoToShell();
             else
-                ShowRegError("Đăng ký thất bại. Vui lòng thử lại.");
+                ShowRegError(LocalizationService.Get("registration_failed"));
         }
         catch (Exception ex)
         {
-            ShowRegError("Có lỗi xảy ra. Vui lòng thử lại.");
+            ShowRegError(LocalizationService.Get("error"));
             System.Diagnostics.Debug.WriteLine(ex.Message);
         }
         finally
@@ -202,12 +202,12 @@ public partial class LoginPage : ContentPage
     private void SetLoginLoading(bool loading)
     {
         LoginButton.IsEnabled = !loading;
-        LoginButton.Text = loading ? "Đang đăng nhập..." : "Đăng nhập";
+        LoginButton.Text = loading ? LocalizationService.Get("logging_in") : LocalizationService.Get("login_button");
     }
 
     private void SetRegisterLoading(bool loading)
     {
         RegisterButton.IsEnabled = !loading;
-        RegisterButton.Text = loading ? "Đang tạo tài khoản..." : "Tạo tài khoản";
+        RegisterButton.Text = loading ? LocalizationService.Get("creating_account") : LocalizationService.Get("register_button");
     }
 }

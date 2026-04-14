@@ -266,7 +266,20 @@
 
 <script>
     const API_BASE = document.getElementById('apiBaseUrl').value;
+    // Cấu hình danh sách Giọng đọc chuẩn cho tính năng Nghe Thử TTS.
+    // Nếu thêm ngôn ngữ mới, hãy khai báo vào đây:
+    const VOICE_MAP = {
+        vi: ['Microsoft HoaiMy', 'Google Vietnamese', 'vi-VN'],
+        en: ['Microsoft Aria', 'Google US English', 'en-US'],
+        ja: ['Microsoft Nanami', 'Google 日本語', 'ja-JP'],
+        zh: ['Microsoft Xiaoxiao', 'Google 普通话', 'zh-CN'],
+        ko: ['Microsoft SunHi', 'Google 한국의', 'ko-KR'],
+        fr: ['Microsoft Denise', 'Google français', 'fr-FR'],
+        de: ['Microsoft Katja', 'Google Deutsch', 'de-DE'],
+        th: ['Google ไทย', 'th-TH']
+    };
 
+    // Danh sách audio hiện có để check trùng
     const EXISTING_AUDIOS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
                                 Model.Audios.Select(a => new { poiId = a.PoiId, languageId = a.LanguageId })
                 ));
@@ -426,13 +439,7 @@
     }
 
     function _applyVoice(u, langCode) {
-        const voiceMap = {
-            vi:['Google Vietnamese','vi-VN'], en:['Google US English','en-US'],
-            ja:['Google 日本語','ja-JP'], zh:['Google 普通话','zh-CN'],
-            ko:['Google 한국의','ko-KR'], fr:['Google français','fr-FR'],
-            de:['Google Deutsch','de-DE'],
-        };
-        const prefs = voiceMap[langCode] || [langCode||'en-US'];
+        const prefs = VOICE_MAP[langCode] || [langCode||'en-US'];
         const voices = window.speechSynthesis.getVoices();
         const voice = voices.find(v => prefs.some(p => v.name.includes(p)||v.lang.startsWith(p)));
         if (voice) u.voice = voice;
@@ -462,21 +469,7 @@
         if (!text) { alert('Chưa có script.'); return; }
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
-        const voiceMap = {
-            vi: ['Google Vietnamese', 'vi-VN'],
-            en: ['Google US English', 'en-US'],
-            ja: ['Google 日本語', 'ja-JP'],
-            zh: ['Google 普通话', 'zh-CN'],
-            ko: ['Google 한국의', 'ko-KR'],
-            fr: ['Google français', 'fr-FR'],
-            de: ['Google Deutsch', 'de-DE'],
-        };
-        const prefs = voiceMap[langCode] || [langCode || 'en-US'];
-        const voices = window.speechSynthesis.getVoices();
-        const voice = voices.find(v => prefs.some(p => v.name.includes(p) || v.lang.startsWith(p)));
-        if (voice) u.voice = voice;
-        u.lang = prefs[prefs.length - 1];
-        u.rate = 0.95;
+        _applyVoice(u, langCode);
         window.speechSynthesis.speak(u);
     }
 

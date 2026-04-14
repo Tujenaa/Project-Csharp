@@ -2,8 +2,9 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:m="clr-namespace:BarcodeScanner.Mobile;assembly=BarcodeScanner.Mobile.Maui"
+             xmlns:services="clr-namespace:TourGuideApp.Services"
              x:Class="TourGuideApp.Pages.QrScannerPage"
-             Title="Quét mã QR"
+             Title="{services:Translate Key='qr_scanner_title'}"
              BackgroundColor="Black"
              Shell.NavBarIsVisible="False">
 
@@ -31,7 +32,7 @@
                              BackgroundColor="Transparent"
                              Clicked="OnBackClicked"/>
                 <Label Grid.Column="1"
-                       Text="Quét mã QR"
+                       Text="{services:Translate Key='qr_scanner_title'}"
                        TextColor="White" FontSize="18" FontAttributes="Bold"
                        HorizontalOptions="Center" VerticalOptions="Center"
                        Margin="0,0,40,0"/>
@@ -68,7 +69,7 @@
                     </BoxView>
                 </Grid>
 
-                <Label Text="Di chuyển camera đến mã QR để quét"
+                <Label Text="{services:Translate Key='move_camera_to_qr_desc'}"
                        TextColor="#CCCCCC" FontSize="13"
                        HorizontalOptions="Center" VerticalOptions="End"
                        Margin="0,0,0,20"/>
@@ -140,7 +141,7 @@
                 <!-- ── Progress bar + Duration ── -->
                 <VerticalStackLayout Grid.Row="1" Margin="0,0,0,12" Spacing="2">
                     <Grid ColumnDefinitions="*, Auto">
-                        <Label Text="Tiến độ nghe" FontSize="11" TextColor="#64748B" VerticalOptions="Center"/>
+                        <Label Text="{services:Translate Key='listening_progress_label'}" FontSize="11" TextColor="#64748B" VerticalOptions="Center"/>
                         <Label Grid.Column="1" Text="{Binding ScannedPoi.AudioDuration}" 
                                FontSize="11" FontAttributes="Bold" TextColor="#512BD4" VerticalOptions="Center"/>
                     </Grid>
@@ -239,7 +240,7 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnDetailClicked"/>
                         </Border.GestureRecognizers>
-                        <Label Text="Xem chi tiết"
+                        <Label Text="{services:Translate Key='view_details_button'}"
                                FontSize="13" FontAttributes="Bold" TextColor="White"
                                HorizontalOptions="Center" VerticalOptions="Center"/>
                     </Border>

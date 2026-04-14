@@ -2,8 +2,9 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:services="clr-namespace:TourGuideApp.Services"
     x:Class="TourGuideApp.Pages.HomePage"
-    Title="Tour Guide"
+    Title="{services:Translate Key='home_title'}"
     BackgroundColor="#F4F2FB"
     Shell.NavBarIsVisible="False">
 
@@ -23,10 +24,10 @@
                         </BoxView.Background>
                     </BoxView>
                     <VerticalStackLayout VerticalOptions="End" Padding="24,0,24,40" Spacing="8">
-                        <Label Text="Vị trí hiện tại" TextColor="#9B7FEA" FontSize="12" FontAttributes="Bold" CharacterSpacing="1"/>
-                        <Label x:Name="LocationLabel" Text="Đang xác định..." TextColor="White" FontSize="22" FontAttributes="Bold"/>
+                        <Label Text="{services:Translate Key='current_location'}" TextColor="#9B7FEA" FontSize="12" FontAttributes="Bold" CharacterSpacing="1"/>
+                        <Label x:Name="LocationLabel" Text="{Binding CurrentAddress}" TextColor="White" FontSize="22" FontAttributes="Bold"/>
                         <HorizontalStackLayout Spacing="10" HorizontalOptions="Start">
-                            <Button Text="Mở bản đồ" BackgroundColor="#512BD4" TextColor="White"
+                            <Button Text="{services:Translate Key='open_map'}" BackgroundColor="#512BD4" TextColor="White"
                                     CornerRadius="12" HeightRequest="44" WidthRequest="140"
                                     FontSize="14" FontAttributes="Bold" Clicked="OnMapButtonClicked">
                                 <Button.Shadow>
@@ -56,7 +57,7 @@
                         </Border.StrokeShape>
                         <VerticalStackLayout Padding="12,14" Spacing="4">
                             <Label Text="{Binding TourCount}" FontSize="20" FontAttributes="Bold" TextColor="#1A1035" HorizontalOptions="Center"/>
-                            <Label Text="Tour" FontSize="11" TextColor="#6B7280" HorizontalOptions="Center"/>
+                            <Label Text="{services:Translate Key='tour'}" FontSize="11" TextColor="#6B7280" HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                     </Border>
                     <Border Grid.Column="1" BackgroundColor="White" Stroke="#E8E3F5" StrokeThickness="1">
@@ -66,14 +67,14 @@
                         <VerticalStackLayout Padding="8,14" Spacing="4" VerticalOptions="Center">
                             <Label Text="{Binding NearestPoiName}" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"
                                    LineBreakMode="TailTruncation" HorizontalOptions="Center" HorizontalTextAlignment="Center"/>
-                            <Label Text="{Binding NearestPoiDist, StringFormat='Nơi gần nhất: {0}'}" FontSize="11" TextColor="#6B7280" HorizontalOptions="Center"/>
+                            <Label Text="{Binding NearestPoiDist, Converter={StaticResource TranslateConverter}, ConverterParameter='nearest_location_prefix'}" FontSize="11" TextColor="#6B7280" HorizontalOptions="Center"/>
                         </VerticalStackLayout>
                     </Border>
                 </Grid>
 
                 <!-- ═══ Địa điểm nổi bật ════════════════════════════════════════ -->
                 <Grid Padding="20,22,20,10">
-                    <Label Text="Địa điểm nổi bật" FontSize="18" FontAttributes="Bold" TextColor="#1A1035"/>
+                    <Label Text="{services:Translate Key='featured_locations'}" FontSize="18" FontAttributes="Bold" TextColor="#1A1035"/>
                 </Grid>
 
                 <CollectionView Margin="18,0,18,8" ItemsSource="{Binding TopPOIs}" SelectionMode="None">
@@ -115,7 +116,7 @@
                                                     Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.GoToMapWithPoiCommand}"
                                                     CommandParameter="{Binding .}"/>
                                             </Border.GestureRecognizers>
-                                            <Label Text="Bản đồ" FontSize="12" FontAttributes="Bold" TextColor="#512BD4" VerticalOptions="Center"/>
+                                            <Label Text="{services:Translate Key='map_title'}" FontSize="12" FontAttributes="Bold" TextColor="#512BD4" VerticalOptions="Center"/>
                                         </Border>
                                     </HorizontalStackLayout>
                                 </Grid>
@@ -130,7 +131,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Label Grid.Column="0" Text="Tour nổi bật" FontSize="18" FontAttributes="Bold" TextColor="#1A1035" VerticalOptions="Center"/>
+                    <Label Grid.Column="0" Text="{services:Translate Key='featured_tours'}" FontSize="18" FontAttributes="Bold" TextColor="#1A1035" VerticalOptions="Center"/>
                     <Border Grid.Column="1" BackgroundColor="#EDE7FF" Stroke="Transparent" StrokeThickness="0" Padding="10,6">
                         <Border.StrokeShape>
                             <RoundRectangle CornerRadius="10"/>
@@ -138,7 +139,7 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnViewAllToursTapped"/>
                         </Border.GestureRecognizers>
-                        <Label Text="Xem tất cả" FontSize="12" FontAttributes="Bold" TextColor="#512BD4"/>
+                        <Label Text="{services:Translate Key='view_all'}" FontSize="12" FontAttributes="Bold" TextColor="#512BD4"/>
                     </Border>
                 </Grid>
 
@@ -167,7 +168,7 @@
                                     <!-- Info -->
                                     <VerticalStackLayout Padding="12,10" Spacing="3">
                                         <Label Text="{Binding Name}" FontSize="13" FontAttributes="Bold" TextColor="#1A1035" LineBreakMode="TailTruncation" MaxLines="2"/>
-                                        <Label Text="{Binding PoiCountText}" FontSize="11" TextColor="#9B7FEA"/>
+                                        <Label Text="{Binding POIs.Count, Converter={StaticResource TranslateConverter}, ConverterParameter='total_locations_format'}" FontSize="11" TextColor="#9B7FEA"/>
                                         <Label Text="{Binding Description}" FontSize="11" TextColor="#94A3B8" LineBreakMode="TailTruncation" MaxLines="2"/>
                                     </VerticalStackLayout>
                                     <!-- Nút xem bản đồ -->
@@ -182,7 +183,7 @@
                                         </Border.GestureRecognizers>
                                         <HorizontalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="6">
                                             <Image Source="ic_directions.svg" WidthRequest="14" HeightRequest="14" VerticalOptions="Center"/>
-                                            <Label Text="Xem trên bản đồ" FontSize="12" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
+                                            <Label Text="{services:Translate Key='view_on_map'}" FontSize="12" FontAttributes="Bold" TextColor="White" VerticalOptions="Center"/>
                                         </HorizontalStackLayout>
                                     </Border>
                                 </VerticalStackLayout>
@@ -226,7 +227,7 @@
                             Command="{Binding GoToMapWithPoiCommand}"
                             CommandParameter="{Binding CurrentPlayedPoi}"/>
                     </VerticalStackLayout.GestureRecognizers>
-                    <Label Text="Đang thuyết minh" FontSize="10" TextColor="#9B7FEA" FontAttributes="Bold"/>
+                    <Label Text="{services:Translate Key='currently_narrating'}" FontSize="10" TextColor="#9B7FEA" FontAttributes="Bold"/>
                     <Label Text="{Binding CurrentPlayedPoi.Name}" FontSize="14" FontAttributes="Bold"
                            TextColor="#1A1035" LineBreakMode="TailTruncation"/>
                     <ProgressBar Progress="{Binding CurrentPlayedPoi.AudioProgress}" ProgressColor="#512BD4" HeightRequest="4"/>

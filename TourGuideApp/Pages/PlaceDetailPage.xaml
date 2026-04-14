@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
-    x:Name="page"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:services="clr-namespace:TourGuideApp.Services"
     x:Class="TourGuideApp.Pages.PlaceDetailPage"
-    Title="Chi tiết địa điểm"
+    x:Name="page"
+    Title="{services:Translate Key='place_detail_title'}"
     BackgroundColor="#F4F2FB"
     Shell.NavBarIsVisible="False">
 
@@ -75,7 +76,7 @@
                 </Border.StrokeShape>
 
                 <VerticalStackLayout Padding="16" Spacing="12">
-                    <Label Text="Thuyết minh" FontSize="15"
+                    <Label Text="{services:Translate Key='audio_guidance'}" FontSize="15"
                            FontAttributes="Bold" TextColor="#1A1035"/>
 
                     <Grid ColumnSpacing="14">
@@ -165,7 +166,7 @@
                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="6">
 
                             <Label x:Name="lblAudioStatus"
-                                   Text="Nghe thuyết minh"
+                                   Text="{services:Translate Key='listen_audio'}"
                                    FontSize="13" FontAttributes="Bold" TextColor="#1A1035"/>
 
                             <!-- 7 waveform bars animated from code-behind -->
@@ -224,7 +225,7 @@
                     <VerticalStackLayout Padding="16" Spacing="4">
                         <Label Text="{Binding DistanceText}" FontSize="18" FontAttributes="Bold"
                                HorizontalOptions="Center" TextColor="#1A1035"/>
-                        <Label Text="Khoảng cách" FontSize="11"
+                        <Label Text="{services:Translate Key='distance_label'}" FontSize="11"
                                HorizontalOptions="Center" TextColor="#6B7280"/>
                     </VerticalStackLayout>
                 </Border>
@@ -235,7 +236,7 @@
                     <VerticalStackLayout Padding="16" Spacing="4">
                         <Label Text="{Binding WalkingTimeText}" FontSize="18" FontAttributes="Bold"
                                HorizontalOptions="Center" TextColor="#1A1035"/>
-                        <Label Text="Đi bộ" FontSize="11"
+                        <Label Text="{services:Translate Key='walking_time_label'}" FontSize="11"
                                HorizontalOptions="Center" TextColor="#6B7280"/>
                     </VerticalStackLayout>
                 </Border>
@@ -247,7 +248,7 @@
                     <RoundRectangle CornerRadius="20"/>
                 </Border.StrokeShape>
                 <VerticalStackLayout Padding="18" Spacing="10">
-                    <Label Text="Mô tả" FontSize="16" FontAttributes="Bold" TextColor="#1A1035"/>
+                    <Label Text="{services:Translate Key='description_label'}" FontSize="16" FontAttributes="Bold" TextColor="#1A1035"/>
                     <Label Text="{Binding Description}" FontSize="14"
                            TextColor="#475569" LineHeight="1.6"/>
                 </VerticalStackLayout>
@@ -259,7 +260,7 @@
                     <RoundRectangle CornerRadius="20"/>
                 </Border.StrokeShape>
                 <VerticalStackLayout Padding="18" Spacing="8">
-                    <Label Text="Thông tin" FontSize="16" FontAttributes="Bold" TextColor="#1A1035"/>
+                    <Label Text="{services:Translate Key='info_section_header'}" FontSize="16" FontAttributes="Bold" TextColor="#1A1035"/>
                     <Label Text="{Binding Address}" FontSize="13" TextColor="#475569"/>
                     <Label Text="{Binding Phone}" FontSize="13" TextColor="#475569"/>
                 </VerticalStackLayout>

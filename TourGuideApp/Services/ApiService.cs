@@ -13,7 +13,7 @@ public class ApiService
     {
         public static string BaseUrl => DeviceInfo.DeviceType == DeviceType.Virtual 
             ? "http://10.0.2.2:5266/api/" 
-            : "http://192.168.1.139:5266/api/";
+            : "http://192.168.1.74:5266/api/";
     }
 
     // ── POI ──────────────────────────────────────────────────────────────────

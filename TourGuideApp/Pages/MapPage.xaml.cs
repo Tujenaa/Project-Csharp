@@ -159,7 +159,7 @@ public partial class MapPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() =>
         {
             var tour = viewModel.ActiveTour;
-            lblBottomSheetTitle.Text = tour != null ? tour.Name ?? "Tour" : "Địa điểm tham quan";
+            lblBottomSheetTitle.Text = tour != null ? tour.Name ?? LocalizationService.Get("tour_label") : LocalizationService.Get("attractions_label");
             UpdatePOICountLabel();
         });
     }
@@ -340,7 +340,7 @@ public partial class MapPage : ContentPage
 
     private async void OnClearRouteTapped(object sender, EventArgs e)
     {
-        lblRouteDestination.Text = "Chọn điểm đến...";
+        lblRouteDestination.Text = LocalizationService.Get("select_destination");
         lblRouteDestination.TextColor = Color.FromArgb("#94A3B8");
         btnClearRoute.IsVisible = false;
         currentRoutePoi = null;  // Xóa route → reset về nearest
@@ -394,7 +394,7 @@ public partial class MapPage : ContentPage
         lblCardName.Text = poi.Name;
         lblCardDistance.Text = poi.DistanceText;
         lblCardDesc.Text = string.IsNullOrWhiteSpace(poi.Description)
-            ? "Nhấn \"Xem chi tiết\" để biết thêm về địa điểm này."
+            ? LocalizationService.Get("click_detail_to_learn_more")
             : poi.Description;
 
         var svc = AudioPlaybackService.Instance;
@@ -461,11 +461,11 @@ public partial class MapPage : ContentPage
         int count = viewModel.NearbyPOI.Count;
         var tour = viewModel.ActiveTour;
         if (tour != null)
-            lblPoiCount.Text = count > 0 ? $"{count} địa điểm trong tour" : "Không có địa điểm";
+            lblPoiCount.Text = count > 0 ? LocalizationService.Get("locations_in_tour_format", count) : LocalizationService.Get("no_locations");
         else
             lblPoiCount.Text = count > 0
-                ? $"{count} địa điểm · sắp xếp từ gần nhất"
-                : "Không có địa điểm nào";
+                ? LocalizationService.Get("locations_nearby_format", count)
+                : LocalizationService.Get("no_locations_found");
     }
 
     void OnPOIUpdated()

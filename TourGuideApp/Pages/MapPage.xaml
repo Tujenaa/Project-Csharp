@@ -2,9 +2,9 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:services="clr-namespace:TourGuideApp.Services"
     x:Class="TourGuideApp.Pages.MapPage"
-    xmlns:viewmodels="clr-namespace:TourGuideApp.ViewModels;assembly=TourGuideApp"
-    Title="Bản đồ"
+    Title="{services:Translate Key='map_title'}"
     Shell.NavBarIsVisible="False">
 
     <Grid>
@@ -42,13 +42,13 @@
                             <Label VerticalOptions="Center">
                                 <Label.FormattedText>
                                     <FormattedString>
-                                        <Span Text="Đang trong tour: " FontSize="12" TextColor="#E0E7FF"/>
+                                        <Span Text="{services:Translate Key='in_tour_prefix'}" FontSize="12" TextColor="#E0E7FF"/>
                                         <Span Text="{Binding ActiveTour.Name}" FontSize="12" FontAttributes="Bold" TextColor="White"/>
                                     </FormattedString>
                                 </Label.FormattedText>
                             </Label>
                         </HorizontalStackLayout>
-                        <Button Grid.Column="1" Text="Hủy" 
+                        <Button Grid.Column="1" Text="{services:Translate Key='cancel'}" 
                                 FontSize="11" HeightRequest="28" Padding="10,0"
                                 BackgroundColor="#312E81" TextColor="White"
                                 CornerRadius="8" Command="{Binding CancelTourCommand}"/>
@@ -75,11 +75,11 @@
 
                     <!-- Text lộ trình -->
                     <VerticalStackLayout Grid.Column="1" Spacing="4">
-                        <Label Text="Vị trí của tôi"
+                        <Label Text="{services:Translate Key='my_location_label'}"
                                FontSize="12" TextColor="#94A3B8"/>
                         <BoxView BackgroundColor="#E2E8F0" HeightRequest="1"/>
                         <Label x:Name="lblRouteDestination"
-                               Text="Chọn điểm đến..."
+                               Text="{services:Translate Key='select_destination_placeholder'}"
                                FontSize="14" FontAttributes="Bold"
                                TextColor="#94A3B8" LineBreakMode="TailTruncation"/>
                     </VerticalStackLayout>
@@ -127,7 +127,7 @@
 
                             <Entry Grid.Column="1"
                                    x:Name="searchEntry"
-                                   Placeholder="Tìm địa điểm..."
+                                   Placeholder="{services:Translate Key='search_location_placeholder'}"
                                    PlaceholderColor="#94A3B8"
                                    FontSize="13" TextColor="#1A1035"
                                    BackgroundColor="Transparent"
@@ -193,7 +193,7 @@
                     </CollectionView>
 
                     <!-- Hoặc: chọn từ danh sách có sẵn -->
-                    <Label Text="— hoặc chọn từ danh sách —"
+                    <Label Text="{services:Translate Key='or_pick_from_list'}"
                            FontSize="11" TextColor="#94A3B8"
                            HorizontalOptions="Center" Margin="0,0,0,8"
                            x:Name="lblOrPickList"/>
@@ -335,10 +335,10 @@
 
                         <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10" Margin="0,8,10,0">
                             <VerticalStackLayout Grid.Column="0" Spacing="0">
-                                <Label x:Name="lblBottomSheetTitle" Text="Địa điểm tham quan"
+                                <Label x:Name="lblBottomSheetTitle" Text="{services:Translate Key='tourist_locations_header'}"
                                        FontSize="17" FontAttributes="Bold"
                                        TextColor="#1A1035"/>
-                                <Label x:Name="lblPoiCount" Text="Đang tải..."
+                                <Label x:Name="lblPoiCount" Text="{services:Translate Key='loading_text'}"
                                        FontSize="12" TextColor="#94A3B8"/>
                             </VerticalStackLayout>
 
@@ -368,7 +368,7 @@
                                 <Border.StrokeShape>
                                     <RoundRectangle CornerRadius="12"/>
                                 </Border.StrokeShape>
-                                <Label Text="Bắt đầu" FontSize="12" FontAttributes="Bold" TextColor="White"/>
+                                <Label Text="{services:Translate Key='start_button'}" FontSize="12" FontAttributes="Bold" TextColor="White"/>
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding StartTourCommand}"/>
                                 </Border.GestureRecognizers>
@@ -407,7 +407,7 @@
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnTourChipAllTapped"/>
                             </Border.GestureRecognizers>
-                            <Label Text="Tất cả" FontSize="12" FontAttributes="Bold" TextColor="White"/>
+                            <Label Text="{services:Translate Key='all_chip'}" FontSize="12" FontAttributes="Bold" TextColor="White"/>
                         </Border>
 
                         <!-- Tour chips — populated from code-behind using BindableLayout -->
@@ -688,7 +688,7 @@
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCardDetailTapped"/>
                         </Border.GestureRecognizers>
-                        <Label Text="Xem chi tiết"
+                        <Label Text="{services:Translate Key='view_details_button'}"
                                FontSize="13" FontAttributes="Bold" TextColor="White"
                                HorizontalOptions="Center" VerticalOptions="Center"/>
                     </Border>

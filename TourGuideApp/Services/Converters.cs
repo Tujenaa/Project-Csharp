@@ -37,3 +37,25 @@ public class RotationConverter : IValueConverter
         throw new NotImplementedException();
     }
 }
+
+/// <summary>
+/// Converter giúp dịch và định dạng chuỗi động.
+/// Cách dùng: Text="{Binding Value, Converter={StaticResource TranslateConverter}, ConverterParameter='key_name'}"
+/// </summary>
+public class TranslateConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (parameter is string key)
+        {
+            string format = LocalizationService.Get(key);
+            return string.Format(format, value);
+        }
+        return value?.ToString() ?? string.Empty;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}

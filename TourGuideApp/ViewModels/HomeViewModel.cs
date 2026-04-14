@@ -4,6 +4,8 @@ using System.Windows.Input;
 using TourGuideApp.Models;
 using TourGuideApp.Services;
 using TourGuideApp.Utils;
+using Microsoft.Maui.Devices.Sensors;
+using Microsoft.Maui.ApplicationModel;
 
 namespace TourGuideApp.ViewModels;
 
@@ -38,7 +40,7 @@ public class HomeViewModel : INotifyPropertyChanged
         set { _tourCount = value; OnPropertyChanged(nameof(TourCount)); }
     }
 
-    private string _nearestPoiName = "Đang tìm...";
+    private string _nearestPoiName = "...";
     public string NearestPoiName
     {
         get => _nearestPoiName;
@@ -50,6 +52,13 @@ public class HomeViewModel : INotifyPropertyChanged
     {
         get => _nearestPoiDist;
         set { _nearestPoiDist = value; OnPropertyChanged(nameof(NearestPoiDist)); }
+    }
+
+    private string _currentAddress = LocalizationService.Get("determining_location");
+    public string CurrentAddress
+    {
+        get => _currentAddress;
+        set { _currentAddress = value; OnPropertyChanged(nameof(CurrentAddress)); }
     }
 
     public HomeViewModel()
@@ -97,6 +106,13 @@ public class HomeViewModel : INotifyPropertyChanged
             foreach (var p in AllPOIs) p.IsPlaying = (CurrentPlayedPoi?.Id == p.Id && AudioPlaybackService.Instance.IsPlaying);
         };
 
+        // Làm mới bản dịch trong ViewModel khi đổi ngôn ngữ
+        LocalizationDataManager.Instance.PropertyChanged += (s, e) => 
+        {
+            OnPropertyChanged(string.Empty);
+            // Re-load để cập nhật các text từ localization service nếu cần
+            _ = LoadData(); 
+        };
     }
 
     public async Task LoadData()
@@ -156,6 +172,34 @@ public class HomeViewModel : INotifyPropertyChanged
                 foreach (var poi in tour.POIs)
                     DistanceUtils.UpdatePoiDistance(poi, myLoc.Latitude, myLoc.Longitude);
             FeaturedTours.Add(tour);
+        }
+
+        if (myLoc != null)
+        {
+            try
+            {
+                var placemarks = await Geocoding.GetPlacemarksAsync(myLoc);
+                var place = placemarks?.FirstOrDefault();
+                if (place != null)
+                {
+                    string street = place.Thoroughfare ?? "";
+                    string ward = place.SubLocality ?? "";
+                    string district = place.SubAdminArea ?? "";
+                    string city = place.Locality ?? "";
+
+                    var parts = new List<string> { street, ward, district, city }
+                        .Where(s => !string.IsNullOrWhiteSpace(s));
+
+                    CurrentAddress = string.Join(", ", parts);
+                    if (string.IsNullOrWhiteSpace(CurrentAddress))
+                        CurrentAddress = LocalizationService.Get("current_location");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Geocoding error: {ex.Message}");
+                CurrentAddress = LocalizationService.Get("current_location");
+            }
         }
     }
 

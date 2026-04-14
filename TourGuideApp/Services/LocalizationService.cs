@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using Microsoft.Maui.Controls;
 
 namespace TourGuideApp.Services
 {
@@ -43,7 +45,113 @@ namespace TourGuideApp.Services
                 ["updating_password"] = "Đang cập nhật mật khẩu...",
                 ["password_changed_success"] = "Cập nhật mật khẩu thành công 🎉",
                 ["change_password_failed"] = "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ.",
-                ["old_password_required"] = "Vui lòng nhập mật khẩu cũ."
+                ["old_password_required"] = "Vui lòng nhập mật khẩu cũ.",
+                // UI Strings
+                ["home_title"] = "Trang chủ",
+                ["map_title"] = "Bản đồ",
+                ["settings_title"] = "Cài đặt",
+                ["account_title"] = "Tài khoản",
+                ["history_title"] = "Lịch sử",
+                ["qr_scanner_title"] = "Quét mã QR",
+                ["current_location"] = "Vị trí hiện tại",
+                ["determining_location"] = "Đang xác định...",
+                ["open_map"] = "Mở bản đồ",
+                ["tour"] = "Tour",
+                ["nearest_location_prefix"] = "Nơi gần nhất: {0}",
+                ["featured_locations"] = "Địa điểm nổi bật",
+                ["featured_tours"] = "Tour nổi bật",
+                ["view_all"] = "Xem tất cả",
+                ["view_on_map"] = "Xem trên bản đồ",
+                ["currently_narrating"] = "Đang thuyết minh",
+                ["in_tour_prefix"] = "Đang trong tour: ",
+                ["my_location_label"] = "Vị trí của tôi",
+                ["select_destination_placeholder"] = "Chọn điểm đến...",
+                ["search_location_placeholder"] = "Tìm địa điểm...",
+                ["or_pick_from_list"] = "— hoặc chọn từ danh sách —",
+                ["tourist_locations_header"] = "Địa điểm tham quan",
+                ["loading_text"] = "Đang tải...",
+                ["start_button"] = "Bắt đầu",
+                ["all_chip"] = "Tất cả",
+                ["use_gps"] = "Sử dụng GPS",
+                ["use_gps_desc"] = "Xác định vị trí của bạn trên bản đồ",
+                ["audio_guidance"] = "Audio hướng dẫn",
+                ["audio_guidance_desc"] = "Tự động phát khi đến gần điểm tham quan",
+                ["language_label"] = "Ngôn ngữ",
+                ["language_desc"] = "Ngôn ngữ thuyết minh và giao diện",
+                ["info_section_header"] = "THÔNG TIN",
+                ["app_name"] = "Tour Guide App",
+                ["version"] = "Phiên bản 1.0",
+                ["app_desc"] = "Ứng dụng hướng dẫn du lịch sử dụng bản đồ và GPS để khám phá các địa điểm.",
+                ["logout_button"] = "Đăng xuất",
+                ["login_button"] = "Đăng nhập",
+                ["register_button"] = "Đăng ký",
+                ["welcome_back_title"] = "Chào mừng trở lại!",
+                ["login_to_continue_desc"] = "Đăng nhập để tiếp tục khám phá",
+                ["username_label"] = "TÊN ĐĂNG NHẬP",
+                ["password_label"] = "MẬT KHẨU",
+                ["or_divider"] = "hoặc",
+                ["continue_without_login_button"] = "Tiếp tục không đăng nhập",
+                ["create_new_account_title"] = "Tạo tài khoản mới",
+                ["register_to_explore_desc"] = "Đăng ký để khám phá thế giới xung quanh",
+                ["full_name_label"] = "HỌ TÊN",
+                ["email_label"] = "EMAIL",
+                ["confirm_password_label"] = "XÁC NHẬN MẬT KHẨU",
+                ["account_info_header"] = "Thông tin tài khoản",
+                ["personal_info_section_header"] = "THÔNG TIN CÁ NHÂN",
+                ["phone_number_label"] = "SỐ ĐIỆN THOẠI",
+                ["readonly_note"] = "Tên đăng nhập và Email không thể thay đổi sau khi đăng ký.",
+                ["save_changes_button"] = "Lưu thay đổi",
+                ["security_section_header"] = "BẢO MẬT",
+                ["old_password_label"] = "MẬT KHẨU CŨ",
+                ["new_password_label"] = "MẬT KHẨU MỚI",
+                ["listening_history_header"] = "Lịch sử nghe",
+                ["clear_all_button"] = "Xoá tất cả",
+                ["not_logged_in_title"] = "Bạn chưa đăng nhập",
+                ["login_to_view_history_desc"] = "Hãy đăng nhập hoặc đăng ký để xem lịch sử nghe",
+                ["no_history_title"] = "Chưa có lịch sử nghe",
+                ["visit_places_to_start_desc"] = "Hãy ghé thăm các địa điểm để bắt đầu hành trình!",
+                ["listened_label"] = "Đã nghe",
+                ["move_camera_to_qr_desc"] = "Di chuyển camera đến mã QR để quét",
+                ["listening_progress_label"] = "Tiến độ nghe",
+                ["view_details_button"] = "Xem chi tiết",
+                ["place_detail_title"] = "Chi tiết địa điểm",
+                ["narration"] = "Thuyết minh",
+                ["listen_narration"] = "Nghe thuyết minh",
+                ["listening_now"] = "Đang phát âm thanh...",
+                ["listen_again"] = "Nghe lại",
+                ["distance"] = "Khoảng cách",
+                ["walking"] = "Đi bộ",
+                ["description"] = "Mô tả",
+                ["info"] = "Thông tin",
+                ["total_locations_format"] = "{0} địa điểm",
+                ["total_minutes_format"] = "{0} phút",
+                ["login_fields_required"] = "Vui lòng nhập username và mật khẩu.",
+                ["offline_error"] = "Bạn đang offline. Không thể kết nối đến máy chủ.",
+                ["login_failed_msg"] = "Username hoặc mật khẩu không đúng.",
+                ["registration_failed"] = "Đăng ký thất bại. Vui lòng thử lại.",
+                ["logging_in"] = "Đang đăng nhập...",
+                ["creating_account"] = "Đang tạo tài khoản...",
+                ["tour_label"] = "Tour",
+                ["attractions_label"] = "Địa điểm tham quan",
+                ["select_destination"] = "Chọn điểm đến...",
+                ["click_detail_to_learn_more"] = "Nhấn \"Xem chi tiết\" để biết thêm về địa điểm này.",
+                ["locations_in_tour_format"] = "{0} địa điểm trong tour",
+                ["locations_nearby_format"] = "{0} địa điểm · sắp xếp từ gần nhất",
+                ["no_locations_found"] = "Không có địa điểm nào",
+                ["no_script_available"] = "Không có dữ liệu thuyết minh cho địa điểm này.",
+                ["today"] = "Hôm nay",
+                ["yesterday"] = "Hôm qua",
+                ["explore_around_desc"] = "Khám phá thế giới xung quanh bạn",
+                ["enter_username_placeholder"] = "Nhập tên đăng nhập",
+                ["name_placeholder"] = "Nhập họ tên",
+                ["email_placeholder"] = "Nhập địa chỉ email",
+                ["create_account_button"] = "Tạo tài khoản",
+                ["no_history_yet"] = "Chưa có lịch sử",
+                ["explore_to_start_journey_desc"] = "Hãy khám phá để bắt đầu hành trình của bạn!",
+                ["login_to_see_history_desc"] = "Đăng nhập để xem lịch sử nghe của bạn",
+                ["listened_tag"] = "ĐÃ NGHE",
+                ["update_password_button"] = "Cập nhật mật khẩu",
+                ["phone_placeholder"] = "Nhập số điện thoại"
             },
             ["en"] = new()
             {
@@ -81,44 +189,480 @@ namespace TourGuideApp.Services
                 ["updating_password"] = "Updating password...",
                 ["password_changed_success"] = "Password updated successfully 🎉",
                 ["change_password_failed"] = "Password change failed. Please check your old password.",
-                ["old_password_required"] = "Old password is required."
+                ["old_password_required"] = "Old password is required.",
+                // UI Strings
+                ["home_title"] = "Home",
+                ["map_title"] = "Map",
+                ["settings_title"] = "Settings",
+                ["account_title"] = "Account",
+                ["history_title"] = "History",
+                ["qr_scanner_title"] = "QR Scanner",
+                ["current_location"] = "Current Location",
+                ["determining_location"] = "Determining...",
+                ["open_map"] = "Open Map",
+                ["tour"] = "Tour",
+                ["nearest_location_prefix"] = "Nearest: {0}",
+                ["featured_locations"] = "Featured Locations",
+                ["featured_tours"] = "Featured Tours",
+                ["view_all"] = "View All",
+                ["view_on_map"] = "View on Map",
+                ["currently_narrating"] = "Currently Narrating",
+                ["in_tour_prefix"] = "In Tour: ",
+                ["my_location_label"] = "My Location",
+                ["select_destination_placeholder"] = "Select Destination...",
+                ["search_location_placeholder"] = "Search Location...",
+                ["or_pick_from_list"] = "— or pick from list —",
+                ["tourist_locations_header"] = "Tourist Locations",
+                ["loading_text"] = "Loading...",
+                ["start_button"] = "Start",
+                ["all_chip"] = "All",
+                ["use_gps"] = "Use GPS",
+                ["use_gps_desc"] = "Determine your location on the map",
+                ["audio_guidance"] = "Audio Guidance",
+                ["audio_guidance_desc"] = "Auto-play when near attractions",
+                ["language_label"] = "Language",
+                ["language_desc"] = "Language for narration and UI",
+                ["info_section_header"] = "INFORMATION",
+                ["app_name"] = "Tour Guide App",
+                ["version"] = "Version 1.0",
+                ["app_desc"] = "Travel guide app using maps and GPS to explore locations.",
+                ["logout_button"] = "Logout",
+                ["login_button"] = "Login",
+                ["register_button"] = "Register",
+                ["welcome_back_title"] = "Welcome Back!",
+                ["login_to_continue_desc"] = "Login to continue exploring",
+                ["username_label"] = "USERNAME",
+                ["password_label"] = "PASSWORD",
+                ["or_divider"] = "or",
+                ["continue_without_login_button"] = "Continue without Login",
+                ["create_new_account_title"] = "Create New Account",
+                ["register_to_explore_desc"] = "Register to explore the world",
+                ["full_name_label"] = "FULL NAME",
+                ["email_label"] = "EMAIL",
+                ["confirm_password_label"] = "CONFIRM PASSWORD",
+                ["account_info_header"] = "Account Details",
+                ["personal_info_section_header"] = "PERSONAL INFORMATION",
+                ["phone_number_label"] = "PHONE NUMBER",
+                ["readonly_note"] = "Username and Email cannot be changed after registration.",
+                ["save_changes_button"] = "Save Changes",
+                ["security_section_header"] = "SECURITY",
+                ["old_password_label"] = "OLD PASSWORD",
+                ["new_password_label"] = "NEW PASSWORD",
+                ["listening_history_header"] = "Listening History",
+                ["clear_all_button"] = "Clear All",
+                ["not_logged_in_title"] = "Not Logged In",
+                ["login_to_view_history_desc"] = "Login or Register to see your listening history",
+                ["no_history_title"] = "No History Yet",
+                ["visit_places_to_start_desc"] = "Visit locations to start your journey!",
+                ["listened_label"] = "Listened",
+                ["move_camera_to_qr_desc"] = "Move camera to QR code to scan",
+                ["listening_progress_label"] = "Listening Progress",
+                ["view_details_button"] = "View Details",
+                ["place_detail_title"] = "Location Details",
+                ["narration"] = "Narration",
+                ["listen_narration"] = "Listen to Narration",
+                ["listening_now"] = "Playing audio...",
+                ["listen_again"] = "Listen Again",
+                ["distance"] = "Distance",
+                ["walking"] = "Walking",
+                ["description"] = "Description",
+                ["info"] = "Information",
+                ["total_locations_format"] = "{0} locations",
+                ["total_minutes_format"] = "{0} mins",
+                ["login_fields_required"] = "Please enter username and password.",
+                ["offline_error"] = "You are offline. Cannot connect to server.",
+                ["login_failed_msg"] = "Invalid username or password.",
+                ["registration_failed"] = "Registration failed. Please try again.",
+                ["logging_in"] = "Logging in...",
+                ["creating_account"] = "Creating account...",
+                ["tour_label"] = "Tour",
+                ["attractions_label"] = "Attractions",
+                ["select_destination"] = "Select destination...",
+                ["click_detail_to_learn_more"] = "Click \"View Details\" to learn more about this place.",
+                ["locations_in_tour_format"] = "{0} locations in tour",
+                ["locations_nearby_format"] = "{0} locations · sorted by nearest",
+                ["no_locations_found"] = "No locations found",
+                ["no_script_available"] = "No commentary available for this location.",
+                ["today"] = "Today",
+                ["yesterday"] = "Yesterday",
+                ["explore_around_desc"] = "Explore the world around you",
+                ["enter_username_placeholder"] = "Enter username",
+                ["name_placeholder"] = "Enter full name",
+                ["email_placeholder"] = "Enter email address",
+                ["create_account_button"] = "Create Account",
+                ["no_history_yet"] = "No history yet",
+                ["explore_to_start_journey_desc"] = "Explore locations to start your journey!",
+                ["login_to_see_history_desc"] = "Login to see your listening history",
+                ["listened_tag"] = "LISTENED",
+                ["update_password_button"] = "Update Password",
+                ["phone_placeholder"] = "Enter phone number"
+            },
+            ["ja"] = new()
+            {
+                ["tour_start_title"] = "ツアー開始",
+                ["tour_start_msg"] = "ツアーへようこそ: {0}。あなたの現在地から最適化されたルートです。",
+                ["autoplay_title"] = "自動音声ガイド",
+                ["autoplay_msg"] = "{0}の近くにいます。自動音声ガイドを開始しますか？",
+                ["ok"] = "OK",
+                ["start_now"] = "今すぐ開始",
+                ["skip"] = "スキップ",
+                ["success"] = "成功",
+                ["failed"] = "失敗",
+                ["profile_updated"] = "プロフィールの更新に成功しました 🎉",
+                ["name_required"] = "名前を入力してください。",
+                ["error"] = "エラー",
+                ["saved"] = "保存されました！",
+                ["notification"] = "通知",
+                ["choose_language"] = "言語を選択",
+                ["cancel"] = "キャンセル",
+                ["confirm_title"] = "確認",
+                ["logout_msg"] = "ログアウトしますか？",
+                ["yes"] = "はい",
+                ["no"] = "いいえ",
+                ["feature_under_development"] = "この機能は現在開発中です",
+                ["permission_title"] = "アクセス許可",
+                ["camera_permission_msg"] = "QRコードをスキャンするにはカメラの許可が必要です。",
+                ["not_found_title"] = "見つかりません",
+                ["qr_not_recognized_msg"] = "このQRコードの情報はありません。",
+                ["out_of_route_title"] = "ルート外",
+                ["out_of_route_msg"] = "地点「{0}」は現在のツアーに含まれていません。ツアーをキャンセルしてここへのルートを表示しますか？",
+                ["cancel_tour_and_route"] = "ツアーキャンセル＆案内",
+                ["keep_tour"] = "ツアーを続ける",
+                ["password_too_short"] = "パスワードは6文字以上である必要があります。",
+                ["password_not_match"] = "確認用パスワードが一致しません。",
+                ["updating_password"] = "パスワードを更新中...",
+                ["password_changed_success"] = "パスワードの更新に成功しました 🎉",
+                ["change_password_failed"] = "パスワードの変更に失敗しました。旧パスワードを確認してください。",
+                ["old_password_required"] = "旧パスワードを入力してください。",
+                // UI Strings
+                ["home_title"] = "ホーム",
+                ["map_title"] = "マップ",
+                ["settings_title"] = "設定",
+                ["account_title"] = "アカウント",
+                ["history_title"] = "履歴",
+                ["qr_scanner_title"] = "QRスキャナー",
+                ["current_location"] = "現在地",
+                ["determining_location"] = "測位中...",
+                ["open_map"] = "マップを開く",
+                ["tour"] = "ツアー",
+                ["nearest_location_prefix"] = "最寄り: {0}",
+                ["featured_locations"] = "おすすめの場所",
+                ["featured_tours"] = "おすすめのツアー",
+                ["view_all"] = "すべて表示",
+                ["view_on_map"] = "地図で表示",
+                ["currently_narrating"] = "解説中",
+                ["in_tour_prefix"] = "ツアー実施中: ",
+                ["my_location_label"] = "現在地",
+                ["select_destination_placeholder"] = "目的地を選択...",
+                ["search_location_placeholder"] = "場所を検索...",
+                ["or_pick_from_list"] = "— またはリストから選択 —",
+                ["tourist_locations_header"] = "観光スポット",
+                ["loading_text"] = "読み込み中...",
+                ["start_button"] = "開始",
+                ["all_chip"] = "すべて",
+                ["use_gps"] = "GPSを使用",
+                ["use_gps_desc"] = "地図上で現在地を特定します",
+                ["audio_guidance"] = "音声ガイダンス",
+                ["audio_guidance_desc"] = "スポット接近時に自動再生",
+                ["language_label"] = "言語",
+                ["language_desc"] = "解説とGUIの言語",
+                ["info_section_header"] = "情報",
+                ["app_name"] = "Tour Guide App",
+                ["version"] = "バージョン 1.0",
+                ["app_desc"] = "地図とGPSを活用した観光ガイドアプリです。",
+                ["logout_button"] = "ログアウト",
+                ["login_button"] = "ログイン",
+                ["register_button"] = "新規登録",
+                ["welcome_back_title"] = "おかえりなさい！",
+                ["login_to_continue_desc"] = "ログインして探索を続ける",
+                ["username_label"] = "ユーザー名",
+                ["password_label"] = "パスワード",
+                ["or_divider"] = "または",
+                ["continue_without_login_button"] = "ログインせずに続ける",
+                ["create_new_account_title"] = "新規アカウント作成",
+                ["register_to_explore_desc"] = "登録して世界を探索しよう",
+                ["full_name_label"] = "氏名",
+                ["email_label"] = "メールアドレス",
+                ["confirm_password_label"] = "パスワード再入力",
+                ["account_info_header"] = "アカウント詳細",
+                ["personal_info_section_header"] = "個人情報",
+                ["phone_number_label"] = "電話番号",
+                ["readonly_note"] = "ユーザー名とメールアドレスは登録後に変更できません。",
+                ["save_changes_button"] = "変更を保存",
+                ["security_section_header"] = "セキュリティ",
+                ["old_password_label"] = "旧パスワード",
+                ["new_password_label"] = "新パスワード",
+                ["listening_history_header"] = "再生履歴",
+                ["clear_all_button"] = "すべて削除",
+                ["not_logged_in_title"] = "ログインしていません",
+                ["login_to_view_history_desc"] = "履歴を見るにはログインが必要です",
+                ["no_history_title"] = "履歴はありません",
+                ["visit_places_to_start_desc"] = "スポットを訪れて履歴を開始しましょう！",
+                ["listened_label"] = "再生済み",
+                ["move_camera_to_qr_desc"] = "QRコードを枠に合わせてください",
+                ["listening_progress_label"] = "再生進捗",
+                ["view_details_button"] = "詳細を見る",
+                ["place_detail_title"] = "地点詳細",
+                ["narration"] = "解説",
+                ["listen_narration"] = "解説を聴く",
+                ["listening_now"] = "再生中...",
+                ["listen_again"] = "もう一度聴く",
+                ["distance"] = "距離",
+                ["walking"] = "徒歩",
+                ["description"] = "説明",
+                ["info"] = "情報",
+                ["total_locations_format"] = "{0} 箇所",
+                ["total_minutes_format"] = "{0} 分",
+                ["login_fields_required"] = "ユーザー名とパスワードを入力してください。",
+                ["offline_error"] = "オフラインです。サーバーに接続できません。",
+                ["login_failed_msg"] = "ユーザー名またはパスワードが無効です。",
+                ["registration_failed"] = "登録に失敗しました。もう一度お試しください。",
+                ["logging_in"] = "ログイン中...",
+                ["creating_account"] = "アカウント作成中...",
+                ["tour_label"] = "ツアー",
+                ["attractions_label"] = "観光スポット",
+                ["select_destination"] = "目的地を選択...",
+                ["click_detail_to_learn_more"] = "詳細については「詳細を見る」をクリックしてください。",
+                ["locations_in_tour_format"] = "ツアー内の {0} 箇所",
+                ["locations_nearby_format"] = "{0} か所 · 近い順",
+                ["no_locations_found"] = "場所が見つかりません",
+                ["no_script_available"] = "この地点の解説データはありません。",
+                ["today"] = "今日",
+                ["yesterday"] = "昨日",
+                ["explore_around_desc"] = "周りの世界を探索しましょう",
+                ["enter_username_placeholder"] = "ユーザー名を入力",
+                ["name_placeholder"] = "氏名を入力",
+                ["email_placeholder"] = "メールアドレスを入力",
+                ["create_account_button"] = "アカウント作成",
+                ["no_history_yet"] = "履歴はありません",
+                ["explore_to_start_journey_desc"] = "スポットを訪れて履歴を開始しましょう！",
+                ["login_to_see_history_desc"] = "ログインして履歴を確認しましょう",
+                ["listened_tag"] = "再生済み",
+                ["update_password_button"] = "パスワードを更新",
+                ["phone_placeholder"] = "電話番号を入力"
+            },
+            ["zh"] = new()
+            {
+                ["tour_start_title"] = "开始游览",
+                ["tour_start_msg"] = "欢迎参加游览：{0}。已根据您的位置优化路线。",
+                ["autoplay_title"] = "自动导览",
+                ["autoplay_msg"] = "您已靠近 {0}。是否开始自动导览？",
+                ["ok"] = "确定",
+                ["start_now"] = "立即开始",
+                ["skip"] = "跳过",
+                ["success"] = "成功",
+                ["failed"] = "失败",
+                ["profile_updated"] = "个人资料更新成功 🎉",
+                ["name_required"] = "姓名不能为空。",
+                ["error"] = "错误",
+                ["saved"] = "保存成功！",
+                ["notification"] = "通知",
+                ["choose_language"] = "选择语言",
+                ["cancel"] = "取消",
+                ["confirm_title"] = "确认",
+                ["logout_msg"] = "您确定要退出登录吗？",
+                ["yes"] = "是",
+                ["no"] = "否",
+                ["feature_under_development"] = "此功能正在开发中",
+                ["permission_title"] = "访问权限",
+                ["camera_permission_msg"] = "应用程序需要相机权限来扫描二维码。",
+                ["not_found_title"] = "未找到",
+                ["qr_not_recognized_msg"] = "暂无此二维码的信息。",
+                ["out_of_route_title"] = "偏离路线",
+                ["out_of_route_msg"] = "地点 \"{0}\" 不在当前游览路线中。\n是否取消游览并导航至此？",
+                ["cancel_tour_and_route"] = "取消游览并导航",
+                ["keep_tour"] = "保留游览",
+                ["password_too_short"] = "密码必须至少为6个字符。",
+                ["password_not_match"] = "确认密码不匹配。",
+                ["updating_password"] = "正在更新密码...",
+                ["password_changed_success"] = "密码更新成功 🎉",
+                ["change_password_failed"] = "修改密码失败。请检查旧密码。",
+                ["old_password_required"] = "请输入旧密码。",
+                // UI Strings
+                ["home_title"] = "首页",
+                ["map_title"] = "地图",
+                ["settings_title"] = "设置",
+                ["account_title"] = "账户",
+                ["history_title"] = "历史",
+                ["qr_scanner_title"] = "扫码",
+                ["current_location"] = "当前位置",
+                ["determining_location"] = "定位中...",
+                ["open_map"] = "查看地图",
+                ["tour"] = "游览",
+                ["nearest_location_prefix"] = "最近地点: {0}",
+                ["featured_locations"] = "热门景点",
+                ["featured_tours"] = "精品游览",
+                ["view_all"] = "查看全部",
+                ["view_on_map"] = "在地图上查看",
+                ["currently_narrating"] = "正在讲解",
+                ["in_tour_prefix"] = "正在游览: ",
+                ["my_location_label"] = "我的位置",
+                ["select_destination_placeholder"] = "选择目的地...",
+                ["search_location_placeholder"] = "搜索地点...",
+                ["or_pick_from_list"] = "— 或从列表中选择 —",
+                ["tourist_locations_header"] = "游览景点",
+                ["loading_text"] = "加载中...",
+                ["start_button"] = "开始",
+                ["all_chip"] = "全部",
+                ["use_gps"] = "使用GPS",
+                ["use_gps_desc"] = "在地图上定位您的位置",
+                ["audio_guidance"] = "语音导览",
+                ["audio_guidance_desc"] = "到达景点附近时自动播放",
+                ["language_label"] = "语言",
+                ["language_desc"] = "讲解与界面语言",
+                ["info_section_header"] = "相关信息",
+                ["app_name"] = "Tour Guide App",
+                ["version"] = "版本 1.0",
+                ["app_desc"] = "利用地图和GPS定位的旅游导览应用。",
+                ["logout_button"] = "退出登录",
+                ["login_button"] = "登录",
+                ["register_button"] = "注册",
+                ["welcome_back_title"] = "欢迎回来！",
+                ["login_to_continue_desc"] = "登录以继续探索",
+                ["username_label"] = "用户名",
+                ["password_label"] = "密码",
+                ["or_divider"] = "或",
+                ["continue_without_login_button"] = "以游客身份继续",
+                ["create_new_account_title"] = "创建新账户",
+                ["register_to_explore_desc"] = "注册以开启探索之旅",
+                ["full_name_label"] = "姓名",
+                ["email_label"] = "电子邮箱",
+                ["confirm_password_label"] = "确认密码",
+                ["account_info_header"] = "账户详情",
+                ["personal_info_section_header"] = "个人信息",
+                ["phone_number_label"] = "电话号码",
+                ["readonly_note"] = "用户名和邮箱注册后不可更改。",
+                ["save_changes_button"] = "保存更改",
+                ["security_section_header"] = "安全设置",
+                ["old_password_label"] = "旧密码",
+                ["new_password_label"] = "新密码",
+                ["listening_history_header"] = "收听历史",
+                ["clear_all_button"] = "清空全部",
+                ["not_logged_in_title"] = "未登录",
+                ["login_to_view_history_desc"] = "请登录或注册以查看历史记录",
+                ["no_history_title"] = "暂无历史",
+                ["visit_places_to_start_desc"] = "访问景点以开启您的旅程！",
+                ["listened_label"] = "已收听",
+                ["move_camera_to_qr_desc"] = "将二维码放入框内即可扫描",
+                ["listening_progress_label"] = "播放进度",
+                ["view_details_button"] = "查看详情",
+                ["place_detail_title"] = "地点详情",
+                ["narration"] = "讲解",
+                ["listen_narration"] = "听取讲解",
+                ["listening_now"] = "正在播放...",
+                ["listen_again"] = "重新听取",
+                ["distance"] = "距离",
+                ["walking"] = "步行",
+                ["description"] = "描述",
+                ["info"] = "信息",
+                ["total_locations_format"] = "{0} 个地点",
+                ["total_minutes_format"] = "{0} 分钟",
+                ["login_fields_required"] = "请输入用户名和密码。",
+                ["offline_error"] = "您目前处于离线状态。无法连接到服务器。",
+                ["login_failed_msg"] = "用户名或密码无效。",
+                ["registration_failed"] = "注册失败。请重试。",
+                ["logging_in"] = "正在登录...",
+                ["creating_account"] = "正在创建账户...",
+                ["tour_label"] = "路线",
+                ["attractions_label"] = "景点",
+                ["select_destination"] = "选择目的地...",
+                ["click_detail_to_learn_more"] = "点击“查看详情”了解更多关于此地点的信息。",
+                ["locations_in_tour_format"] = "行程中的 {0} 个地点",
+                ["locations_nearby_format"] = "{0} 个地点 · 按最近距离排序",
+                ["no_locations_found"] = "未找到地点",
+                ["no_script_available"] = "该地点暂无讲解数据。",
+                ["today"] = "今天",
+                ["yesterday"] = "昨天",
+                ["explore_around_desc"] = "探索您周围的世界",
+                ["enter_username_placeholder"] = "输入用户名",
+                ["name_placeholder"] = "输入姓名",
+                ["email_placeholder"] = "输入电子邮箱",
+                ["create_account_button"] = "创建账户",
+                ["no_history_yet"] = "暂无历史",
+                ["explore_to_start_journey_desc"] = "开始探索以查看历史记录！",
+                ["login_to_see_history_desc"] = "登录以查看收听历史",
+                ["listened_tag"] = "已收听",
+                ["update_password_button"] = "更新密码",
+                ["phone_placeholder"] = "输入电话号码"
             }
         };
 
         public static string Get(string key, params object[] args)
         {
-            string lang = SettingService.Instance.Language ?? "vi";
-            
-            // Nếu không có ngôn ngữ trong dict, fallback về tiếng Anh (en)
-            if (!Translations.ContainsKey(lang))
-                lang = "en";
-
-            if (Translations[lang].TryGetValue(key, out var translation))
+            try
             {
-                try
+                string lang = SettingService.Instance.Language ?? "en";
+
+                // 1. Fallback to 'en' if the selected language is not supported
+                if (!Translations.ContainsKey(lang))
+                    lang = "en";
+
+                // 2. Try to get key in selected language
+                if (Translations[lang].TryGetValue(key, out var translation))
                 {
-                    return string.Format(translation, args);
+                    return args.Length > 0 ? string.Format(translation, args) : translation;
                 }
-                catch
+
+                // 3. Fallback to 'en' if key is missing in selected language
+                if (lang != "en" && Translations["en"].TryGetValue(key, out var enTranslation))
                 {
-                    return translation;
+                    return args.Length > 0 ? string.Format(enTranslation, args) : enTranslation;
+                }
+
+                // 4. Fallback to 'vi' if still not found (legacy)
+                if (lang != "vi" && Translations["vi"].TryGetValue(key, out var viTranslation))
+                {
+                    return args.Length > 0 ? string.Format(viTranslation, args) : viTranslation;
                 }
             }
-
-            // Nếu không tìm thấy key ở ngôn ngữ hiện tại, thử tìm ở tiếng Việt
-            if (lang != "vi" && Translations["vi"].TryGetValue(key, out var viTranslation))
+            catch (Exception ex)
             {
-                try
-                {
-                    return string.Format(viTranslation, args);
-                }
-                catch
-                {
-                    return viTranslation;
-                }
+                System.Diagnostics.Debug.WriteLine($"[LocalizationService] Get error: {ex.Message}");
             }
 
             return key;
+        }
+    }
+
+    /// <summary>
+    /// Manager to handle dynamic localization updates via data binding.
+    /// </summary>
+    public class LocalizationDataManager : INotifyPropertyChanged
+    {
+        public static LocalizationDataManager Instance { get; } = new();
+
+        public string this[string key] => LocalizationService.Get(key);
+
+        public void Invalidate()
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+    }
+
+    /// <summary>
+    /// Markup extension to support localization directly in XAML with dynamic updates.
+    /// Usage: Text="{services:Translate Key='tour_start_title'}"
+    /// </summary>
+    [Microsoft.Maui.Controls.ContentProperty("Key")]
+    public class TranslateExtension : IMarkupExtension
+    {
+        public string? Key { get; set; }
+
+        public object ProvideValue(IServiceProvider serviceProvider)
+        {
+            if (string.IsNullOrWhiteSpace(Key))
+                return string.Empty;
+
+            var binding = new Binding
+            {
+                Source = LocalizationDataManager.Instance,
+                Path = $"[{Key}]",
+                Mode = BindingMode.OneWay
+            };
+
+            return binding;
         }
     }
 }

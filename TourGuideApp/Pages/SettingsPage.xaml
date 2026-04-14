@@ -2,9 +2,9 @@
 <ContentPage
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:services="clr-namespace:TourGuideApp.Services"
     x:Class="TourGuideApp.Pages.SettingsPage"
-    xmlns:local="clr-namespace:TourGuideApp.Services"
-    Title="Cài đặt"
+    Title="{services:Translate Key='settings_title'}"
     BackgroundColor="#F4F2FB"
     Shell.NavBarIsVisible="False">
 
@@ -18,7 +18,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Label Grid.Row="0" Text="Cài đặt"
+                <Label Grid.Row="0" Text="{services:Translate Key='settings_title'}"
                        FontSize="22" FontAttributes="Bold"
                        TextColor="White" Margin="0,0,0,16"/>
 
@@ -50,7 +50,7 @@
 
                         <!-- Name / email -->
                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
-                            <Label x:Name="NameLabel" Text="Người dùng"
+                            <Label x:Name="NameLabel" Text="{services:Translate Key='user'}"
                                    FontSize="16" FontAttributes="Bold" TextColor="White"/>
                             <Label x:Name="EmailLabel" Text=""
                                    FontSize="12" TextColor="#9B7FEA"/>
@@ -64,7 +64,7 @@
             </Grid>
 
             <!-- ── ỨNG DỤNG ── -->
-            <Label Text="ỨNG DỤNG" Margin="22,20,20,8"
+            <Label Text="{services:Translate Key='app_settings_section'}" Margin="22,20,20,8"
                    FontSize="11" FontAttributes="Bold"
                    TextColor="#94A3B8" CharacterSpacing="1"/>
 
@@ -82,12 +82,12 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" Spacing="2">
-                            <Label Text="Sử dụng GPS" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
-                            <Label Text="Xác định vị trí của bạn trên bản đồ"
+                            <Label Text="{services:Translate Key='use_gps'}" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
+                            <Label Text="{services:Translate Key='use_gps_desc'}"
                                    FontSize="11" TextColor="#94A3B8"/>
                         </VerticalStackLayout>
                         <Switch Grid.Column="1"
-                                IsToggled="{Binding GpsEnabled, Source={x:Static local:SettingService.Instance}}"
+                                IsToggled="{Binding GpsEnabled, Source={x:Static services:SettingService.Instance}}"
                                 OnColor="#512BD4"/>
                     </Grid>
 
@@ -100,12 +100,12 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" Spacing="2">
-                            <Label Text="Audio hướng dẫn" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
-                            <Label Text="Tự động phát khi đến gần điểm tham quan"
+                            <Label Text="{services:Translate Key='audio_guidance'}" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
+                            <Label Text="{services:Translate Key='audio_guidance_desc'}"
                                    FontSize="11" TextColor="#94A3B8"/>
                         </VerticalStackLayout>
                         <Switch Grid.Column="1"
-                                IsToggled="{Binding AutoPlay, Source={x:Static local:SettingService.Instance}}"
+                                IsToggled="{Binding AutoPlay, Source={x:Static services:SettingService.Instance}}"
                                 OnColor="#512BD4"/>
                     </Grid>
 
@@ -118,8 +118,8 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" Spacing="2">
-                            <Label Text="Ngôn ngữ" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
-                            <Label Text="Ngôn ngữ thuyết minh và giao diện"
+                            <Label Text="{services:Translate Key='language_label'}" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
+                            <Label Text="{services:Translate Key='language_desc'}"
                                    FontSize="11" TextColor="#94A3B8"/>
                         </VerticalStackLayout>
                         <Border Grid.Column="1" BackgroundColor="#EDE7FF"
@@ -132,7 +132,7 @@
                                 <TapGestureRecognizer Tapped="OnLanguageTapped"/>
                             </Border.GestureRecognizers>
                             <Label x:Name="lblLanguage"
-                                   Text="{Binding LanguageDisplayName, Source={x:Static local:SettingService.Instance}}"
+                                   Text="{Binding LanguageDisplayName, Source={x:Static services:SettingService.Instance}}"
                                    FontSize="13" FontAttributes="Bold"
                                    TextColor="#512BD4" VerticalOptions="Center"/>
                         </Border>
@@ -141,7 +141,7 @@
             </Border>
 
             <!-- ── THÔNG TIN ── -->
-            <Label Text="THÔNG TIN" Margin="22,20,20,8"
+            <Label Text="{services:Translate Key='info_section_header'}" Margin="22,20,20,8"
                    FontSize="11" FontAttributes="Bold"
                    TextColor="#94A3B8" CharacterSpacing="1"/>
 
@@ -151,15 +151,15 @@
                     <RoundRectangle CornerRadius="18"/>
                 </Border.StrokeShape>
                 <VerticalStackLayout Padding="18" Spacing="6">
-                    <Label Text="Tour Guide App" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
-                    <Label Text="Phiên bản 1.0" FontSize="13" TextColor="#6B7280"/>
-                    <Label Text="Ứng dụng hướng dẫn du lịch sử dụng bản đồ và GPS để khám phá các địa điểm."
+                    <Label Text="{services:Translate Key='app_name'}" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
+                    <Label Text="{services:Translate Key='version'}" FontSize="13" TextColor="#6B7280"/>
+                    <Label Text="{services:Translate Key='app_desc'}"
                            FontSize="13" TextColor="#94A3B8" LineHeight="1.5"/>
                 </VerticalStackLayout>
             </Border>
 
             <!-- Logout -->
-            <Button Text="Đăng xuất"
+            <Button Text="{services:Translate Key='logout_button'}"
                     Clicked="OnLogoutClicked"
                     BackgroundColor="#FEF0F3"
                     TextColor="#E94560"

@@ -179,6 +179,14 @@ public class MapViewModel : INotifyPropertyChanged
 
 
         _ = InitAsync();
+
+        // Làm mới bản dịch khi đổi ngôn ngữ
+        LocalizationDataManager.Instance.PropertyChanged += (s, e) => 
+        {
+            OnPropertyChanged(string.Empty);
+            // RefreshNearbyOrder để cập nhật các nhãn khoảng cách nếu cần
+            RefreshNearbyOrder();
+        };
     }
 
     // ── Property Changed ──────────────────────────────────────────────────────
@@ -341,9 +349,9 @@ public class MapViewModel : INotifyPropertyChanged
     // ── Auto-play ─────────────────────────────────────────────────────────────
     void CheckNearbyPOI(double lat, double lon)
     {
-        // 1. Tự động dừng nếu đi ra xa (Stop on Exit)
+        // 1. Tự động dừng nếu đi ra xa (Stop on Exit) - CHỈ ÁP DỤNG CHO AUTO-PLAY
         var currentPlaying = AudioPlaybackService.Instance.CurrentPlayingPoi;
-        if (currentPlaying != null)
+        if (currentPlaying != null && AudioPlaybackService.Instance.IsCurrentPlayAuto)
         {
             double distToCurrent = DistanceUtils.GetDistance(lat, lon, currentPlaying.Latitude, currentPlaying.Longitude);
             // Tăng vùng đệm lên 1.6 để đảm bảo âm thanh không bị ngắt quãng do sai số GPS

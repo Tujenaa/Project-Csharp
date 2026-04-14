@@ -31,7 +31,7 @@
                        HorizontalOptions="Center" VerticalOptions="Center"/>
             </Border>
 
-            <Label Grid.Column="1" Text="Thông tin tài khoản"
+            <Label Grid.Column="1" Text="{services:Translate Key='account_info_header'}"
                    FontSize="18" FontAttributes="Bold" TextColor="White"
                    VerticalOptions="Center" Margin="12,0,0,0"/>
         </Grid>
@@ -52,7 +52,7 @@
                                TextColor="White"
                                HorizontalOptions="Center" VerticalOptions="Center"/>
                     </Border>
-                    <Label x:Name="HeaderNameLabel" Text="Người dùng"
+                    <Label x:Name="HeaderNameLabel" Text="{services:Translate Key='user'}"
                            FontSize="18" FontAttributes="Bold"
                            TextColor="#1A1035" HorizontalOptions="Center"/>
                     <Label x:Name="HeaderEmailLabel" Text=""
@@ -65,7 +65,7 @@
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding ToggleProfileFormCommand}"/>
                     </Grid.GestureRecognizers>
-                    <Label Grid.Column="0" Text="THÔNG TIN CÁ NHÂN"
+                    <Label Grid.Column="0" Text="{services:Translate Key='personal_info_section_header'}"
                            FontSize="11" FontAttributes="Bold"
                            TextColor="#94A3B8" CharacterSpacing="1"
                            VerticalOptions="Center"/>
@@ -82,7 +82,7 @@
                             <RoundRectangle CornerRadius="18"/>
                         </Border.StrokeShape>
                         <VerticalStackLayout Padding="20,18" Spacing="0">
-                            <Label Text="TÊN ĐĂNG NHẬP" FontSize="11" FontAttributes="Bold"
+                            <Label Text="{services:Translate Key='username_label'}" FontSize="11" FontAttributes="Bold"
                                    TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
                             <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5"
                                     Margin="0,0,0,16">
@@ -97,7 +97,7 @@
                                        IsEnabled="False"/>        
                             </Border>
                             <!-- Full name -->
-                            <Label Text="HỌ TÊN" FontSize="11" FontAttributes="Bold"
+                            <Label Text="{services:Translate Key='full_name_label'}" FontSize="11" FontAttributes="Bold"
                                    TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
                             <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5"
                                     Margin="0,0,0,16">
@@ -106,13 +106,14 @@
                                 </Border.StrokeShape>
                                 <Entry x:Name="NameEntry" 
                                        Text="{Binding Name}"
+                                       Placeholder="{services:Translate Key='name_placeholder'}"
                                        PlaceholderColor="#B0ADBB" TextColor="#1A1035"
                                        FontSize="15" BackgroundColor="Transparent"
                                        Margin="6,0" HeightRequest="48"/>
                             </Border>
 
                             <!-- Email (read-only) -->
-                            <Label Text="EMAIL" FontSize="11" FontAttributes="Bold"
+                            <Label Text="{services:Translate Key='email_label'}" FontSize="11" FontAttributes="Bold"
                                    TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
                             <Border BackgroundColor="#EEEAF8" Stroke="#E8E3F5" StrokeThickness="1.5"
                                     Margin="0,0,0,16">
@@ -129,7 +130,7 @@
                             </Border>
 
                             <!-- Phone -->
-                            <Label Text="SỐ ĐIỆN THOẠI" FontSize="11" FontAttributes="Bold"
+                            <Label Text="{services:Translate Key='phone_number_label'}" FontSize="11" FontAttributes="Bold"
                                    TextColor="#94A3B8" Margin="0,0,0,6" CharacterSpacing="0.8"/>
                             <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5"
                                     Margin="0,0,0,4">
@@ -138,20 +139,21 @@
                                 </Border.StrokeShape>
                                 <Entry x:Name="PhoneEntry" 
                                        Text="{Binding Phone}"
-                                       PlaceholderColor="#1A1035" TextColor="#1A1035"
+                                       Placeholder="{services:Translate Key='phone_placeholder'}"
+                                       PlaceholderColor="#B0ADBB" TextColor="#1A1035"
                                        FontSize="15" Keyboard="Telephone"
                                        BackgroundColor="Transparent"
                                        Margin="6,0" HeightRequest="48"/>
                             </Border>
 
-                            <Label Text="Tên đăng nhập và Email không thể thay đổi sau khi đăng ký."
+                            <Label Text="{services:Translate Key='readonly_note'}"
                                    FontSize="11" TextColor="#94A3B8" Margin="4,6,0,0"/>
                         </VerticalStackLayout>
                     </Border>
 
                     <!-- Save button -->
                     <Button x:Name="SaveButton" 
-                            Text="Lưu thay đổi"
+                            Text="{services:Translate Key='save_changes_button'}"
                             Command="{Binding SaveProfileCommand}"
                             BackgroundColor="#512BD4" TextColor="White"
                             FontSize="15" FontAttributes="Bold"
@@ -176,7 +178,7 @@
                     <Grid.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding TogglePasswordFormCommand}"/>
                     </Grid.GestureRecognizers>
-                    <Label Grid.Column="0" Text="BẢO MẬT"
+                    <Label Grid.Column="0" Text="{services:Translate Key='security_section_header'}"
                            FontSize="11" FontAttributes="Bold"
                            TextColor="#94A3B8" CharacterSpacing="1"
                            VerticalOptions="Center"/>
@@ -195,7 +197,7 @@
                         <VerticalStackLayout Padding="20,18" Spacing="16">
                             <!-- Old Password -->
                             <VerticalStackLayout Spacing="4">
-                                <Label Text="MẬT KHẨU CŨ" FontSize="11" FontAttributes="Bold"
+                                <Label Text="{services:Translate Key='old_password_label'}" FontSize="11" FontAttributes="Bold"
                                        TextColor="#94A3B8" CharacterSpacing="0.8"/>
                                 <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5">
                                     <Border.StrokeShape>
@@ -211,7 +213,7 @@
 
                             <!-- New Password -->
                             <VerticalStackLayout Spacing="4">
-                                <Label Text="MẬT KHẨU MỚI" FontSize="11" FontAttributes="Bold"
+                                <Label Text="{services:Translate Key='new_password_label'}" FontSize="11" FontAttributes="Bold"
                                        TextColor="#94A3B8" CharacterSpacing="0.8"/>
                                 <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5">
                                     <Border.StrokeShape>
@@ -227,7 +229,7 @@
 
                             <!-- Confirm Password -->
                             <VerticalStackLayout Spacing="4">
-                                <Label Text="XÁC NHẬN MẬT KHẨU" FontSize="11" FontAttributes="Bold"
+                                <Label Text="{services:Translate Key='confirm_password_label'}" FontSize="11" FontAttributes="Bold"
                                        TextColor="#94A3B8" CharacterSpacing="0.8"/>
                                 <Border BackgroundColor="#F4F2FB" Stroke="#E8E3F5" StrokeThickness="1.5">
                                     <Border.StrokeShape>
@@ -241,7 +243,7 @@
                                 </Border>
                             </VerticalStackLayout>
 
-                            <Button Text="Cập nhật mật khẩu"
+                            <Button Text="{services:Translate Key='update_password_button'}"
                                     Command="{Binding ChangePasswordCommand}"
                                     BackgroundColor="#512BD4" TextColor="White"
                                     FontSize="14" FontAttributes="Bold"

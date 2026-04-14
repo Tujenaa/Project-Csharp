@@ -1,4 +1,4 @@
-﻿USE TourGuideDB;
+USE TourGuideDB;
 
 -- ========================
 -- LANGUAGES
@@ -126,6 +126,15 @@ CREATE TABLE TourPOI (
     PoiId      INT NOT NULL,
     OrderIndex INT NOT NULL DEFAULT 0,  -- thứ tự POI trong tour
 
+    Status NVARCHAR(20)
+        NOT NULL
+        CHECK (Status IN ('PENDING', 'APPROVED', 'REJECTED', 'REMOVE_PENDING'))
+        DEFAULT 'PENDING',
+        -- PENDING        : owner xin vào tour, chờ admin duyệt
+        -- APPROVED       : đã có trong tour
+        -- REJECTED       : bị từ chối vào tour
+        -- REMOVE_PENDING : owner xin rời tour, chờ admin duyệt xóa
+
     FOREIGN KEY (TourId) REFERENCES Tours(Id) ON DELETE CASCADE,
     FOREIGN KEY (PoiId)  REFERENCES POI(Id)   ON DELETE CASCADE,
 
@@ -151,15 +160,15 @@ VALUES
 -- ========================
 INSERT INTO Users (Username, PasswordHash, Name, Email, Phone, Role)
 VALUES
-(N'admin',  N'123456', N'Admin Tổng',                  N'admin@gmail.com',  N'0900000001', N'ADMIN'),
-(N'owner1', N'123456', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner1@gmail.com', N'0901111111', N'OWNER'),
-(N'owner2', N'123456', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner2@gmail.com', N'0902222227', N'OWNER'),
-(N'owner3', N'123456', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner3@gmail.com', N'0901111181', N'OWNER'),
-(N'owner4', N'123456', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner4@gmail.com', N'0902222922', N'OWNER'),
-(N'owner5', N'123456', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner5@gmail.com', N'0901111311', N'OWNER'),
-(N'owner6', N'123456', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner6@gmail.com', N'0902422222', N'OWNER'),
-(N'user1',  N'123456', N'Nguyễn Văn A',                N'user1@gmail.com',  N'0900000004', N'CUSTOMER'),
-(N'user2',  N'123456', N'Trần Thị B',                  N'user2@gmail.com',  N'0900000005', N'CUSTOMER');
+(N'admin',  N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Admin Tổng',                  N'admin@gmail.com',  N'0900000001', N'ADMIN'),
+(N'owner1', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner1@gmail.com', N'0901111111', N'OWNER'),
+(N'owner2', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner2@gmail.com', N'0902222227', N'OWNER'),
+(N'owner3', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner3@gmail.com', N'0901111181', N'OWNER'),
+(N'owner4', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner4@gmail.com', N'0902222922', N'OWNER'),
+(N'owner5', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner5@gmail.com', N'0901111311', N'OWNER'),
+(N'owner6', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner6@gmail.com', N'0902422222', N'OWNER'),
+(N'user1',  N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Nguyễn Văn A',                N'user1@gmail.com',  N'0900000004', N'CUSTOMER'),
+(N'user2',  N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Trần Thị B',                  N'user2@gmail.com',  N'0900000005', N'CUSTOMER');
 
 -- ========================
 -- POI
@@ -259,10 +268,15 @@ VALUES
 -- ========================
 INSERT INTO POIImages (PoiId, ImageUrl, IsThumbnail)
 VALUES
-(1, N'images/oc_oanh_1.jpg', 1),
-(1, N'images/oc_oanh_2.jpg', 0),
-(2, N'images/oc_thao_1.jpg', 1),
-(3, N'images/oc_nho_1.jpg',  1);
+(1, '/uploads/poi/poi_1_1776157591648.webp', 0),
+(1, '/uploads/poi/poi_1_1776157591869.webp', 0),
+(2, '/uploads/poi/poi_2_1776157619503.jpg', 1),
+(10,'/uploads/poi/poi_10_1776157656609.jpg', 1),
+(3, '/uploads/poi/poi_3_1776157775039.webp', 1),
+(9, '/uploads/poi/poi_9_1776157798581.jpg', 1),
+(4, '/uploads/poi/poi_4_1776158006046.jpeg', 0),
+(4, '/uploads/poi/poi_4_1776158006158.webp', 0),
+(5, '/uploads/poi/poi_5_1776158254400.jpg', 1);
 
 -- ========================
 -- TOURS
@@ -276,32 +290,24 @@ VALUES
 -- ========================
 -- TOUR - POI
 -- ========================
-INSERT INTO TourPOI (TourId, PoiId, OrderIndex)
+INSERT INTO TourPOI (TourId, PoiId, OrderIndex, Status)
 VALUES
 -- Tour 1: Khám phá ẩm thực Vĩnh Khánh
-(1, 1, 1),  -- Ốc Oanh
-(1, 3, 2),  -- Ốc Nho
-(1, 4, 3),  -- Hải sản 63
-(1, 6, 4),  -- Ốc Đào
+(1, 1, 1, N'APPROVED'),  -- Ốc Oanh
+(1, 3, 2, N'APPROVED'),  -- Ốc Nho
+(1, 4, 3, N'APPROVED'),  -- Hải sản 63
+(1, 6, 4, N'APPROVED'),  -- Ốc Đào
 
 -- Tour 2: Top ốc bình dân
-(2, 2, 1),  -- Ốc Thảo
-(2, 8, 2),  -- Ốc 30K
-(2, 9, 3),  -- Quán Nhậu Vĩnh Khánh
+(2, 2, 1, N'APPROVED'),  -- Ốc Thảo
+(2, 8, 2, N'PENDING'),   -- Ốc 30K
+(2, 9, 3, N'REJECTED'),  -- Quán Nhậu Vĩnh Khánh
 
 -- Tour 3: Ốc cay và đặc sản
-(3, 7, 1),  -- Ốc Xào Me 109
-(3, 10, 2), -- Ốc Cay Vĩnh Khánh
-(3, 5, 3);  -- Ốc Tô Vĩnh Khánh
+(3, 7, 1, N'PENDING'),   -- Ốc Xào Me 109
+(3, 10, 2, N'PENDING'),  -- Ốc Cay Vĩnh Khánh
+(3, 5, 3, N'PENDING');   -- Ốc Tô Vĩnh Khánh
 
 -- Cập nhật Tours sang PUBLISHED
 UPDATE Tours SET Status = 'PUBLISHED' WHERE Status = 'DRAFT';
 
--- ================================================
--- VÍ DỤ THÊM NGÔN NGỮ MỚI (không cần ALTER TABLE)
--- ================================================
--- Bước 1: thêm ngôn ngữ
--- INSERT INTO Languages (Code, Name, IsActive, OrderIndex) VALUES (N'ko', N'한국어', 1, 5);
---
--- Bước 2: thêm nội dung audio cho từng POI
--- INSERT INTO Audio (PoiId, LanguageId, Content) VALUES (1, 5, N'...');

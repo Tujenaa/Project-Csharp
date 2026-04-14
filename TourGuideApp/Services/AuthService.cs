@@ -29,7 +29,7 @@ public static class AuthService
         Preferences.Set(KeyToken, "offline_guest_token");
         Preferences.Set(KeyUsername, "guest");
         Preferences.Set(KeyEmail, "guest@tourguide.local");
-        Preferences.Set(KeyName, "Khách (Sử dụng Offline)");
+        Preferences.Set(KeyName, "Khách");
         Preferences.Set(KeyPhone, "000000000");
         Preferences.Set("user_id", 0);
     }

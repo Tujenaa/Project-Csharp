@@ -28,6 +28,9 @@ public class SettingService : INotifyPropertyChanged
             Preferences.Set("app_language", value);
             OnPropertyChanged(nameof(Language));
             OnPropertyChanged(nameof(LanguageDisplayName));
+            
+            // Thông báo cho hệ thống dịch thuật làm mới toàn bộ UI
+            LocalizationDataManager.Instance.Invalidate();
         }
     }
 
@@ -44,6 +47,15 @@ public class SettingService : INotifyPropertyChanged
             var api = new ApiService();
             var list = await api.GetLanguages();
             
+            // Khởi tạo với 4 ngôn ngữ mặc định luôn hỗ trợ giao diện
+            var dict = new Dictionary<string, string>
+            {
+                { "vi", "🇻🇳  Tiếng Việt" },
+                { "en", "🇬🇧  English" },
+                { "ja", "🇯🇵  日本語" },
+                { "zh", "🇨🇳  中文" },
+            };
+
             if (list != null && list.Count > 0)
             {
                 // 1. Lấy danh sách POI để kiểm tra ngôn ngữ nào thực tế có script
@@ -55,22 +67,21 @@ public class SettingService : INotifyPropertyChanged
                     .Where(code => code != null)
                     .ToHashSet();
 
-                var dict = new Dictionary<string, string>();
-                
-                // 2. Chỉ hiển thị các ngôn ngữ đang hoạt động VÀ có ít nhất 1 script
+                // 2. Thêm các ngôn ngữ khác từ API nếu có script
                 foreach (var l in list.Where(l => l.IsActive))
                 {
                     string normalizedCode = l.Code.ToLowerInvariant();
+                    if (dict.ContainsKey(normalizedCode)) continue; // Đã có trong mặc định
                     if (!usedLanguageCodes.Contains(normalizedCode)) continue;
 
                     string emoji = GetFlagEmoji(l.Code);
                     dict[l.Code] = string.IsNullOrEmpty(emoji) ? l.Name : $"{emoji}  {l.Name}";
                 }
-
-                AvailableLanguages = dict;
-                OnPropertyChanged(nameof(LanguageDisplayName));
-                System.Diagnostics.Debug.WriteLine($"[SettingService] Loaded {dict.Count} languages (filtered by scripts)");
             }
+
+            AvailableLanguages = dict;
+            OnPropertyChanged(nameof(LanguageDisplayName));
+            System.Diagnostics.Debug.WriteLine($"[SettingService] Loaded {dict.Count} languages (4 core + others with scripts)");
         }
         catch (Exception ex)
         {

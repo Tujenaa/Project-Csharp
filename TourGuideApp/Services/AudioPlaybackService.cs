@@ -41,11 +41,12 @@ public class AudioPlaybackService
     private CancellationTokenSource? _pauseTimeoutCts;
 
     // ── Hàng đợi phát tuần tự ────────────────────────────────────────────────
-    private readonly Queue<POI> _playQueue = new();
+    private readonly Queue<(POI Poi, bool IsAutoPlay)> _playQueue = new();
     private bool _isProcessingQueue = false;
 
     public POI? CurrentPlayingPoi { get; private set; }
     public bool IsPlaying { get; private set; }
+    public bool IsCurrentPlayAuto { get; private set; }
     public int ListenSeconds => (int)_listenStopwatch.Elapsed.TotalSeconds;
 
     public event Action? PlaybackStateChanged;
@@ -67,17 +68,17 @@ public class AudioPlaybackService
         };
     }
 
-    public async Task EnqueueRangeAsync(IEnumerable<POI> pois)
+    public async Task EnqueueRangeAsync(IEnumerable<POI> pois, bool isAutoPlay = true)
     {
         foreach (var poi in pois)
-            _playQueue.Enqueue(poi);
+            _playQueue.Enqueue((poi, isAutoPlay));
 
         await ProcessQueueAsync();
     }
 
-    public async Task EnqueueAsync(POI poi)
+    public async Task EnqueueAsync(POI poi, bool isAutoPlay = true)
     {
-        _playQueue.Enqueue(poi);
+        _playQueue.Enqueue((poi, isAutoPlay));
         await ProcessQueueAsync();
     }
 
@@ -93,7 +94,7 @@ public class AudioPlaybackService
                 if (IsPlaying) break;
 
                 var next = _playQueue.Dequeue();
-                await PlayAsync(next);
+                await PlayAsync(next.Poi, next.IsAutoPlay);
 
                 while (IsPlaying)
                     await Task.Delay(500);
@@ -105,7 +106,7 @@ public class AudioPlaybackService
         }
     }
 
-    public async Task PlayAsync(POI poi)
+    public async Task PlayAsync(POI poi, bool isAutoPlay = false)
     {
         if (poi == null) return;
 
@@ -128,6 +129,7 @@ public class AudioPlaybackService
         await StopAsync();
 
         CurrentPlayingPoi = poi;
+        IsCurrentPlayAuto = isAutoPlay;
         _listenStopwatch.Reset();
         _historyRecorded = false;
         _listenThresholdReached = false;
@@ -182,20 +184,7 @@ public class AudioPlaybackService
     /// </summary>
     private static string BuildNoScriptMessage(string lang)
     {
-        return lang.ToLowerInvariant() switch
-        {
-            "vi" => "Không có dữ liệu thuyết minh cho địa điểm này.",
-            "en" => "No commentary available for this location.",
-            "ja" => "この地点の解説データはありません。",
-            "zh" => "该地点暂无讲解数据。",
-            "ko" => "이 장소에 대한 해설 데이터가 없습니다.",
-            "fr" => "Aucune donnée de commentaire disponible pour ce lieu.",
-            "de" => "Keine Kommentardaten für diesen Ort verfügbar.",
-            "es" => "No hay datos de comentario disponibles para este lugar.",
-            "it" => "Nessun dato di commento disponibile per questo luogo.",
-            "ru" => "Данные комментария для этого места отсутствуют.",
-            _ => "No commentary available for this location."
-        };
+        return LocalizationService.Get("no_script_available");
     }
 
     private void SetNoScriptMessage(string? message)
