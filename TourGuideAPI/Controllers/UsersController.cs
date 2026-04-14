@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TourGuideAPI.Data;
 using TourGuideAPI.Models;
+using BC = BCrypt.Net.BCrypt;
 
 namespace TourGuideAPI.Controllers
 {
@@ -34,6 +35,12 @@ namespace TourGuideAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] User user)
         {
+            // Băm mật khẩu trước khi lưu
+            if (!string.IsNullOrWhiteSpace(user.PasswordHash))
+            {
+                user.PasswordHash = BC.HashPassword(user.PasswordHash);
+            }
+
             // Admin được tạo cả 3 role: ADMIN, OWNER, CUSTOMER
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -46,7 +53,13 @@ namespace TourGuideAPI.Controllers
             var existing = await _context.Users.FindAsync(id);
             if (existing == null) return NotFound();
             existing.Username = user.Username;
-            existing.PasswordHash = string.IsNullOrWhiteSpace(user.PasswordHash) ? existing.PasswordHash : user.PasswordHash;
+            
+            // Nếu có password mới thì băm nó, nếu không thì giữ nguyên password cũ
+            if (!string.IsNullOrWhiteSpace(user.PasswordHash))
+            {
+                existing.PasswordHash = BC.HashPassword(user.PasswordHash);
+            }
+            
             existing.Role = user.Role;
             existing.Name = user.Name;
             existing.Email = user.Email;
@@ -76,11 +89,8 @@ namespace TourGuideAPI.Controllers
             if (user == null)
                 return Unauthorized("Sai username");
 
-            if (req.Password != user.PasswordHash)
+            if (!BC.Verify(req.Password, user.PasswordHash))
                 return Unauthorized("Sai mật khẩu");
-
-            if (user.Role != "CUSTOMER")
-                return Unauthorized("Chỉ CUSTOMER được login");
 
             return Ok(new
             {
@@ -100,8 +110,15 @@ namespace TourGuideAPI.Controllers
             // check username tồn tại
             if (_context.Users.Any(x => x.Username == user.Username))
                 return BadRequest("Username đã tồn tại");
+            // Chỉ gán CUSTOMER nếu yêu cầu từ thiết bị không gửi kèm Role (như trên App)
+            if (string.IsNullOrWhiteSpace(user.Role))
+                user.Role = "CUSTOMER";
 
-            user.Role = "CUSTOMER";
+            // Băm mật khẩu trước khi lưu
+            if (!string.IsNullOrWhiteSpace(user.PasswordHash))
+            {
+                user.PasswordHash = BC.HashPassword(user.PasswordHash);
+            }
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -139,14 +156,15 @@ namespace TourGuideAPI.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound("Người dùng không tồn tại");
 
-            // Kiểm tra mật khẩu cũ (So sánh trực tiếp vì đang lưu plain text dạng PasswordHash)
-            if (user.PasswordHash != req.OldPassword)
+            // Kiểm tra mật khẩu cũ bằng BCrypt
+            if (!BC.Verify(req.OldPassword, user.PasswordHash))
                 return BadRequest("Mật khẩu cũ không chính xác");
 
             if (string.IsNullOrWhiteSpace(req.NewPassword))
                 return BadRequest("Mật khẩu mới không được để trống");
 
-            user.PasswordHash = req.NewPassword;
+            // Băm mật khẩu mới
+            user.PasswordHash = BC.HashPassword(req.NewPassword);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Đổi mật khẩu thành công" });

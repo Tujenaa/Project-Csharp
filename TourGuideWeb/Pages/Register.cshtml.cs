@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 
@@ -36,30 +36,29 @@ public class RegisterModel : PageModel
         var client = _http.CreateClient("API");
         try
         {
-            // Kiểm tra username đã tồn tại chưa
-            var users = await client.GetFromJsonAsync<List<UserDto>>("users");
-            if (users?.Any(u => u.Username.Equals(Username, StringComparison.OrdinalIgnoreCase)) == true)
-            { Error = "Tên đăng nhập đã tồn tại."; return Page(); }
-
-            // Tạo user mới với role OWNER
-            var newUser = new { Username, PasswordHash = Password, Role = "OWNER" };
-            var resp = await client.PostAsJsonAsync("users", newUser);
+            // Ủy quyền việc kiểm tra username và băm mật khẩu cho API
+            var newUserPayload = new { Username, PasswordHash = Password, Role = "OWNER" };
+            var resp = await client.PostAsJsonAsync("users/register", newUserPayload);
 
             if (!resp.IsSuccessStatusCode)
-            { Error = "Đăng ký thất bại. Vui lòng thử lại."; return Page(); }
+            { 
+                var errorMsg = await resp.Content.ReadAsStringAsync();
+                Error = string.IsNullOrWhiteSpace(errorMsg) ? "Đăng ký thất bại. Vui lòng thử lại." : errorMsg; 
+                return Page(); 
+            }
 
             var created = await resp.Content.ReadFromJsonAsync<UserDto>();
             if (created == null)
             { Error = "Đăng ký thất bại."; return Page(); }
 
-            // Đăng nhập luôn sau khi đăng ký
+            // Đăng nhập luôn sau khi đăng ký thành công
             HttpContext.Session.SetString("UserId", created.Id.ToString());
             HttpContext.Session.SetString("Username", created.Username);
             HttpContext.Session.SetString("Role", "OWNER");
 
             return RedirectToPage("/Index");
         }
-        catch
+        catch (Exception ex)
         {
             Error = "Không kết nối được API. Vui lòng thử lại.";
             return Page();

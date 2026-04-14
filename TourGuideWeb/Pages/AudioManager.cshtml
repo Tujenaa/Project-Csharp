@@ -77,10 +77,6 @@
                     </td>
                     <td style="white-space:nowrap">
                         <div style="display:flex;align-items:center;gap:2px" id="player-@a.Id">
-                            <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Tua lùi"
-                                    onclick="seekRow(@a.Id,-1)" style="display:none" id="btn-back-@a.Id">
-                                <i class="bi bi-skip-backward-fill"></i>
-                            </button>
                             <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Phát"
                                     onclick="rowPlay(@a.Id,'@a.LanguageCode',`@Html.Raw(a.Script.Replace("`", "\\`"))`)"
                                     id="btn-play-@a.Id">
@@ -93,10 +89,6 @@
                             <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Tiếp tục"
                                     onclick="rowResume(@a.Id)" style="display:none" id="btn-resume-@a.Id">
                                 <i class="bi bi-play-circle-fill"></i>
-                            </button>
-                            <button type="button" class="btn btn-ghost btn-sm btn-icon" title="Tua nhanh"
-                                    onclick="seekRow(@a.Id,+1)" style="display:none" id="btn-fwd-@a.Id">
-                                <i class="bi bi-skip-forward-fill"></i>
                             </button>
                             <button type="button" class="btn btn-ghost btn-sm btn-icon text-danger" title="Dừng"
                                     onclick="rowStop(@a.Id)" style="display:none" id="btn-stop-@a.Id">
@@ -408,21 +400,13 @@
         _setRowState(id, 'idle');
     }
 
-    function seekRow(id, dir) {
-        if (_rowId !== id) return;
-        window.speechSynthesis.cancel();
-        _rowSession++;
-        const newIdx = Math.max(0, Math.min(_rowSentIdx + dir, _rowSentences.length - 1));
-        _rowSpeakFrom(newIdx, _rowSession);
-    }
-
     function _setRowState(id, state) {
         const shown = {
             idle:    ['play'],
-            playing: ['pause','fwd','back','stop'],
-            paused:  ['resume','fwd','back','stop']
+            playing: ['pause','stop'],
+            paused:  ['resume','stop']
         }[state] || ['play'];
-        ['play','pause','resume','fwd','back','stop'].forEach(s => {
+        ['play','pause','resume','stop'].forEach(s => {
             const el = document.getElementById(`btn-${s}-${id}`);
             if (el) el.style.display = shown.includes(s) ? '' : 'none';
         });

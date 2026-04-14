@@ -1,4 +1,4 @@
-﻿USE TourGuideDB;
+USE TourGuideDB;
 
 -- ========================
 -- LANGUAGES
@@ -160,15 +160,15 @@ VALUES
 -- ========================
 INSERT INTO Users (Username, PasswordHash, Name, Email, Phone, Role)
 VALUES
-(N'admin',  N'123456', N'Admin Tổng',                  N'admin@gmail.com',  N'0900000001', N'ADMIN'),
-(N'owner1', N'123456', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner1@gmail.com', N'0901111111', N'OWNER'),
-(N'owner2', N'123456', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner2@gmail.com', N'0902222227', N'OWNER'),
-(N'owner3', N'123456', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner3@gmail.com', N'0901111181', N'OWNER'),
-(N'owner4', N'123456', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner4@gmail.com', N'0902222922', N'OWNER'),
-(N'owner5', N'123456', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner5@gmail.com', N'0901111311', N'OWNER'),
-(N'owner6', N'123456', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner6@gmail.com', N'0902422222', N'OWNER'),
-(N'user1',  N'123456', N'Nguyễn Văn A',                N'user1@gmail.com',  N'0900000004', N'CUSTOMER'),
-(N'user2',  N'123456', N'Trần Thị B',                  N'user2@gmail.com',  N'0900000005', N'CUSTOMER');
+(N'admin',  N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Admin Tổng',                  N'admin@gmail.com',  N'0900000001', N'ADMIN'),
+(N'owner1', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner1@gmail.com', N'0901111111', N'OWNER'),
+(N'owner2', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner2@gmail.com', N'0902222227', N'OWNER'),
+(N'owner3', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner3@gmail.com', N'0901111181', N'OWNER'),
+(N'owner4', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner4@gmail.com', N'0902222922', N'OWNER'),
+(N'owner5', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ốc Vĩnh Khánh',     N'owner5@gmail.com', N'0901111311', N'OWNER'),
+(N'owner6', N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Chủ Quán Ăn Vặt Vĩnh Khánh', N'owner6@gmail.com', N'0902422222', N'OWNER'),
+(N'user1',  N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Nguyễn Văn A',                N'user1@gmail.com',  N'0900000004', N'CUSTOMER'),
+(N'user2',  N'$2a$11$Ck.hKHKgo40.rtZHd8ZkRuEJy6C0ozOI.DuV.I9VjpQLV6obn8bAq', N'Trần Thị B',                  N'user2@gmail.com',  N'0900000005', N'CUSTOMER');
 
 -- ========================
 -- POI
@@ -306,11 +306,3 @@ VALUES
 -- Cập nhật Tours sang PUBLISHED
 UPDATE Tours SET Status = 'PUBLISHED' WHERE Status = 'DRAFT';
 
--- ================================================
--- VÍ DỤ THÊM NGÔN NGỮ MỚI (không cần ALTER TABLE)
--- ================================================
--- Bước 1: thêm ngôn ngữ
--- INSERT INTO Languages (Code, Name, IsActive, OrderIndex) VALUES (N'ko', N'한국어', 1, 5);
---
--- Bước 2: thêm nội dung audio cho từng POI
--- INSERT INTO Audio (PoiId, LanguageId, Content) VALUES (1, 5, N'...');

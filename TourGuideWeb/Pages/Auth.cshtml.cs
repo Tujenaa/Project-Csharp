@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 
@@ -23,31 +23,46 @@ public class AuthModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
-        { Error = "Vui lòng nhập đầy đủ thông tin."; return Page(); }
+        // if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+        // { Error = "Vui lòng nhập đầy đủ thông tin."; return Page(); }
 
         var client = _http.CreateClient("API");
         try
         {
-            var users = await client.GetFromJsonAsync<List<UserDto>>("users");
-            var user = users?.FirstOrDefault(u =>
-                u.Username.Equals(Username, StringComparison.OrdinalIgnoreCase) &&
-                u.PasswordHash == Password);
+            // Gọi endpoint login chính thức của API
+            var loginPayload = new { Username, Password };
+            var resp = await client.PostAsJsonAsync("users/login", loginPayload);
+            
+            if (!resp.IsSuccessStatusCode)
+            {
+                Error = "Tên đăng nhập hoặc mật khẩu không đúng.";
+                return Page();
+            }
 
+            var user = await resp.Content.ReadFromJsonAsync<UserDto>();
             if (user == null)
-            { Error = "Tên đăng nhập hoặc mật khẩu không đúng."; return Page(); }
+            {
+                Error = "Lỗi hệ thống khi đăng nhập.";
+                return Page();
+            }
 
             // Chặn CUSTOMER — web chỉ dành cho ADMIN và OWNER
             if (user.Role == "CUSTOMER")
-            { Error = "Tài khoản khách hàng không được phép đăng nhập web quản lý. Vui lòng dùng ứng dụng mobile."; return Page(); }
+            { 
+                Error = "Tài khoản khách hàng không được phép đăng nhập web quản lý. Vui lòng dùng ứng dụng mobile."; 
+                return Page(); 
+            }
 
             HttpContext.Session.SetString("UserId", user.Id.ToString());
             HttpContext.Session.SetString("Username", user.Username);
             HttpContext.Session.SetString("Role", user.Role ?? "OWNER");
             return RedirectToPage("/Index");
         }
-        catch
-        { Error = "Không kết nối được API. Vui lòng thử lại."; return Page(); }
+        catch (Exception ex)
+        { 
+            Error = "Không kết nối được API. Vui lòng thử lại."; 
+            return Page(); 
+        }
     }
 
     // Đăng xuất

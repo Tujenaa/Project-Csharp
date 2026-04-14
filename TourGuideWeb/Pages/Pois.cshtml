@@ -56,11 +56,10 @@
                         @{
                             var thumb = p.ImageUrl ?? (p.Images.FirstOrDefault(i => i.IsThumbnail)?.ImageUrl ?? p.Images.FirstOrDefault()?.ImageUrl);
                             var fullThumb = string.IsNullOrEmpty(thumb) 
-                                ? "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=80&q=60" 
+                                ? "" 
                                 : "/img-proxy?url=" + System.Net.WebUtility.UrlEncode(thumb);
                         }
-                        <img class="poi-item-thumb" src="@fullThumb" 
-                             onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=80&q=60'" />
+                        <img class="poi-item-thumb" src="@fullThumb" />
 
                         <div class="poi-item-body">
                             <div style="display:flex;align-items:center;gap:6px">
@@ -358,7 +357,7 @@
         images = p.Images.Select(i => new { id = i.Id, imageUrl = i.ImageUrl, isThumbnail = i.IsThumbnail })
     })).Replace("'", "\\'"))');
 
-    const PLH_IMG = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80';
+    const PLH_IMG = '';
 
     let mainMap, markers={}, circles={}, selectedId=null;
 
@@ -425,7 +424,7 @@
         }
 
         document.getElementById('detailImg').src = finalImgUrl;
-        document.getElementById('detailImg').onerror = function() { this.src = PLH_IMG; };
+        document.getElementById('detailImg').onerror = null;
         document.getElementById('detailImg').alt = poi.name;
 
         // Thumbnail strip
@@ -435,8 +434,7 @@
             thumbsWrap.innerHTML = poi.images.map(img => {
                 const url = toAbsUrl(img.imageUrl);
                 return `<img src="${url}" onclick="switchDetailImg('${url}', this)"
-                    style="width:52px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:2px solid ${img.isThumbnail ? '#7c3aed' : '#e5e7eb'};flex-shrink:0"
-                    onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=80&q=60'" />`;
+                    style="width:52px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:2px solid ${img.isThumbnail ? '#7c3aed' : '#e5e7eb'};flex-shrink:0" />`;
             }).join('');
         } else {
             thumbsWrap.style.display = 'none';
@@ -695,8 +693,7 @@
                 html += `
                     <div style="position:relative;width:80px;height:80px" id="imgwrap-${img.id}">
                         <img src="${absUrl}"
-                             style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid ${img.isThumbnail ? 'var(--accent)' : '#e5e7eb'}"
-                             onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=80&q=60'" />
+                             style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:2px solid ${img.isThumbnail ? 'var(--accent)' : '#e5e7eb'}" />
                         <button type="button" onclick="event.preventDefault();event.stopPropagation();deleteImage(${img.id})"
                             style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;border:none;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center">
                             ✕

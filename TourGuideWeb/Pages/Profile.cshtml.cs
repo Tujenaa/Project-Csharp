@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 
@@ -37,10 +37,13 @@ public class ProfileModel : PageModel
         var existing = await client.GetFromJsonAsync<UserInfo>($"users/{MyId}");
         if (existing == null) { Error = "Không tải được thông tin."; return RedirectToPage(); }
 
+        // ✅ Gửi password plaintext lên API, API sẽ chịu trách nhiệm băm
+        string passwordHash = NewPassword ?? existing.PasswordHash ?? "";
+
         var payload = new
         {
             Username = NewUsername,
-            PasswordHash = string.IsNullOrWhiteSpace(NewPassword) ? existing.PasswordHash : NewPassword,
+            PasswordHash = passwordHash,
             Role = existing.Role,
             Name,
             Email,
@@ -50,7 +53,6 @@ public class ProfileModel : PageModel
         var res = await client.PutAsJsonAsync($"users/{MyId}", payload);
         if (res.IsSuccessStatusCode)
         {
-            // Cập nhật session username nếu đổi
             HttpContext.Session.SetString("Username", NewUsername);
             Msg = "Đã cập nhật thông tin thành công.";
         }
