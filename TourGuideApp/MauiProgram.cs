@@ -29,6 +29,7 @@ public static class MauiProgram
 #endif
 
         // --- SERVICES ---
+        builder.Services.AddSingleton<ApiService>(); // Thêm dòng này
         builder.Services.AddSingleton<MapService>();
         builder.Services.AddSingleton<LocationService>();
         builder.Services.AddSingleton<LocalDbService>(_ => LocalDbService.Instance);
