@@ -13,7 +13,7 @@ public class ApiService
     {
         public static string BaseUrl => DeviceInfo.DeviceType == DeviceType.Virtual 
             ? "http://10.0.2.2:5266/api/" 
-            : "http://192.168.1.74:5266/api/";
+            : "http://192.168.31.25:5266/api/";
     }
 
     // ── POI ──────────────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ public class ApiService
         }
 
         var cached = await LocalDbService.Instance.GetCachedPOIsAsync();
-        return cached.Where(p => p.IsReady).Take(5).ToList();
+        return cached.Where(p => p.IsReady).Take(2).ToList();
     }
 
     public async Task<int> GetPoiCount()
