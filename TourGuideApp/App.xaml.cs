@@ -5,8 +5,12 @@ namespace TourGuideApp
 {
     public partial class App : Application
     {
-        public App()
+        private readonly DeviceHeartbeatSender _heartbeat;
+
+        public App(DeviceHeartbeatSender heartbeat)
         {
+            _heartbeat = heartbeat;
+
             InitializeComponent();
 
             if (AuthService.IsLoggedIn)
@@ -20,6 +24,9 @@ namespace TourGuideApp
                     if (userId > 0)
                         _ = new ApiService().SyncPendingHistoriesAsync(userId);
                 }
+
+                // Bắt đầu gửi vị trí GPS lên server (chỉ khi đã đăng nhập)
+                _heartbeat.Start();
             }
 
             MainPage = AuthService.IsLoggedIn
@@ -49,14 +56,38 @@ namespace TourGuideApp
         protected override void OnResume()
         {
             base.OnResume();
+
             // Reset flag để khi vào lại app (từ background) vẫn hỏi lại lân cận
             var mapVm = Handler?.MauiContext?.Services.GetService<TourGuideApp.ViewModels.MapViewModel>();
             mapVm?.ResetStartupFlag();
+
+            // Tiếp tục gửi heartbeat khi app trở lại foreground
+            if (AuthService.IsLoggedIn)
+            {
+                System.Diagnostics.Debug.WriteLine("[App] Resuming... starting heartbeat");
+                _heartbeat.Start();
+            }
+        }
+
+        protected override void OnSleep()
+        {
+            base.OnSleep();
+
+            // Dừng gửi heartbeat khi app vào background
+            System.Diagnostics.Debug.WriteLine("[App] Sleeping... stopping heartbeat");
+            _heartbeat.Stop();
+
+            // Thông báo ngay cho server là tôi offline
+            if (AuthService.IsLoggedIn)
+                _ = _heartbeat.NotifyOfflineAsync();
         }
 
         protected override void CleanUp()
         {
             Connectivity.Current.ConnectivityChanged -= OnConnectivityChanged;
+            _heartbeat.Stop();
+            if (AuthService.IsLoggedIn)
+                _ = _heartbeat.NotifyOfflineAsync();
             base.CleanUp();
         }
     }

@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Microsoft.Maui.Devices;
 using System.Text;
 using System.Text.Json;
 using TourGuideApp.Models;
@@ -11,9 +12,26 @@ public class ApiService
 
     public static class ApiConfig
     {
-        public static string BaseUrl => DeviceInfo.DeviceType == DeviceType.Virtual 
-            ? "http://10.0.2.2:5266/api/" 
-            : "http://10.34.197.246:5266/api/";
+        // QUAN TRỌNG: Thay đổi địa chỉ IP này thành IP máy tính của bạn khi chạy trên thiết bị thật.
+        private const string DevHostIp = "192.168.1.107"; 
+        private const string DevPort = "5266";
+
+        public static string BaseUrl
+        {
+            get
+            {
+                if (DeviceInfo.DeviceType == DeviceType.Virtual)
+                {
+                    // Máy ảo Android dùng 10.0.2.2, các máy ảo khác (iOS/Windows) dùng localhost
+                    return DeviceInfo.Platform == DevicePlatform.Android
+                        ? $"http://10.0.2.2:{DevPort}/api/"
+                        : $"http://localhost:{DevPort}/api/";
+                }
+
+                // Thiết bị thật: Kết nối qua địa chỉ IP máy tính trong mạng nội bộ
+                return $"http://{DevHostIp}:{DevPort}/api/";
+            }
+        }
     }
 
     // ── POI ──────────────────────────────────────────────────────────────────

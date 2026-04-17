@@ -1,0 +1,443 @@
+@page
+@model GPSGuide.Web.Pages.HeatmapModel
+@{
+    ViewData["Title"] = "Bản đồ nhiệt";
+    ViewData["Active"] = "heatmap";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* ── Layout: bản đồ chiếm toàn bộ phần còn lại của viewport ── */
+        .heatmap-wrapper {
+            position: relative;
+            height: calc(100vh - 70px); /* chỉ trừ navbar, không trừ gì thêm */
+            margin: -24px -24px 0; /* phá padding của layout cha */
+        }
+
+        #heatMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ── Overlay controls nổi trên bản đồ ── */
+        .map-overlay {
+            position: absolute;
+            z-index: 1000;
+            pointer-events: none; /* cho phép click xuyên qua nơi không có UI */
+        }
+
+        .map-overlay > * {
+            pointer-events: auto;
+        }
+
+        /* Filter bar — góc trên trái */
+        .overlay-filter {
+            top: 16px;
+            left: 16px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 14px;
+            padding: 10px 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+            border: 1px solid rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .overlay-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 13px;
+            color: #1e293b;
+            white-space: nowrap;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .filter-btn {
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            color: #1e293b;
+        }
+
+        .filter-btn.active {
+            background: #7c3aed;
+            color: white;
+            border-color: #7c3aed;
+            box-shadow: 0 3px 10px rgba(124,58,237,0.35);
+        }
+
+        /* Stats — góc dưới trái */
+        .overlay-stats {
+            bottom: 32px;
+            left: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 10px 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 180px;
+        }
+
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.history  { background: rgba(239,68,68,0.12); }
+        .stat-icon.online   { background: rgba(34,197,94,0.12); }
+
+        .stat-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1e293b;
+            line-height: 1.1;
+        }
+
+        /* API Status indicator */
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        .status-dot-sm {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        .status-ok { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+        .status-err { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+        /* Legend — góc dưới phải */
+        .overlay-legend {
+            bottom: 32px;
+            right: 16px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+
+        .legend-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 5px;
+        }
+
+        .legend-row:last-child { margin-bottom: 0; }
+
+        .legend-heat {
+            width: 80px;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right, #3b82f6, #06b6d4, #22c55e, #eab308, #ef4444);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+            flex-shrink: 0;
+        }
+
+        /* Pulse animation cho thiết bị online */
+        @@keyframes devicePulse {
+            0%   { transform: scale(1);   opacity: 1; }
+            70%  { transform: scale(2.2); opacity: 0; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+
+        .device-marker-icon {
+            position: relative;
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Loading indicator */
+        .online-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            display: inline-block;
+        }
+
+        .pulse-dot.animating {
+            animation: blink 1.2s ease-in-out infinite;
+        }
+
+        @@keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.3; }
+        }
+    </style>
+}
+
+<div class="heatmap-wrapper">
+    <div id="heatMap"></div>
+
+    <div class="map-overlay overlay-filter">
+        <div class="overlay-title">
+            <i class="bi bi-broadcast-pin" style="color:#ef4444; font-size:16px;"></i>
+            Mật độ thiết bị trực tuyến
+        </div>
+    </div>
+
+    <!-- Stats — góc dưới trái -->
+    <div class="map-overlay overlay-stats">
+        <div class="stat-card">
+            <div class="stat-icon history">🔥</div>
+            <div class="stat-text">
+                <span class="stat-label">Tổng thiết bị</span>
+                <span class="stat-value" id="totalInteractions">0</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon online">📱</div>
+            <div class="stat-text">
+                <span class="stat-label">
+                    <span class="online-badge">
+                        <span class="pulse-dot animating" id="onlineDot"></span>
+                        Thiết bị online
+                    </span>
+                </span>
+                <span class="stat-value" id="totalOnline">–</span>
+                <div class="api-status" id="apiStatusContainer">
+                    <span class="status-dot-sm status-ok" id="apiStatusDot"></span>
+                    <span id="apiStatusText">Đang kết nối API...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legend — góc dưới phải -->
+    <div class="map-overlay overlay-legend">
+        <div class="legend-title">Chú giải</div>
+        <div class="legend-row">
+            <div class="legend-heat"></div>
+            <span>Mật độ thiết bị</span>
+        </div>
+        <div class="legend-row">
+            <div class="legend-dot"></div>
+            <span>Thiết bị đang online</span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // ── 1. Khởi tạo bản đồ ──────────────────────────────────────────
+            const heatData = @Html.Raw(Model.HeatDataJson);
+
+            const total = heatData.reduce((acc, p) => acc + p[2], 0);
+            document.getElementById('totalInteractions').textContent = total.toLocaleString('vi-VN');
+
+            let center = [10.7769, 106.7009]; // Mặc định TP.HCM
+            if (heatData.length > 0) {
+                center = [
+                    heatData.reduce((s, p) => s + p[0], 0) / heatData.length,
+                    heatData.reduce((s, p) => s + p[1], 0) / heatData.length
+                ];
+            }
+
+            const map = L.map('heatMap', { zoomControl: true }).setView(center, 14);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+
+            // ── 2. Layer heatmap mật độ ─────────────────────────────────────
+            const heatLayer = L.heatLayer(heatData, {
+                radius: 35,
+                blur: 20,
+                maxZoom: 17,
+                gradient: {
+                    0.2: '#3b82f6',
+                    0.4: '#06b6d4',
+                    0.6: '#22c55e',
+                    0.8: '#eab308',
+                    1.0: '#ef4444'
+                }
+            }).addTo(map);
+
+            if (heatData.length > 0) {
+                const bounds = L.latLngBounds(heatData.map(p => [p[0], p[1]]));
+                map.fitBounds(bounds, { padding: [80, 80] });
+            }
+
+            // ── 3. Layer thiết bị đang online ────────────────────────────────
+            // Dùng LayerGroup để dễ xóa/vẽ lại khi poll
+            const deviceLayer = L.layerGroup().addTo(map);
+
+            // Custom icon: chấm xanh lá có ring pulse
+            function makeDeviceIcon() {
+                return L.divIcon({
+                    className: '',
+                    html: `
+                        <div style="position:relative;width:20px;height:20px;">
+                            <div style="
+                                position:absolute;inset:0;
+                                border-radius:50%;
+                                background:rgba(34,197,94,0.3);
+                                animation:deviceRipple 1.6s ease-out infinite;
+                            "></div>
+                            <div style="
+                                position:absolute;top:50%;left:50%;
+                                transform:translate(-50%,-50%);
+                                width:10px;height:10px;
+                                border-radius:50%;
+                                background:#22c55e;
+                                border:2px solid white;
+                                box-shadow:0 2px 6px rgba(0,0,0,0.3);
+                            "></div>
+                        </div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+            }
+
+            async function refreshDevices() {
+                try {
+                    const res = await fetch('/api-device-proxy/active');
+                    if (!res.ok) throw new Error('API error');
+                    const devices = await res.json();
+
+                    // Xóa markers cũ và chuẩn bị dữ liệu mới cho heatmap
+                    deviceLayer.clearLayers();
+                    const newHeatData = [];
+
+                    devices.forEach(d => {
+                        const marker = L.marker([d.lat, d.lng], { icon: makeDeviceIcon() });
+                        newHeatData.push([d.lat, d.lng, 1.0]);
+
+                        // Popup khi click vào thiết bị
+                        const lastSeen = new Date(d.lastSeen);
+                        const ago = Math.round((Date.now() - lastSeen.getTime()) / 1000);
+                        marker.bindPopup(`
+                            <div style="font-size:13px;line-height:1.6">
+                                <b style="color:#1e293b">📱 Thiết bị online</b><br>
+                                <span style="color:#64748b;font-size:11px">${d.deviceId}</span><br>
+                                <span style="color:#22c55e;font-weight:600">● Online</span>
+                                <span style="color:#94a3b8;font-size:11px"> · ${ago}s trước</span>
+                            </div>
+                        `, { maxWidth: 220 });
+
+                        deviceLayer.addLayer(marker);
+                    });
+
+                    // Cập nhật Heatmap layer
+                    heatLayer.setLatLngs(newHeatData);
+
+                    document.getElementById('totalOnline').textContent = devices.length;
+                    document.getElementById('totalInteractions').textContent = devices.length;
+                    
+                    // Cập nhật UI trạng thái API
+                    document.getElementById('apiStatusDot').className = 'status-dot-sm status-ok';
+                    document.getElementById('apiStatusText').textContent = 'API Connected (Live)';
+
+                } catch (err) {
+                    console.error('Lỗi kết nối API Heatmap:', err);
+                    document.getElementById('totalOnline').textContent = 'Error';
+                    
+                    // Cập nhật UI trạng thái API lỗi
+                    document.getElementById('apiStatusDot').className = 'status-dot-sm status-err';
+                    document.getElementById('apiStatusText').innerHTML = `Lỗi kết nối: <span style="color:#ef4444">${err.message}</span>`;
+                }
+            }
+
+            // Lần đầu tải ngay, sau đó poll mỗi 30 giây
+            refreshDevices();
+            setInterval(refreshDevices, 30_000);
+        });
+    </script>
+
+    <style>
+        @@keyframes deviceRipple {
+            0%   { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+    </style>
+}

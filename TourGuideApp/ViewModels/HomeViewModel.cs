@@ -131,8 +131,8 @@ public class HomeViewModel : INotifyPropertyChanged
         Location? myLoc = null;
         try
         {
-            myLoc = await Geolocation.GetLastKnownLocationAsync()
-                    ?? await Geolocation.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(5)));
+            myLoc = await Geolocation.Default.GetLastKnownLocationAsync()
+                    ?? await Geolocation.Default.GetLocationAsync(new GeolocationRequest(GeolocationAccuracy.Medium, TimeSpan.FromSeconds(5)));
         }
         catch { }
 

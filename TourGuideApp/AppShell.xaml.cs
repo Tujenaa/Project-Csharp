@@ -1,4 +1,5 @@
-﻿using TourGuideApp.Pages;
+using TourGuideApp.Pages;
+using TourGuideApp.Services;
 
 namespace TourGuideApp
 {
@@ -8,6 +9,12 @@ namespace TourGuideApp
         {
             InitializeComponent();
             Routing.RegisterRoute("placeDetail", typeof(PlaceDetailPage));
+
+            // Đảm bảo heartbeat chạy ngay khi vào dashboard (đặc biệt sau khi Login)
+            var heartbeat = Handler?.MauiContext?.Services.GetService<DeviceHeartbeatSender>() 
+                           ?? Application.Current?.Handler?.MauiContext?.Services.GetService<DeviceHeartbeatSender>();
+            
+            heartbeat?.Start();
         }
     }
 }

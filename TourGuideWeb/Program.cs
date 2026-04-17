@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Antiforgery;
 
@@ -66,6 +66,20 @@ app.MapGet("/img-proxy", async (string url, IHttpClientFactory httpFactory, ICon
         return Results.File(bytes, mime);
     }
     catch { return Results.NotFound(); }
+});
+
+// Proxy danh sách thiết bị online để tránh lỗi CORS/Mixed Content trên điện thoại thật
+app.MapGet("/api-device-proxy/active", async (IHttpClientFactory httpFactory) =>
+{
+    try 
+    {
+        var client = httpFactory.CreateClient("API");
+        var resp = await client.GetAsync("device/active");
+        if (!resp.IsSuccessStatusCode) return Results.StatusCode((int)resp.StatusCode);
+        var content = await resp.Content.ReadFromJsonAsync<object>();
+        return Results.Ok(content);
+    }
+    catch { return Results.Problem("Không thể kết nối tới API server."); }
 });
 
 // Auth middleware

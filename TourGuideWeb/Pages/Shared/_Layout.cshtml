@@ -52,6 +52,9 @@
                 <a href="/HistoryPage" class="nav-item @(ViewData["Active"]?.ToString() == "history" ? "active" : "")">
                     <i class="bi bi-clock-history"></i><span>Lịch sử phát</span>
                 </a>
+                <a href="/Heatmap" class="nav-item @(ViewData["Active"]?.ToString() == "heatmap" ? "active" : "")">
+                    <i class="bi bi-fire"></i><span>Bản đồ nhiệt</span>
+                </a>
                 @if (isAdmin)
                 {
                     <a href="/Users" class="nav-item @(ViewData["Active"]?.ToString() == "users" ? "active" : "")">
