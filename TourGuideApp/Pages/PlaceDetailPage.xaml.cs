@@ -136,11 +136,13 @@ public partial class PlaceDetailPage : ContentPage
 
         if (!playing && _currentPoi.AudioProgress >= 0.99)
         {
-            lblAudioStatus.Text = "Nghe lại";
+            lblAudioStatus.Text = LocalizationService.Get("listen_again");
         }
         else
         {
-            lblAudioStatus.Text = playing ? "Đang phát âm thanh..." : "Nghe thuyết minh";
+            lblAudioStatus.Text = playing ? 
+                LocalizationService.Get("listening_now") : 
+                LocalizationService.Get("listen_narration");
         }
     }
 

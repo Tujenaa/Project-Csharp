@@ -1,3 +1,4 @@
+using System;
 using TourGuideApp.Pages;
 using TourGuideApp.Services;
 
@@ -80,6 +81,23 @@ namespace TourGuideApp
             // Thông báo ngay cho server là tôi offline
             if (AuthService.IsLoggedIn)
                 _ = _heartbeat.NotifyOfflineAsync();
+        }
+
+        protected override void OnAppLinkRequestReceived(Uri uri)
+        {
+            base.OnAppLinkRequestReceived(uri);
+
+            // Nếu đã đăng nhập thì không làm gì cả
+            if (AuthService.IsLoggedIn)
+                return;
+
+            // Kiểm tra link tourguideapp://guest
+            if (string.Equals(uri.Scheme, "tourguideapp", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(uri.Host, "guest", StringComparison.OrdinalIgnoreCase))
+            {
+                AuthService.LoginOfflineAsGuest();
+                MainPage = new AppShell();
+            }
         }
 
         protected override void CleanUp()

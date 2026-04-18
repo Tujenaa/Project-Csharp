@@ -151,7 +151,15 @@ namespace TourGuideApp.Services
                 ["login_to_see_history_desc"] = "Đăng nhập để xem lịch sử nghe của bạn",
                 ["listened_tag"] = "ĐÃ NGHE",
                 ["update_password_button"] = "Cập nhật mật khẩu",
-                ["phone_placeholder"] = "Nhập số điện thoại"
+                ["phone_placeholder"] = "Nhập số điện thoại",
+                ["guest_login_notification"] = "Bạn đang đăng nhập với tư cách là khách",
+                ["guest_account_access_denied"] = "Vui lòng đăng nhập để sử dụng tính năng này",
+                ["user"] = "Người dùng",
+                ["app_settings_section"] = "CÀI ĐẶT ỨNG DỤNG",
+                ["listen_audio"] = "Nghe audio",
+                ["distance_label"] = "Khoảng cách",
+                ["walking_time_label"] = "Thời gian đi bộ",
+                ["description_label"] = "Mô tả"
             },
             ["en"] = new()
             {
@@ -295,7 +303,15 @@ namespace TourGuideApp.Services
                 ["login_to_see_history_desc"] = "Login to see your listening history",
                 ["listened_tag"] = "LISTENED",
                 ["update_password_button"] = "Update Password",
-                ["phone_placeholder"] = "Enter phone number"
+                ["phone_placeholder"] = "Enter phone number",
+                ["guest_login_notification"] = "You are logged in as a guest",
+                ["guest_account_access_denied"] = "Please login to use this feature",
+                ["user"] = "User",
+                ["app_settings_section"] = "APP SETTINGS",
+                ["listen_audio"] = "Listen to audio",
+                ["distance_label"] = "Distance",
+                ["walking_time_label"] = "Walking time",
+                ["description_label"] = "Description"
             },
             ["ja"] = new()
             {
@@ -439,7 +455,13 @@ namespace TourGuideApp.Services
                 ["login_to_see_history_desc"] = "ログインして履歴を確認しましょう",
                 ["listened_tag"] = "再生済み",
                 ["update_password_button"] = "パスワードを更新",
-                ["phone_placeholder"] = "電話番号を入力"
+                ["phone_placeholder"] = "電話番号を入力",
+                ["user"] = "ユーザー",
+                ["app_settings_section"] = "アプリ設定",
+                ["listen_audio"] = "オーディオを聴く",
+                ["distance_label"] = "距離",
+                ["walking_time_label"] = "徒歩時間",
+                ["description_label"] = "説明"
             },
             ["zh"] = new()
             {
@@ -583,7 +605,13 @@ namespace TourGuideApp.Services
                 ["login_to_see_history_desc"] = "登录以查看收听历史",
                 ["listened_tag"] = "已收听",
                 ["update_password_button"] = "更新密码",
-                ["phone_placeholder"] = "输入电话号码"
+                ["phone_placeholder"] = "输入电话号码",
+                ["user"] = "用户",
+                ["app_settings_section"] = "应用设置",
+                ["listen_audio"] = "听取音频",
+                ["distance_label"] = "距离",
+                ["walking_time_label"] = "步行时间",
+                ["description_label"] = "描述"
             }
         };
 

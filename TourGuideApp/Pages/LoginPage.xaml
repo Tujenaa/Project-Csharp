@@ -19,6 +19,22 @@
             <Ellipse Fill="#2D1B6E" WidthRequest="220" HeightRequest="220"
                      HorizontalOptions="Start" VerticalOptions="End"
                      Margin="-60,0,0,-60" Opacity="0.35"/>
+            
+            <!-- Language Selector -->
+            <Border HorizontalOptions="End" VerticalOptions="Start"
+                    Margin="0,52,24,0" Padding="12,8"
+                    BackgroundColor="#2D1B6E" StrokeThickness="0">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="14"/>
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnLanguageTapped" />
+                </Border.GestureRecognizers>
+                <HorizontalStackLayout Spacing="6" VerticalOptions="Center">
+                    <Label x:Name="LanguageLabel" Text="🇻🇳" FontSize="18" VerticalOptions="Center"/>
+                    <Label Text="›" FontSize="20" TextColor="#9B7FEA" VerticalOptions="Center" Margin="0,-2,0,0"/>
+                </HorizontalStackLayout>
+            </Border>
 
             <VerticalStackLayout Padding="32,0" VerticalOptions="Center">
 

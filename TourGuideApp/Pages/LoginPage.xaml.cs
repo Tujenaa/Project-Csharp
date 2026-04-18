@@ -12,6 +12,40 @@ public partial class LoginPage : ContentPage
         InitializeComponent();
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        UpdateLanguageLabel();
+    }
+
+    private void UpdateLanguageLabel()
+    {
+        var displayName = SettingService.Instance.LanguageDisplayName;
+        // Extract emoji part
+        LanguageLabel.Text = displayName.Split(' ').FirstOrDefault() ?? "🌐";
+    }
+
+    private async void OnLanguageTapped(object sender, EventArgs e)
+    {
+        var languages = SettingService.Instance.AvailableLanguages;
+        var names = languages.Values.ToArray();
+
+        var chosen = await DisplayActionSheet(
+            LocalizationService.Get("choose_language"),
+            LocalizationService.Get("cancel"),
+            null, names);
+
+        if (chosen == null || chosen == LocalizationService.Get("cancel")) return;
+
+        var pair = languages.FirstOrDefault(kv => kv.Value == chosen);
+
+        if (pair.Key != null)
+        {
+            SettingService.Instance.Language = pair.Key;
+            UpdateLanguageLabel();
+        }
+    }
+
     // ─── Tab switching ────────────────────────────────────────────────────────
 
     private void OnLoginTabTapped(object sender, EventArgs e) => ShowLogin();

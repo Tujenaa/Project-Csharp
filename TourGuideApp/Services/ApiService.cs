@@ -12,8 +12,7 @@ public class ApiService
 
     public static class ApiConfig
     {
-        // QUAN TRỌNG: Thay đổi địa chỉ IP này thành IP máy tính của bạn khi chạy trên thiết bị thật.
-        private const string DevHostIp = "192.168.1.107"; 
+        private const string DevHostIp = "192.168.1.131"; 
         private const string DevPort = "5266";
 
         public static string BaseUrl
@@ -22,13 +21,11 @@ public class ApiService
             {
                 if (DeviceInfo.DeviceType == DeviceType.Virtual)
                 {
-                    // Máy ảo Android dùng 10.0.2.2, các máy ảo khác (iOS/Windows) dùng localhost
                     return DeviceInfo.Platform == DevicePlatform.Android
                         ? $"http://10.0.2.2:{DevPort}/api/"
                         : $"http://localhost:{DevPort}/api/";
                 }
 
-                // Thiết bị thật: Kết nối qua địa chỉ IP máy tính trong mạng nội bộ
                 return $"http://{DevHostIp}:{DevPort}/api/";
             }
         }

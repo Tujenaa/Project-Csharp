@@ -151,15 +151,16 @@
                     <RoundRectangle CornerRadius="18"/>
                 </Border.StrokeShape>
                 <VerticalStackLayout Padding="18" Spacing="6">
-                    <Label Text="{services:Translate Key='app_name'}" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
-                    <Label Text="{services:Translate Key='version'}" FontSize="13" TextColor="#6B7280"/>
-                    <Label Text="{services:Translate Key='app_desc'}"
+                    <Label x:Name="AppInfoTitleLabel" Text="{services:Translate Key='app_name'}" FontSize="15" FontAttributes="Bold" TextColor="#1A1035"/>
+                    <Label x:Name="VersionLabel" Text="{services:Translate Key='version'}" FontSize="13" TextColor="#6B7280"/>
+                    <Label x:Name="DescriptionLabel" Text="{services:Translate Key='app_desc'}"
                            FontSize="13" TextColor="#94A3B8" LineHeight="1.5"/>
                 </VerticalStackLayout>
             </Border>
 
             <!-- Logout -->
-            <Button Text="{services:Translate Key='logout_button'}"
+            <Button x:Name="LogoutButton"
+                    Text="{services:Translate Key='logout_button'}"
                     Clicked="OnLogoutClicked"
                     BackgroundColor="#FEF0F3"
                     TextColor="#E94560"
