@@ -34,12 +34,13 @@ namespace TourGuideApp.ViewModels
         {
             if (poi == null) return;
 
-            int userId = Preferences.Get("user_id", -1);
-            if (userId <= 0)
-            {
-                // Khách không lưu lịch sử
-                return;
-            }
+            int userId = Preferences.Get("user_id", 0);
+            // Gửi lên API kể cả khi userId = 0 (khách)
+            await new ApiService().SaveHistory(poi.Id, userId, listenDuration);
+
+            // Chỉ lưu vào in-memory list (hiển thị trên trang Lịch sử) 
+            // nếu không phải là khách (mặc dù khách sẽ bị ẩn trang này)
+            if (userId <= 0) return;
 
             var item = new HistoryItem
             {
@@ -52,7 +53,6 @@ namespace TourGuideApp.ViewModels
 
             OnItemAdded?.Invoke(item);
 
-            await new ApiService().SaveHistory(poi.Id, userId, listenDuration);
         }
 
         public static async Task LoadFromApiAsync()

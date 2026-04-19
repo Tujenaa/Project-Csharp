@@ -4,10 +4,8 @@
     ViewData["Title"] = "Lịch sử phát"; ViewData["Active"] = "history";
     var stats = Model.PoiStats;
     var maxCount = stats.Any() ? stats.First().PlayCount : 1;
-    var playsByPoi = Model.AllHistory
-        .GroupBy(h => h.PoiId)
-        .ToDictionary(g => g.Key, g => g.OrderByDescending(h => h.PlayTime).ToList());
-    var topPoi = stats.FirstOrDefault();
+    var topPoi = Model.IsAdmin ? stats.FirstOrDefault() : null;
+    var allHistorySorted = Model.AllHistory.OrderByDescending(h => h.PlayTime).ToList();
 
     string FormatDuration(double seconds)
     {
@@ -56,172 +54,164 @@
             <span class="hs-lbl"><i class="bi bi-trophy-fill"></i> POI phổ biến nhất · @topPoi.PlayCount lượt</span>
         </div>
     }
+    @if (!Model.IsAdmin && Model.OwnerTopRank.HasValue)
+    {
+        var otr = Model.OwnerTopRank.Value;
+        var oRankIcon = otr.Rank == 1 ? "bi-trophy-fill" : otr.Rank == 2 ? "bi-award-fill" : otr.Rank == 3 ? "bi-patch-check-fill" : "bi-bar-chart-line-fill";
+        var oRankColor = otr.Rank == 1 ? "#b45309" : otr.Rank == 2 ? "#475569" : otr.Rank == 3 ? "#c2410c" : "#7c3aed";
+        <div class="hs-sep"></div>
+        <div class="hs-item hs-item--top">
+            <span class="hs-val hs-val--top" title="@otr.Poi.Name">
+                <i class="bi @oRankIcon" style="color:@oRankColor;margin-right:3px"></i>#@otr.Rank · @otr.Poi.Name
+            </span>
+            <span class="hs-lbl"><i class="bi bi-bar-chart-line-fill"></i> POI xếp hạng cao nhất · @otr.Poi.PlayCount lượt</span>
+        </div>
+    }
 </div>
 
-@* ── Main card: Leaderboard (Admin) / History list (Owner) ── *@
-<div class="card hist-card">
+@* ── Tab bar ── *@
+<div class="hist-tabs">
+    <button class="hist-tab active" id="tab-all" onclick="switchTab('all')">
+        <i class="bi bi-clock-history"></i> Tất cả lịch sử
+    </button>
+    <button class="hist-tab" id="tab-rank" onclick="switchTab('rank')">
+        <i class="bi bi-bar-chart-line-fill"></i> Xếp hạng địa điểm
+    </button>
+</div>
+
+@* ── TAB 1: Tất cả lịch sử ── *@
+<div class="card hist-card" id="panel-all">
     <div class="hist-card-hd">
-        @if (Model.IsAdmin)
-        {
-            <span><i class="bi bi-bar-chart-line-fill"></i> Xếp hạng địa điểm theo lượt nghe</span>
-        }
-        else
-        {
-            <span><i class="bi bi-clock-history"></i> Lịch sử phát</span>
-        }
-        <input type="text" id="searchInput" class="form-control hist-search"
-               placeholder="Tìm kiếm..." oninput="filterList()" />
+        <span><i class="bi bi-clock-history"></i> Tất cả lịch sử phát</span>
+        <input type="text" id="searchAll" class="form-control hist-search"
+               placeholder="Tìm kiếm..." oninput="filterAll()" />
     </div>
 
-    @if (Model.IsAdmin)
+    @if (!allHistorySorted.Any())
     {
-        @* ── ADMIN: Leaderboard ── *@
-        @if (!stats.Any())
-        {
-            <div class="hist-empty">
-                <i class="bi bi-inbox"></i>
-                <p>Chưa có dữ liệu xếp hạng.</p>
-            </div>
-        }
-        else
-        {
-            <ul class="poi-list" id="poiList">
-                @for (int i = 0; i < stats.Count; i++)
-                {
-                    var poi = stats[i];
-                    var rawPct = maxCount > 0 ? (poi.PlayCount * 100.0 / maxCount) : 0;
-                    var pct = rawPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-                    var rankClass = i == 0 ? "rank--gold" : i == 1 ? "rank--silver" : i == 2 ? "rank--bronze" : "rank--default";
-                    var rankIcon = i == 0 ? "bi-trophy-fill" : i == 1 ? "bi-award-fill" : i == 2 ? "bi-patch-check-fill" : "bi-headphones";
-                    var plays = playsByPoi.TryGetValue(poi.PoiId, out var pl) ? pl : [];
-                    var detailId = $"detail-{poi.PoiId}";
-
-                    <li class="poi-item" data-search="@poi.Name.ToLower()">
-                        <div class="poi-row" onclick="toggleDetail('@detailId', this)" role="button" aria-expanded="false">
-                            <div class="poi-rank @rankClass">
-                                <i class="bi @rankIcon"></i>
-                                <span>@(i + 1)</span>
-                            </div>
-                            <div class="poi-info">
-                                <div class="poi-name-row">
-                                    <span class="poi-name">@poi.Name</span>
-                                    <span class="poi-id text-muted">#@poi.PoiId</span>
-                                </div>
-                                <div class="poi-bar-wrap">
-                                    <div class="poi-bar @(i == 0 ? "poi-bar--gold" : "")" style="width:@(pct)%"></div>
-                                </div>
-                                <div class="poi-meta">
-                                    <i class="bi bi-clock"></i> Lần cuối: @poi.LastPlay.ToString("dd/MM/yyyy HH:mm")
-                                </div>
-                            </div>
-                            <div class="poi-stat-col">
-                                <span class="poi-stat-val @(i == 0 ? "poi-stat-val--gold" : "")">@poi.PlayCount</span>
-                                <span class="poi-stat-lbl">Lượt phát</span>
-                            </div>
-                            <div class="poi-stat-col poi-stat-col--avg">
-                                <span class="poi-stat-val poi-stat-val--indigo">@poi.AvgInterval</span>
-                                <span class="poi-stat-lbl">Nghe TB</span>
-                            </div>
-                            <div class="poi-chevron"><i class="bi bi-chevron-down"></i></div>
-                        </div>
-                        <div class="poi-detail" id="@detailId">
-                            @if (!plays.Any())
-                            {
-                                <div style="padding:1rem 1.5rem;color:#94a3b8;font-size:13px">Không có dữ liệu chi tiết.</div>
-                            }
-                            else
-                            {
-                                <table class="poi-detail-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Người dùng</th>
-                                            <th>Thời điểm phát</th>
-                                            <th>Thời lượng</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var p in plays)
-                                        {
-                                            <tr>
-                                                <td>
-                                                    <span class="det-user">@p.UserFullName</span>
-                                                    <span class="text-muted det-login">@@@p.UserLogin</span>
-                                                </td>
-                                                <td class="text-muted">@p.PlayTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                                                <td><span class="duration-badge"><i class="bi bi-stopwatch"></i> @FormatDurationInt(p.ListenDuration)</span></td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            }
-                        </div>
-                    </li>
-                }
-            </ul>
-        }
+        <div class="hist-empty">
+            <i class="bi bi-inbox"></i>
+            <p>Chưa có lịch sử phát.</p>
+        </div>
     }
     else
     {
-        @* ── OWNER: Flat history list ── *@
-        var ownerHistory = Model.AllHistory.OrderByDescending(h => h.PlayTime).ToList();
-        @if (!ownerHistory.Any())
-        {
-            <div class="hist-empty">
-                <i class="bi bi-inbox"></i>
-                <p>Chưa có lịch sử phát.</p>
-            </div>
-        }
-        else
-        {
-            <table class="poi-detail-table" id="poiList">
-                <thead>
-                    <tr>
-                        <th>Điểm POI</th>
-                        <th>Thời điểm phát</th>
-                        <th>Thời lượng</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var h in ownerHistory)
+        <table class="poi-detail-table" id="allList">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Điểm POI</th>
+                    @if (Model.IsAdmin)
                     {
-                        <tr data-search="@(h.PoiName?.ToLower() ?? "")">
-                            <td>
-                                <span class="poi-name" style="font-size:13px">@(h.PoiName ?? $"POI #{h.PoiId}")</span>
-                                <span class="poi-id text-muted">#@h.PoiId</span>
-                            </td>
-                            <td class="text-muted">@h.PlayTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                            <td><span class="duration-badge"><i class="bi bi-stopwatch"></i> @FormatDurationInt(h.ListenDuration)</span></td>
-                        </tr>
+                        <th>Người dùng</th>
                     }
-                </tbody>
-            </table>
-        }
+                    <th>Thời điểm phát</th>
+                    <th>Thời lượng</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < allHistorySorted.Count; i++)
+                {
+                    var h = allHistorySorted[i];
+                    <tr data-search="@((h.PoiName?.ToLower() ?? "") + " " + (h.UserFullName?.ToLower() ?? "") + " " + (h.UserLogin?.ToLower() ?? ""))">
+                        <td class="text-muted" style="font-size:12px;width:36px">@(i + 1)</td>
+                        <td>
+                            <span class="poi-name" style="font-size:13px">@(h.PoiName ?? $"POI #{h.PoiId}")</span>
+                            <span class="poi-id text-muted">#@h.PoiId</span>
+                        </td>
+                        @if (Model.IsAdmin)
+                        {
+                            <td>
+                                <span class="det-user">@(h.UserFullName ?? "—")</span>
+                                <span class="text-muted det-login">@(h.UserLogin != null ? "@" + h.UserLogin : "")</span>
+                            </td>
+                        }
+                        <td class="text-muted" style="font-size:12px;white-space:nowrap">@h.PlayTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td><span class="duration-badge"><i class="bi bi-stopwatch"></i> @FormatDurationInt(h.ListenDuration)</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+@* ── TAB 2: Xếp hạng ── *@
+<div class="card hist-card" id="panel-rank" style="display:none">
+    <div class="hist-card-hd">
+        <span><i class="bi bi-bar-chart-line-fill"></i> Xếp hạng địa điểm theo lượt nghe</span>
+        <input type="text" id="searchRank" class="form-control hist-search"
+               placeholder="Tìm kiếm..." oninput="filterRank()" />
+    </div>
+
+    @if (!stats.Any())
+    {
+        <div class="hist-empty">
+            <i class="bi bi-inbox"></i>
+            <p>Chưa có dữ liệu xếp hạng.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="poi-list" id="rankList">
+            @for (int i = 0; i < stats.Count; i++)
+            {
+                var poi = stats[i];
+                var rawPct = maxCount > 0 ? (poi.PlayCount * 100.0 / maxCount) : 0;
+                var pct = rawPct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                var rankClass = i == 0 ? "rank--gold" : i == 1 ? "rank--silver" : i == 2 ? "rank--bronze" : "rank--default";
+                var rankIcon = i == 0 ? "bi-trophy-fill" : i == 1 ? "bi-award-fill" : i == 2 ? "bi-patch-check-fill" : "bi-headphones";
+
+                <li class="poi-item" data-search="@poi.Name.ToLower()">
+                    <div class="poi-row">
+                        <div class="poi-rank @rankClass">
+                            <i class="bi @rankIcon"></i>
+                            <span>@(i + 1)</span>
+                        </div>
+                        <div class="poi-info">
+                            <div class="poi-name-row">
+                                <span class="poi-name">@poi.Name</span>
+                                <span class="poi-id text-muted">#@poi.PoiId</span>
+                            </div>
+                            <div class="poi-bar-wrap">
+                                <div class="poi-bar @(i == 0 ? "poi-bar--gold" : "")" style="width:@(pct)%"></div>
+                            </div>
+                            <div class="poi-meta">
+                                <i class="bi bi-clock"></i> Lần cuối: @poi.LastPlay.ToString("dd/MM/yyyy HH:mm")
+                            </div>
+                        </div>
+                        <div class="poi-stat-col">
+                            <span class="poi-stat-val @(i == 0 ? "poi-stat-val--gold" : "")">@poi.PlayCount</span>
+                            <span class="poi-stat-lbl">Lượt phát</span>
+                        </div>
+                        <div class="poi-stat-col poi-stat-col--avg">
+                            <span class="poi-stat-val poi-stat-val--indigo">@poi.AvgInterval</span>
+                            <span class="poi-stat-lbl">Nghe TB</span>
+                        </div>
+                    </div>
+                </li>
+            }
+        </ul>
     }
 </div>
 
 <script>
-    function toggleDetail(id, rowEl) {
-        const panel = document.getElementById(id);
-        const isOpen = panel.classList.contains('open');
-        const chevron = rowEl.querySelector('.poi-chevron i');
-        if (isOpen) {
-            panel.style.maxHeight = panel.scrollHeight + 'px';
-            requestAnimationFrame(() => { panel.style.maxHeight = '0'; });
-            panel.classList.remove('open');
-            chevron.style.transform = 'rotate(0deg)';
-            rowEl.setAttribute('aria-expanded', 'false');
-        } else {
-            panel.classList.add('open');
-            panel.style.maxHeight = panel.scrollHeight + 'px';
-            chevron.style.transform = 'rotate(180deg)';
-            rowEl.setAttribute('aria-expanded', 'true');
-            setTimeout(() => { panel.style.maxHeight = 'none'; }, 320);
-        }
+    function switchTab(tab) {
+        document.getElementById('panel-all').style.display  = tab === 'all'  ? '' : 'none';
+        document.getElementById('panel-rank').style.display = tab === 'rank' ? '' : 'none';
+        document.getElementById('tab-all').classList.toggle('active',  tab === 'all');
+        document.getElementById('tab-rank').classList.toggle('active', tab === 'rank');
     }
 
-    function filterList() {
-        const q = document.getElementById('searchInput').value.toLowerCase();
-        document.querySelectorAll('#poiList [data-search]').forEach(el => {
+    function filterAll() {
+        const q = document.getElementById('searchAll').value.toLowerCase();
+        document.querySelectorAll('#allList tbody tr[data-search]').forEach(el => {
+            el.style.display = el.dataset.search.includes(q) ? '' : 'none';
+        });
+    }
+
+    function filterRank() {
+        const q = document.getElementById('searchRank').value.toLowerCase();
+        document.querySelectorAll('#rankList li[data-search]').forEach(el => {
             el.style.display = el.dataset.search.includes(q) ? '' : 'none';
         });
     }

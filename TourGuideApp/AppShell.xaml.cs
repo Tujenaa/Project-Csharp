@@ -15,6 +15,9 @@ namespace TourGuideApp
                            ?? Application.Current?.Handler?.MauiContext?.Services.GetService<DeviceHeartbeatSender>();
             
             heartbeat?.Start();
+
+            // Ẩn tab Lịch sử nếu là khách
+            HistoryTab.IsVisible = AuthService.Username != "guest";
         }
     }
 }

@@ -40,6 +40,11 @@ namespace TourGuideAPI.Controllers
             {
                 user.PasswordHash = BC.HashPassword(user.PasswordHash);
             }
+            else
+            {
+                // Mặc định nếu không có pass (hiếm gặp)
+                user.PasswordHash = BC.HashPassword("123456");
+            }
 
             // Admin được tạo cả 3 role: ADMIN, OWNER, CUSTOMER
             _context.Users.Add(user);
@@ -53,13 +58,14 @@ namespace TourGuideAPI.Controllers
             var existing = await _context.Users.FindAsync(id);
             if (existing == null) return NotFound();
             existing.Username = user.Username;
-            
-            // Nếu có password mới thì băm nó, nếu không thì giữ nguyên password cũ
-            if (!string.IsNullOrWhiteSpace(user.PasswordHash))
+
+            // Chỉ băm và cập nhật nếu password gửi lên khác với password hiện tại (đã băm)
+            // Điều này ngăn chặn việc băm đè mã hash cũ khi Web gửi ngược lại hash.
+            if (!string.IsNullOrWhiteSpace(user.PasswordHash) && user.PasswordHash != existing.PasswordHash)
             {
                 existing.PasswordHash = BC.HashPassword(user.PasswordHash);
             }
-            
+
             existing.Role = user.Role;
             existing.Name = user.Name;
             existing.Email = user.Email;
@@ -89,7 +95,7 @@ namespace TourGuideAPI.Controllers
             if (user == null)
                 return Unauthorized("Sai username");
 
-            if (!BC.Verify(req.Password, user.PasswordHash))
+            if (string.IsNullOrWhiteSpace(req.Password) || !BC.Verify(req.Password, user.PasswordHash))
                 return Unauthorized("Sai mật khẩu");
 
             return Ok(new
@@ -157,7 +163,7 @@ namespace TourGuideAPI.Controllers
             if (user == null) return NotFound("Người dùng không tồn tại");
 
             // Kiểm tra mật khẩu cũ bằng BCrypt
-            if (!BC.Verify(req.OldPassword, user.PasswordHash))
+            if (string.IsNullOrWhiteSpace(req.OldPassword) || !BC.Verify(req.OldPassword, user.PasswordHash))
                 return BadRequest("Mật khẩu cũ không chính xác");
 
             if (string.IsNullOrWhiteSpace(req.NewPassword))

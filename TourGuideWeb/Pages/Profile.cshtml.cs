@@ -37,8 +37,8 @@ public class ProfileModel : PageModel
         var existing = await client.GetFromJsonAsync<UserInfo>($"users/{MyId}");
         if (existing == null) { Error = "Không tải được thông tin."; return RedirectToPage(); }
 
-        // ✅ Gửi password plaintext lên API, API sẽ chịu trách nhiệm băm
-        string passwordHash = NewPassword ?? existing.PasswordHash ?? "";
+        // ✅ Chỉ gửi password plaintext nếu người dùng nhập mới, nếu không gửi null để API giữ nguyên pass cũ
+        string? passwordHash = string.IsNullOrWhiteSpace(NewPassword) ? null : NewPassword;
 
         var payload = new
         {

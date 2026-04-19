@@ -32,8 +32,13 @@ public class HeatmapModel : PageModel
     public bool IsAdmin => Role == "ADMIN";
     private int? MyId => int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
 
-    public async Task OnGetAsync()
+    public async Task<IActionResult> OnGetAsync()
     {
+        if (!IsAdmin)
+        {
+            return RedirectToPage("/Index");
+        }
+
         var client = _http.CreateClient("API");
 
         try
@@ -64,6 +69,8 @@ public class HeatmapModel : PageModel
             Console.WriteLine("Error loading heatmap data: " + ex.Message);
             HeatDataJson = "[]";
         }
+
+        return Page();
     }
 
     public class ActiveDevice

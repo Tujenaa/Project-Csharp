@@ -28,8 +28,8 @@ namespace TourGuideAPI.Controllers
                     h.PoiId,
                     PoiName = p != null ? p.Name : null,
                     h.UserId,
-                    UserLogin = u != null ? u.Username : "unknown",
-                    UserFullName = u != null ? u.Name : "Unknown",
+                    UserLogin = u != null ? u.Username : "guest",
+                    UserFullName = u != null ? u.Name : "Khách",
                     UserRole = u != null ? u.Role : null,
                     h.PlayTime,
                     h.ListenDuration
@@ -42,12 +42,16 @@ namespace TourGuideAPI.Controllers
         public async Task<IActionResult> Create([FromBody] History history)
         {
             Console.WriteLine($"API RECEIVED: PoiId={history.PoiId}, UserId={history.UserId}");
-            if (history.UserId == 0)
-                return BadRequest("UserId bị null / không gửi lên");
+            
+            // Xử lý khách (UserId = 0 hoặc null)
+            if (history.UserId == 0) history.UserId = null;
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == history.UserId);
-            if (user == null) return BadRequest("User không tồn tại");
-            if (user.Role != "CUSTOMER") return BadRequest("Chỉ CUSTOMER mới được ghi lịch sử");
+            if (history.UserId != null)
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == history.UserId);
+                if (user == null) return BadRequest("User không tồn tại");
+                if (user.Role != "CUSTOMER") return BadRequest("Chỉ CUSTOMER mới được ghi lịch sử");
+            }
 
             history.POI = null;
             if (history.PlayTime == default) history.PlayTime = DateTime.Now;

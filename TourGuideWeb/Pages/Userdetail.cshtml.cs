@@ -10,7 +10,7 @@ public class UserDetailModel : PageModel
     private readonly IHttpClientFactory _http;
     public UserDetailModel(IHttpClientFactory http) => _http = http;
 
-    public UserInfo? User { get; set; }
+    public UserInfo? SelectedUser { get; set; }
     public List<POI> OwnerPois { get; set; } = [];
 
     private string Role => HttpContext.Session.GetString("Role") ?? "";
@@ -24,11 +24,11 @@ public class UserDetailModel : PageModel
         var client = _http.CreateClient("API");
         try
         {
-            User = await client.GetFromJsonAsync<UserInfo>($"users/{id}");
-            if (User?.Role == "OWNER")
+            SelectedUser = await client.GetFromJsonAsync<UserInfo>($"users/{id}");
+            if (SelectedUser?.Role == "OWNER")
                 OwnerPois = await client.GetFromJsonAsync<List<POI>>($"poi/owner/{id}") ?? [];
         }
-        catch { User = null; }
+        catch { SelectedUser = null; }
 
         return Page();
     }

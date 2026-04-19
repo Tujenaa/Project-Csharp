@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 
@@ -51,7 +51,7 @@ public class UsersModel : PageModel
         var payload = new
         {
             existing.Username,
-            existing.PasswordHash,
+            PasswordHash = (string?)null, // Không thay đổi password khi đổi role
             Role = NewRole,
             existing.Name,
             existing.Email,

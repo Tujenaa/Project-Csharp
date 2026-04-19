@@ -13,10 +13,8 @@ public partial class PlaceDetailPage : ContentPage
 
     // ── TTS state ─────────────────────────────────────────────────────────────
     // Logic đã chuyển sang AudioPlaybackService
-    bool _isPaused = false;
 
     // Ngôn ngữ đang được load trong ttsService
-    string _currentLoadedLang = "";
 
     // POI hiện tại (lưu để ghi lịch sử)
     POI? _currentPoi;
@@ -37,7 +35,6 @@ public partial class PlaceDetailPage : ContentPage
 
             // Reset TTS state khi chuyển sang POI mới
             StopPlayback();
-            _currentLoadedLang = "";
         }
     }
 

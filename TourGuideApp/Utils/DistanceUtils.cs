@@ -46,4 +46,31 @@ public static class DistanceUtils
 
         return d;
     }
+
+    /// <summary>
+    /// Tính phương vị (Bearing) từ điểm 1 đến điểm 2 (độ, 0-360).
+    /// </summary>
+    public static double GetBearing(double lat1, double lon1, double lat2, double lon2)
+    {
+        double φ1 = lat1 * Math.PI / 180;
+        double φ2 = lat2 * Math.PI / 180;
+        double Δλ = (lon2 - lon1) * Math.PI / 180;
+
+        double y = Math.Sin(Δλ) * Math.Cos(φ2);
+        double x = Math.Cos(φ1) * Math.Sin(φ2) -
+                   Math.Sin(φ1) * Math.Cos(φ2) * Math.Cos(Δλ);
+
+        double θ = Math.Atan2(y, x);
+        return (θ * 180 / Math.PI + 360) % 360;
+    }
+
+    /// <summary>
+    /// Tính độ lệch góc nhỏ nhất giữa hai góc (độ). 
+    /// Trả về giá trị dương (0-180).
+    /// </summary>
+    public static double GetAngleDifference(double angle1, double angle2)
+    {
+        double diff = Math.Abs(angle1 - angle2) % 360;
+        return diff > 180 ? 360 - diff : diff;
+    }
 }

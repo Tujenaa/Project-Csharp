@@ -74,8 +74,8 @@ public class PoisModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        var latStr = Request.Form["Latitude"].ToString().Replace(',', '.');
-        var lngStr = Request.Form["Longitude"].ToString().Replace(',', '.');
+        var latStr = Request.Form["Latitude"].ToString().Trim().Replace(',', '.');
+        var lngStr = Request.Form["Longitude"].ToString().Trim().Replace(',', '.');
         double lat = double.TryParse(latStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var lv) ? lv : Latitude;
         double lng = double.TryParse(lngStr, NumberStyles.Any, CultureInfo.InvariantCulture, out var lgv) ? lgv : Longitude;
 

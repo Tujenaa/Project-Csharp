@@ -11,12 +11,12 @@
 <div class="page-header">
     <div>
         <h2>Chi tiết người dùng</h2>
-        <div class="sub">ID #@Model.User?.Id</div>
+        <div class="sub">ID #@Model.SelectedUser?.Id</div>
     </div>
     <a href="/Users" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Quay lại</a>
 </div>
 
-@if (Model.User == null)
+@if (Model.SelectedUser == null)
 {
     <div class="alert alert-error"><i class="bi bi-exclamation-triangle"></i> Không tìm thấy người dùng.</div>
 }
@@ -26,13 +26,13 @@ else
 
         <!-- Avatar card -->
         <div class="profile-avatar-card">
-            <div class="profile-avatar">@Model.User.Username.Substring(0, 1).ToUpper()</div>
-            <div class="profile-uname">@Model.User.Username</div>
-            @if (Model.User.Role == "ADMIN")
+            <div class="profile-avatar">@Model.SelectedUser.Username.Substring(0, 1).ToUpper()</div>
+            <div class="profile-uname">@Model.SelectedUser.Username</div>
+            @if (Model.SelectedUser.Role == "ADMIN")
             {
                 <span class="badge badge-red" style="font-size:12px;padding:4px 12px">ADMIN</span>
             }
-            else if (Model.User.Role == "OWNER")
+            else if (Model.SelectedUser.Role == "OWNER")
             {
                 <span class="badge badge-blue" style="font-size:12px;padding:4px 12px">OWNER</span>
             }
@@ -40,17 +40,17 @@ else
             {
                 <span class="badge badge-green" style="font-size:12px;padding:4px 12px">CUSTOMER</span>
             }
-            @if (!string.IsNullOrEmpty(Model.User.Name))
+            @if (!string.IsNullOrEmpty(Model.SelectedUser.Name))
             {
-                <div class="profile-displayname">@Model.User.Name</div>
+                <div class="profile-displayname">@Model.SelectedUser.Name</div>
             }
-            @if (!string.IsNullOrEmpty(Model.User.Email))
+            @if (!string.IsNullOrEmpty(Model.SelectedUser.Email))
             {
-                <div class="profile-meta"><i class="bi bi-envelope"></i> @Model.User.Email</div>
+                <div class="profile-meta"><i class="bi bi-envelope"></i> @Model.SelectedUser.Email</div>
             }
-            @if (!string.IsNullOrEmpty(Model.User.Phone))
+            @if (!string.IsNullOrEmpty(Model.SelectedUser.Phone))
             {
-                <div class="profile-meta"><i class="bi bi-telephone"></i> @Model.User.Phone</div>
+                <div class="profile-meta"><i class="bi bi-telephone"></i> @Model.SelectedUser.Phone</div>
             }
         </div>
 
@@ -61,15 +61,15 @@ else
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                     <div>
                         <div class="form-label">ID</div>
-                        <div style="font-size:18px;font-weight:800;color:#111827;font-family:var(--mono)">#@Model.User.Id</div>
+                        <div style="font-size:18px;font-weight:800;color:#111827;font-family:var(--mono)">#@Model.SelectedUser.Id</div>
                     </div>
                     <div>
                         <div class="form-label">Vai trò</div>
-                        <div style="font-size:15px;font-weight:700;color:#5b21b6">@Model.User.Role</div>
+                        <div style="font-size:15px;font-weight:700;color:#5b21b6">@Model.SelectedUser.Role</div>
                     </div>
                     <div>
                         <div class="form-label">Tên đăng nhập</div>
-                        <div style="font-size:15px;font-weight:700;color:#111827">@Model.User.Username</div>
+                        <div style="font-size:15px;font-weight:700;color:#111827">@Model.SelectedUser.Username</div>
                     </div>
                     <div>
                         <div class="form-label">Mật khẩu</div>
@@ -84,25 +84,25 @@ else
                     <div>
                         <div class="form-label">Tên hiển thị</div>
                         <div style="font-size:15px;font-weight:600;color:#111827">
-                            @(string.IsNullOrEmpty(Model.User.Name) ? "—" : Model.User.Name)
+                            @(string.IsNullOrEmpty(Model.SelectedUser.Name) ? "—" : Model.SelectedUser.Name)
                         </div>
                     </div>
                     <div>
                         <div class="form-label">Email</div>
                         <div style="font-size:15px;font-weight:600;color:#111827">
-                            @(string.IsNullOrEmpty(Model.User.Email) ? "—" : Model.User.Email)
+                            @(string.IsNullOrEmpty(Model.SelectedUser.Email) ? "—" : Model.SelectedUser.Email)
                         </div>
                     </div>
                     <div>
                         <div class="form-label">Số điện thoại</div>
                         <div style="font-size:15px;font-weight:600;color:#111827">
-                            @(string.IsNullOrEmpty(Model.User.Phone) ? "—" : Model.User.Phone)
+                            @(string.IsNullOrEmpty(Model.SelectedUser.Phone) ? "—" : Model.SelectedUser.Phone)
                         </div>
                     </div>
                 </div>
             </div>
 
-            @if (Model.User.Role == "OWNER" && Model.OwnerPois.Any())
+            @if (Model.SelectedUser.Role == "OWNER" && Model.OwnerPois.Any())
             {
                 <div class="profile-section">
                     <div class="profile-section-title"><i class="bi bi-geo-alt"></i> POI đang quản lý (@Model.OwnerPois.Count điểm)</div>

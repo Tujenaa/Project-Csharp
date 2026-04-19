@@ -6,7 +6,7 @@ namespace TourGuideApp.Services;
 
 public class ErrorColorConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo? culture)
     {
         if (value is bool isError)
         {
@@ -15,7 +15,7 @@ public class ErrorColorConverter : IValueConverter
         return Colors.Gray;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo? culture)
     {
         throw new NotImplementedException();
     }
@@ -23,7 +23,7 @@ public class ErrorColorConverter : IValueConverter
 
 public class RotationConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo? culture)
     {
         if (value is bool isVisible)
         {
@@ -32,7 +32,7 @@ public class RotationConverter : IValueConverter
         return 0.0;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo? culture)
     {
         throw new NotImplementedException();
     }
@@ -44,7 +44,7 @@ public class RotationConverter : IValueConverter
 /// </summary>
 public class TranslateConverter : IValueConverter
 {
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo? culture)
     {
         if (parameter is string key)
         {
@@ -54,7 +54,7 @@ public class TranslateConverter : IValueConverter
         return value?.ToString() ?? string.Empty;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo? culture)
     {
         throw new NotImplementedException();
     }

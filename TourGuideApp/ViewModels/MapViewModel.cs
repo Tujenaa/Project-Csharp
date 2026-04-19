@@ -39,6 +39,7 @@ public class MapViewModel : INotifyPropertyChanged
 
     double? userLat;
     double? userLon;
+    double? userCourse; // Lần cập nhật hướng di chuyển gần nhất
 
     readonly HashSet<int> autoPlayedIds = new();
     private bool _hasPromptedOnStartup = false;
@@ -354,7 +355,7 @@ public class MapViewModel : INotifyPropertyChanged
         if (currentPlaying != null && AudioPlaybackService.Instance.IsCurrentPlayAuto)
         {
             double distToCurrent = DistanceUtils.GetDistance(lat, lon, currentPlaying.Latitude, currentPlaying.Longitude);
-            // Tăng vùng đệm lên 1.6 để đảm bảo âm thanh không bị ngắt quãng do sai số GPS
+            // Tăng vùng đệm lên 1.4 để đảm bảo âm thanh không bị ngắt quãng do sai số GPS
             if (distToCurrent > currentPlaying.Radius * 1.4)
             {
                 System.Diagnostics.Debug.WriteLine($"[MapViewModel] User left radius of {currentPlaying.Name}. Stopping audio.");
@@ -367,6 +368,9 @@ public class MapViewModel : INotifyPropertyChanged
             ? (ActiveTour.POIs ?? new List<POI>()).Where(p => p.IsApprovedInTour).ToList()
             : allPOIs.Where(p => p.IsReady).ToList();
 
+        // 3. Lọc ra các POI đang ở trong bán kính và chưa được phát/đang chờ
+        var candidates = new List<(POI Poi, double AngleDiff)>();
+
         foreach (var poi in sourceList)
         {
             double dist = DistanceUtils.GetDistance(lat, lon, poi.Latitude, poi.Longitude);
@@ -375,24 +379,17 @@ public class MapViewModel : INotifyPropertyChanged
             if (dist > poi.Radius * 2 && autoPlayedIds.Contains(poi.Id))
                 autoPlayedIds.Remove(poi.Id);
 
-            // Kiểm tra trạng thái vùng phát
             if (dist < poi.Radius)
             {
-                // Chỉ xử lý nếu chưa phát và chưa nằm trong danh sách chờ
                 if (!autoPlayedIds.Contains(poi.Id) && !_pendingAutoPlay.ContainsKey(poi.Id))
                 {
-                    // Nếu là startup -> Giữ nguyên logic prompt (không delay ở đây mà delay sau khi OK)
-                    if (!_hasPromptedOnStartup)
+                    double angleDiff = 0;
+                    if (userCourse.HasValue)
                     {
-                        ProcessStartupPrompt(new List<POI> { poi });
-                        break; // Startup prompt chỉ xử lý 1 lần
+                        double bearing = DistanceUtils.GetBearing(lat, lon, poi.Latitude, poi.Longitude);
+                        angleDiff = DistanceUtils.GetAngleDifference(userCourse.Value, bearing);
                     }
-                    
-                    // Nếu không phải startup -> Chạy logic trì hoãn
-                    if (SettingService.Instance.AutoPlay)
-                    {
-                        StartDelayedAutoPlay(poi);
-                    }
+                    candidates.Add((poi, angleDiff));
                 }
             }
             else
@@ -404,6 +401,26 @@ public class MapViewModel : INotifyPropertyChanged
                     _pendingAutoPlay.Remove(poi.Id);
                     System.Diagnostics.Debug.WriteLine($"[MapViewModel] Cancelled pending audio for {poi.Name} (left radius).");
                 }
+            }
+        }
+
+        // 4. Sắp xếp candidates theo độ lệch góc (góc nhỏ nhất đứng trước)
+        // Nếu không có hướng (userCourse == null), thứ tự sẽ giữ nguyên theo sourceList
+        var sortedCandidates = candidates.OrderBy(c => c.AngleDiff).Select(c => c.Poi).ToList();
+
+        foreach (var poi in sortedCandidates)
+        {
+            // Nếu là startup -> Giữ nguyên logic prompt
+            if (!_hasPromptedOnStartup)
+            {
+                ProcessStartupPrompt(new List<POI> { poi });
+                break; // Startup prompt chỉ xử lý 1 lần
+            }
+
+            // Nếu không phải startup -> Chạy logic trì hoãn
+            if (SettingService.Instance.AutoPlay)
+            {
+                StartDelayedAutoPlay(poi);
             }
         }
     }
@@ -502,6 +519,11 @@ public class MapViewModel : INotifyPropertyChanged
             {
                 userLat = loc.Latitude;
                 userLon = loc.Longitude;
+                // Cập nhật hướng di chuyển (Course) nếu có dữ liệu hợp lệ
+                if (loc.Course.HasValue && loc.Speed.HasValue && loc.Speed.Value > 0.5)
+                {
+                    userCourse = loc.Course.Value;
+                }
 
                 if (EvalJs != null)
                 {

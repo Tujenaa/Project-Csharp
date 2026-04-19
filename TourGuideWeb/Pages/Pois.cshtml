@@ -422,6 +422,7 @@
     }
     
     function placeMarker(lat,lng,r){
+        isPoiDirty = true; // Đánh dấu form có thay đổi khi đặt marker mới
         if(_pmk)_pm.removeLayer(_pmk); drawCircle(lat,lng,r);
         _pmk=L.marker([lat,lng],{draggable:true}).addTo(_pm);
         document.getElementById('fLat').value=lat.toFixed(6); document.getElementById('fLng').value=lng.toFixed(6);
@@ -432,6 +433,37 @@
             document.getElementById('fLng').value=p.lng.toFixed(6);
             drawCircle(p.lat,p.lng,parseFloat(document.getElementById('fRadius').value)||5);
         });
+    }
+
+    function getMyLocation() {
+        if (!navigator.geolocation) {
+            alert("Trình duyệt không hỗ trợ định vị.");
+            return;
+        }
+        const btn = event.currentTarget;
+        const oldHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang lấy vị trí...';
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                const radius = parseFloat(document.getElementById('fRadius').value) || 5;
+                if (_pm) {
+                    _pm.setView([lat, lng], 17);
+                    placeMarker(lat, lng, radius);
+                }
+                btn.innerHTML = oldHtml;
+                btn.disabled = false;
+            },
+            (err) => {
+                alert("Không thể lấy vị trí hiện tại: " + err.message);
+                btn.innerHTML = oldHtml;
+                btn.disabled = false;
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     }
     function drawCircle(lat,lng,r){if(_pmc)_pm.removeLayer(_pmc);_pmc=L.circle([lat,lng],{radius:r,color:'#e94560',fillColor:'#e94560',fillOpacity:.2}).addTo(_pm);}
 

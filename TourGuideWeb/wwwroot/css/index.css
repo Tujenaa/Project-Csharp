@@ -1,7 +1,7 @@
-﻿/* index.css */
+/* index.css */
 .stat-grid {
     display: grid;
-    grid-template-columns: repeat(4,1fr);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px;
     margin-bottom: 20px;
 }
@@ -50,6 +50,10 @@
         background: linear-gradient(90deg,#b45309,#f59e0b);
     }
 
+    .stat-card.orange::before {
+        background: linear-gradient(90deg,#ea580c,#f97316);
+    }
+
     .stat-card .stat-label {
         font-size: 11px;
         font-weight: 700;
@@ -83,6 +87,10 @@
         color: #78350f;
     }
 
+    .stat-card.orange .stat-value {
+        color: #7c2d12;
+    }
+
 .stat-trend {
     display: inline-flex;
     align-items: center;
@@ -112,6 +120,11 @@
 .trend-yellow {
     background: #fef3c7;
     color: #78350f;
+}
+
+.trend-orange {
+    background: #fff7ed;
+    color: #7c2d12;
 }
 
 .stat-icon-wrap {
@@ -144,6 +157,11 @@
 .icon-yellow {
     background: #fef3c7;
     color: #b45309;
+}
+
+.icon-orange {
+    background: #fff7ed;
+    color: #ea580c;
 }
 
 .poi-dot {

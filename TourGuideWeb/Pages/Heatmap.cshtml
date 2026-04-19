@@ -264,25 +264,18 @@
     <!-- Stats — góc dưới trái -->
     <div class="map-overlay overlay-stats">
         <div class="stat-card">
-            <div class="stat-icon history">🔥</div>
-            <div class="stat-text">
-                <span class="stat-label">Tổng thiết bị</span>
-                <span class="stat-value" id="totalInteractions">0</span>
-            </div>
-        </div>
-        <div class="stat-card">
             <div class="stat-icon online">📱</div>
             <div class="stat-text">
                 <span class="stat-label">
                     <span class="online-badge">
                         <span class="pulse-dot animating" id="onlineDot"></span>
-                        Thiết bị online
+                        Thiết bị trực tuyến
                     </span>
                 </span>
                 <span class="stat-value" id="totalOnline">–</span>
                 <div class="api-status" id="apiStatusContainer">
                     <span class="status-dot-sm status-ok" id="apiStatusDot"></span>
-                    <span id="apiStatusText">Đang kết nối API...</span>
+                    <span id="apiStatusText">Đang kết nối...</span>
                 </div>
             </div>
         </div>
@@ -312,7 +305,7 @@
             const heatData = @Html.Raw(Model.HeatDataJson);
 
             const total = heatData.reduce((acc, p) => acc + p[2], 0);
-            document.getElementById('totalInteractions').textContent = total.toLocaleString('vi-VN');
+            // document.getElementById('totalInteractions').textContent = total.toLocaleString('vi-VN');
 
             let center = [10.7769, 106.7009]; // Mặc định TP.HCM
             if (heatData.length > 0) {
@@ -412,7 +405,6 @@
                     heatLayer.setLatLngs(newHeatData);
 
                     document.getElementById('totalOnline').textContent = devices.length;
-                    document.getElementById('totalInteractions').textContent = devices.length;
                     
                     // Cập nhật UI trạng thái API
                     document.getElementById('apiStatusDot').className = 'status-dot-sm status-ok';

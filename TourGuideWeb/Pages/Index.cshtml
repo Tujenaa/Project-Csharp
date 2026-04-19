@@ -1,4 +1,4 @@
-﻿@page
+@page
 @model GPSGuide.Web.Pages.IndexModel
 @{
     ViewData["Title"] = "Trang chủ";
@@ -55,6 +55,14 @@
             <div class="stat-icon-wrap icon-yellow"><i class="bi bi-people"></i></div>
         </div>
     }
+    <div class="stat-card orange">
+        <div>
+            <div class="stat-label">Thiết bị online</div>
+            <div class="stat-value">@Model.TotalDevices</div>
+            <div class="stat-trend trend-orange"><i class="bi bi-broadcast"></i> live-now</div>
+        </div>
+        <div class="stat-icon-wrap icon-orange"><i class="bi bi-phone"></i></div>
+    </div>
 </div>
 
 <!-- Bottom Grid -->

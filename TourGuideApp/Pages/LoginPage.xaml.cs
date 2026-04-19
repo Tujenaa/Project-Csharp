@@ -5,7 +5,6 @@ namespace TourGuideApp.Pages;
 
 public partial class LoginPage : ContentPage
 {
-    private bool _showingLogin = true;
 
     public LoginPage()
     {
@@ -53,7 +52,6 @@ public partial class LoginPage : ContentPage
 
     private void ShowLogin()
     {
-        _showingLogin = true;
 
         // Tab styles
         LoginTabBorder.BackgroundColor = Color.FromArgb("#512BD4");
@@ -68,7 +66,6 @@ public partial class LoginPage : ContentPage
 
     private void ShowRegister()
     {
-        _showingLogin = false;
 
         RegisterTabBorder.BackgroundColor = Color.FromArgb("#512BD4");
         RegisterTabLabel.TextColor = Colors.White;
