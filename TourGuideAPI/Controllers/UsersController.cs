@@ -35,18 +35,19 @@ namespace TourGuideAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] User user)
         {
-            // Băm mật khẩu trước khi lưu
             if (!string.IsNullOrWhiteSpace(user.PasswordHash))
-            {
                 user.PasswordHash = BC.HashPassword(user.PasswordHash);
+<<<<<<< HEAD
             }
             else
             {
                 // Mặc định nếu không có pass (hiếm gặp)
                 user.PasswordHash = BC.HashPassword("123456");
             }
+=======
+>>>>>>> 52f2df7be72fb6846287e62b7cc53e9a7cf3cfe7
 
-            // Admin được tạo cả 3 role: ADMIN, OWNER, CUSTOMER
+            user.IsActive = true; // Tài khoản mới luôn active
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return Ok(user);
@@ -57,19 +58,34 @@ namespace TourGuideAPI.Controllers
         {
             var existing = await _context.Users.FindAsync(id);
             if (existing == null) return NotFound();
+
             existing.Username = user.Username;
 
+<<<<<<< HEAD
             // Chỉ băm và cập nhật nếu password gửi lên khác với password hiện tại (đã băm)
             // Điều này ngăn chặn việc băm đè mã hash cũ khi Web gửi ngược lại hash.
+=======
+            // Chỉ hash nếu PasswordHash được gửi lên khác với hash hiện tại và không phải là một chuỗi rỗng
+>>>>>>> 52f2df7be72fb6846287e62b7cc53e9a7cf3cfe7
             if (!string.IsNullOrWhiteSpace(user.PasswordHash) && user.PasswordHash != existing.PasswordHash)
             {
-                existing.PasswordHash = BC.HashPassword(user.PasswordHash);
+                // Kiểm tra xem có vẻ là hash BCrypt chưa (thường bắt đầu bằng $2)
+                if (!user.PasswordHash.StartsWith("$2a$") && !user.PasswordHash.StartsWith("$2b$"))
+                {
+                    existing.PasswordHash = BC.HashPassword(user.PasswordHash);
+                }
+                else
+                {
+                    // Nếu nó đã là hash rồi thì cứ gán thẳng, không hash đè
+                    existing.PasswordHash = user.PasswordHash;
+                }
             }
 
             existing.Role = user.Role;
             existing.Name = user.Name;
             existing.Email = user.Email;
             existing.Phone = user.Phone;
+            existing.IsActive = user.IsActive; // Cập nhật trạng thái active
             await _context.SaveChangesAsync();
             return Ok(existing);
         }
@@ -84,95 +100,99 @@ namespace TourGuideAPI.Controllers
             return Ok();
         }
 
-
-        // ── APP: GET /api/users/login ── Đăng nhập (chỉ CUSTOMER)
         [HttpPost("login")]
         public IActionResult Login([FromBody] UserLoginRequest req)
         {
             var user = _context.Users
                 .FirstOrDefault(x => x.Username == req.Username);
 
+            // 1. Không tìm thấy user
             if (user == null)
-                return Unauthorized("Sai username");
+                return NotFound("Tài khoản không tồn tại");
 
+<<<<<<< HEAD
             if (string.IsNullOrWhiteSpace(req.Password) || !BC.Verify(req.Password, user.PasswordHash))
                 return Unauthorized("Sai mật khẩu");
+=======
+            // 2. Tài khoản bị vô hiệu hoá - Kiểm tra trước mật khẩu theo yêu cầu của bạn
+            if (!user.IsActive)
+                return StatusCode(403, "Tài khoản của bạn đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.");
+
+            // 3. Kiểm tra mật khẩu
+            if (!BC.Verify(req.Password, user.PasswordHash))
+                return Unauthorized("Mật khẩu không đúng");
+>>>>>>> 52f2df7be72fb6846287e62b7cc53e9a7cf3cfe7
 
             return Ok(new
             {
                 user.Id,
-                user.Username, // thêm dòng này
+                user.Username,
                 user.Name,
                 user.Email,
                 user.Phone,
-                user.Role
+                user.Role,
+                user.IsActive
             });
         }
 
-        // ── APP: POST /api/users/register ── Đăng ký (tự động CUSTOMER)
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] User user)
         {
-            // check username tồn tại
             if (_context.Users.Any(x => x.Username == user.Username))
                 return BadRequest("Username đã tồn tại");
-            // Chỉ gán CUSTOMER nếu yêu cầu từ thiết bị không gửi kèm Role (như trên App)
+
             if (string.IsNullOrWhiteSpace(user.Role))
                 user.Role = "CUSTOMER";
 
-            // Băm mật khẩu trước khi lưu
             if (!string.IsNullOrWhiteSpace(user.PasswordHash))
-            {
                 user.PasswordHash = BC.HashPassword(user.PasswordHash);
-            }
 
+            user.IsActive = true;
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
             return Ok(new
             {
                 user.Id,
-                user.Username, // thêm dòng này
+                user.Username,
                 user.Name,
                 user.Email,
                 user.Phone,
-                user.Role
+                user.Role,
+                user.IsActive
             });
         }
 
-        // ── APP: PUT /api/users/{id} ── Cập nhật thông tin (chỉ CUSTOMER)
         [HttpPut("customer/{id}")]
         public async Task<IActionResult> UpdateCustomer(int id, [FromBody] User updated)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound();
-
             user.Name = updated.Name;
             user.Phone = updated.Phone;
-
             await _context.SaveChangesAsync();
-
             return Ok(user);
         }
 
-        // ── APP: PUT /api/users/change-password/{id} ── Đổi mật khẩu
         [HttpPut("change-password/{id}")]
         public async Task<IActionResult> ChangePassword(int id, [FromBody] ChangePasswordRequest req)
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound("Người dùng không tồn tại");
 
+<<<<<<< HEAD
             // Kiểm tra mật khẩu cũ bằng BCrypt
             if (string.IsNullOrWhiteSpace(req.OldPassword) || !BC.Verify(req.OldPassword, user.PasswordHash))
+=======
+            if (!BC.Verify(req.OldPassword, user.PasswordHash))
+>>>>>>> 52f2df7be72fb6846287e62b7cc53e9a7cf3cfe7
                 return BadRequest("Mật khẩu cũ không chính xác");
 
             if (string.IsNullOrWhiteSpace(req.NewPassword))
                 return BadRequest("Mật khẩu mới không được để trống");
 
-            // Băm mật khẩu mới
             user.PasswordHash = BC.HashPassword(req.NewPassword);
             await _context.SaveChangesAsync();
-
             return Ok(new { message = "Đổi mật khẩu thành công" });
         }
     }

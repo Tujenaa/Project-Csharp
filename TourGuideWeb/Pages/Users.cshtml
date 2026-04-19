@@ -58,7 +58,6 @@
                         <strong>@u.Username</strong>
                     </td>
                     <td>
-                        <!-- Admin đổi role trực tiếp bằng dropdown -->
                         <form method="post" asp-page-handler="ChangeRole" style="display:inline">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="ChangeId" value="@u.Id" />
@@ -73,10 +72,18 @@
                         </form>
                     </td>
                     <td>
-                        <label class="toggle-switch">
-                            <input type="checkbox" checked onchange="toggleActive(this, @u.Id)" />
-                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                        </label>
+                        <form method="post" asp-page-handler="ToggleActive" style="display:inline"
+                              id="toggleForm-@u.Id">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ToggleId" value="@u.Id" />
+                            <input type="hidden" name="ToggleValue" id="toggleVal-@u.Id"
+                                   value="@(u.IsActive ? "false" : "true")" />
+                            <label class="toggle-switch" title="@(u.IsActive ? "Đang hoạt động — click để vô hiệu hoá" : "Đang bị vô hiệu hoá — click để kích hoạt")">
+                                <input type="checkbox" @(u.IsActive ? "checked" : "")
+                                       onchange="submitToggle(@u.Id, this.checked)" />
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            </label>
+                        </form>
                     </td>
                     <td>
                         <div class="action-group">
@@ -193,8 +200,11 @@
         });
     }
 
-    function toggleActive(checkbox, userId) {
-        console.log(`User ${userId} active = ${checkbox.checked}`);
+    // Cập nhật hidden input ToggleValue rồi submit form
+    function submitToggle(userId, newChecked) {
+        // newChecked = trạng thái checkbox SAU khi click (true = muốn kích hoạt, false = muốn vô hiệu hoá)
+        document.getElementById('toggleVal-' + userId).value = newChecked ? 'true' : 'false';
+        document.getElementById('toggleForm-' + userId).submit();
     }
 
     document.addEventListener('keydown', e => {
