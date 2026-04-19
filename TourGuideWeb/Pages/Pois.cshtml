@@ -131,6 +131,7 @@
         <form id="poiForm" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <input type="hidden" name="Id" id="fId" value="0" />
+            <input type="hidden" name="DeletedImageIds" id="fDeletedImageIds" value="" />
             <div class="modal-body">
                 <div class="tab-nav">
                     <button type="button" class="tab-btn active" id="btnTabBasic" onclick="showTab('tab-basic','btnTabBasic')"><i class="bi bi-info-circle"></i> Thông tin</button>
@@ -247,6 +248,9 @@
     // BIẾN THEO DÕI THAY ĐỔI FORM (Chống gửi nhầm POI PENDING)
     let isPoiDirty = false;
 
+    // *** FIX: Set chứa imageId cần xóa, chỉ gửi khi submit ***
+    let _pendingDeleteIds = new Set();
+
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('poiForm').addEventListener('input', function(e) {
             if (e.target.name !== 'TourIds') isPoiDirty = true;
@@ -352,23 +356,24 @@
     function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg,p.img); }
     function deleteCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) confirmDelete(p.id,p.name); }
 
-    // XÓA ẢNH - KHÔNG CẦN CONFIRM
-    async function deleteImage(imageId) {
-        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-        const formData = new FormData();
-        formData.append('ImageIdToDelete', imageId);
-        formData.append('__RequestVerificationToken', token);
-        try {
-            const res = await fetch(window.location.pathname + '?handler=DeleteImage', { method: 'POST', body: formData });
-            if (res.ok) {
-                const imgWrap = document.getElementById('imgwrap-' + imageId);
-                if (imgWrap) imgWrap.remove();
-                const poi = POIS.find(p => p.id === selectedId);
-                if (poi && poi.images) poi.images = poi.images.filter(i => i.id !== imageId);
-                const grid = document.getElementById('currentImagesGrid');
-                if (grid && grid.children.length === 0) document.getElementById('currentImagesWrap').style.display = 'none';
-            } else alert('Lỗi từ server khi xoá ảnh.');
-        } catch (err) { alert('Lỗi kết nối.'); }
+    // *** FIX: Đánh dấu xóa thay vì xóa ngay — ẩn UI, lưu id vào _pendingDeleteIds ***
+    function deleteImage(imageId) {
+        _pendingDeleteIds.add(imageId);
+        isPoiDirty = true;
+
+        // Ẩn thẻ ảnh trong modal
+        const imgWrap = document.getElementById('imgwrap-' + imageId);
+        if (imgWrap) imgWrap.style.display = 'none';
+
+        // Ẩn luôn section "Ảnh hiện tại" nếu không còn ảnh nào hiển thị
+        const grid = document.getElementById('currentImagesGrid');
+        if (grid) {
+            const visible = Array.from(grid.querySelectorAll('[id^="imgwrap-"]'))
+                .filter(el => el.style.display !== 'none');
+            if (visible.length === 0) {
+                document.getElementById('currentImagesWrap').style.display = 'none';
+            }
+        }
     }
 
     async function loadPoiTours(poiId) {
@@ -426,7 +431,7 @@
         _pmk=L.marker([lat,lng],{draggable:true}).addTo(_pm);
         document.getElementById('fLat').value=lat.toFixed(6); document.getElementById('fLng').value=lng.toFixed(6);
         _pmk.on('dragend',e=>{
-            isPoiDirty = true; // Cập nhật biến theo dõi
+            isPoiDirty = true;
             const p=e.target.getLatLng();
             document.getElementById('fLat').value=p.lat.toFixed(6);
             document.getElementById('fLng').value=p.lng.toFixed(6);
@@ -437,8 +442,10 @@
 
     function openModal(){
         isPoiDirty = false;
+        _pendingDeleteIds = new Set(); // *** FIX: reset khi mở modal mới ***
         document.getElementById('poiForm').reset();
         document.getElementById('fId').value='0';
+        document.getElementById('fDeletedImageIds').value='';
         document.getElementById('modalTitle').textContent='Thêm điểm thuyết minh';
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Lưu';
         _selectedFiles = new DataTransfer();
@@ -453,10 +460,17 @@
         document.getElementById('poiModal').style.display='flex';
         setTimeout(()=>initPickMap(10.7769,106.7009,5),150);
     }
-    function closeModal(){document.getElementById('poiModal').style.display='none';}
+
+    // *** FIX: closeModal reset _pendingDeleteIds, không xóa ảnh thật ***
+    function closeModal(){
+        _pendingDeleteIds = new Set();
+        document.getElementById('fDeletedImageIds').value = '';
+        document.getElementById('poiModal').style.display='none';
+    }
 
     async function editPoi(id,name,desc,lat,lng,radius,ownerId,imageUrl){
         isPoiDirty = false;
+        _pendingDeleteIds = new Set(); // *** FIX: reset pending delete khi mở edit ***
         document.getElementById('fId').value=id;
         document.getElementById('fName').value=name;
         document.getElementById('fDescription').value=desc;
@@ -464,6 +478,7 @@
         document.getElementById('fLng').value=lng;
         document.getElementById('fRadius').value=radius;
         document.getElementById('fOwnerId').value=(ownerId===null||ownerId==='null')?'':ownerId;
+        document.getElementById('fDeletedImageIds').value='';
         document.getElementById('modalTitle').textContent='Chỉnh sửa: '+name;
         document.getElementById('submitBtn').innerHTML='<i class="bi bi-check-lg"></i> Cập nhật';
 
@@ -562,7 +577,6 @@
         _selectedFiles = dt; document.getElementById('imageFileInput').files = _selectedFiles.files; renderPreviewGrid();
     }
 
-    // NATIVE SUBMIT FIX CHỐNG GỬI KÉP POI
     document.getElementById('poiForm').addEventListener('submit', async function(e) {
         e.preventDefault(); 
         const poiId = parseInt(document.getElementById('fId').value);
@@ -570,6 +584,9 @@
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Đang xử lý...';
         submitBtn.disabled = true;
+
+        // *** FIX: Ghi danh sách ảnh cần xóa vào hidden input trước khi submit ***
+        document.getElementById('fDeletedImageIds').value = Array.from(_pendingDeleteIds).join(',');
 
         if (poiId > 0) {
             const changes = [];
@@ -596,8 +613,8 @@
             });
             await Promise.all(apiCalls);
 
-            // Chỉ load lại trang nếu POI KHÔNG hề bị sửa chữ/ảnh
-            if (!isPoiDirty) {
+            // Chỉ reload nếu POI không bị sửa text/ảnh và không có ảnh pending delete
+            if (!isPoiDirty && _pendingDeleteIds.size === 0) {
                 if (tourChanged) {
                     alert('Đã gửi yêu cầu tham gia/rời Tour thành công!');
                 }
@@ -606,7 +623,7 @@
             }
         }
 
-        // Nếu isPoiDirty = true, cho phép Browser Native Submit để gửi ảnh + text
+        // Native submit để gửi ảnh + text + DeletedImageIds
         document.querySelectorAll('input[name="TourIds"]').forEach(cb => cb.removeAttribute('name'));
         HTMLFormElement.prototype.submit.call(this); 
     });
