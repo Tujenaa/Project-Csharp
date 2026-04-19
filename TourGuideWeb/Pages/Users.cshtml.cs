@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 namespace GPSGuide.Web.Pages;
@@ -44,12 +44,12 @@ public class UsersModel : PageModel
         var payload = new
         {
             existing.Username,
-            existing.PasswordHash,
+            // existing.PasswordHash, // Bỏ mật khẩu ra khỏi payload cập nhật để tránh hỏng dữ liệu
             Role = NewRole,
             existing.Name,
             existing.Email,
             existing.Phone,
-            existing.IsActive  // giữ nguyên, không reset
+            existing.IsActive
         };
         await client.PutAsJsonAsync($"users/{ChangeId}", payload);
         Msg = $"Đã đổi vai trò thành {NewRole}.";
@@ -64,7 +64,7 @@ public class UsersModel : PageModel
         var payload = new
         {
             existing.Username,
-            existing.PasswordHash,
+            // existing.PasswordHash, // Bỏ mật khẩu ra khỏi payload cập nhật
             existing.Role,
             existing.Name,
             existing.Email,

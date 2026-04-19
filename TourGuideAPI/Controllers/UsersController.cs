@@ -52,8 +52,20 @@ namespace TourGuideAPI.Controllers
 
             existing.Username = user.Username;
 
-            if (!string.IsNullOrWhiteSpace(user.PasswordHash))
-                existing.PasswordHash = BC.HashPassword(user.PasswordHash);
+            // Chỉ hash nếu PasswordHash được gửi lên khác với hash hiện tại và không phải là một chuỗi rỗng
+            if (!string.IsNullOrWhiteSpace(user.PasswordHash) && user.PasswordHash != existing.PasswordHash)
+            {
+                // Kiểm tra xem có vẻ là hash BCrypt chưa (thường bắt đầu bằng $2)
+                if (!user.PasswordHash.StartsWith("$2a$") && !user.PasswordHash.StartsWith("$2b$"))
+                {
+                    existing.PasswordHash = BC.HashPassword(user.PasswordHash);
+                }
+                else
+                {
+                    // Nếu nó đã là hash rồi thì cứ gán thẳng, không hash đè
+                    existing.PasswordHash = user.PasswordHash;
+                }
+            }
 
             existing.Role = user.Role;
             existing.Name = user.Name;
@@ -80,16 +92,17 @@ namespace TourGuideAPI.Controllers
             var user = _context.Users
                 .FirstOrDefault(x => x.Username == req.Username);
 
-            // Không tìm thấy user → trả 404 (web sẽ hiện "tài khoản không tồn tại")
+            // 1. Không tìm thấy user
             if (user == null)
                 return NotFound("Tài khoản không tồn tại");
 
-            if (!BC.Verify(req.Password, user.PasswordHash))
-                return Unauthorized("Sai mật khẩu");
-
-            // Tài khoản bị vô hiệu hoá → trả 403
+            // 2. Tài khoản bị vô hiệu hoá - Kiểm tra trước mật khẩu theo yêu cầu của bạn
             if (!user.IsActive)
-                return StatusCode(403, "Tài khoản đã bị vô hiệu hoá");
+                return StatusCode(403, "Tài khoản của bạn đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.");
+
+            // 3. Kiểm tra mật khẩu
+            if (!BC.Verify(req.Password, user.PasswordHash))
+                return Unauthorized("Mật khẩu không đúng");
 
             return Ok(new
             {
