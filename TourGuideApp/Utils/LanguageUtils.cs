@@ -4,31 +4,7 @@ namespace TourGuideApp.Utils;
 
 public static class LanguageUtils
 {
-    /// <summary>
-    /// Kiểm tra xem POI đã có bản thuyết minh viết tay cho ngôn ngữ này chưa.
-    /// </summary>
-    public static bool HasHandwrittenScript(POI poi, string lang)
-    {
-        if (poi?.Audios == null) return false;
-        return poi.Audios.Any(a =>
-            a.LanguageCode != null &&
-            a.LanguageCode.Equals(lang, StringComparison.OrdinalIgnoreCase) &&
-            !string.IsNullOrWhiteSpace(a.Script));
-    }
 
-    /// <summary>
-    /// Lấy kịch bản Tiếng Việt chính thức của POI.
-    /// KHÔNG fallback về Description vì Description thường là HTML/text tóm tắt,
-    /// không phải script thuyết minh — dịch ra sẽ cho kết quả kém và dễ timeout.
-    /// </summary>
-    public static string GetVietnameseScript(POI poi)
-    {
-        if (poi?.Audios == null) return "";
-        return poi.Audios.FirstOrDefault(a =>
-            a.LanguageCode != null &&
-            a.LanguageCode.Equals("vi", StringComparison.OrdinalIgnoreCase))?
-            .Script ?? "";
-    }
 
     /// <summary>
     /// Lấy kịch bản thuyết minh dựa trên mã ngôn ngữ.

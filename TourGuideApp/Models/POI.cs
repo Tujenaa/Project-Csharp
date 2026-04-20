@@ -83,7 +83,21 @@ public class POI : INotifyPropertyChanged
         set => SetProperty(ref _distanceText, value);
     }
 
-    // Thời gian đi bộ ước tính (VD: 5 phút, 15 phút)
+    private bool _isNearest;
+    public bool IsNearest
+    {
+        get => _isNearest;
+        set => SetProperty(ref _isNearest, value);
+    }
+
+    private bool _isInAnyTour;
+    public bool IsInAnyTour
+    {
+        get => _isInAnyTour;
+        set => SetProperty(ref _isInAnyTour, value);
+    }
+
+    // Thời gian đi bộ ước tính
     private string _walkingTimeText = "---";
     public string WalkingTimeText
     {

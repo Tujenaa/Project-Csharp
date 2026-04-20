@@ -101,16 +101,19 @@ public partial class LoginPage : ContentPage
 
         try
         {
-            bool ok = await AuthService.LoginAsync(username, password);
+            var result = await AuthService.LoginAsync(username, password);
 
-            if (ok)
+            if (result.Success)
             {
                 // Tải lịch sử ngay khi đăng nhập thành công
                 _ = HistoryStore.LoadFromApiAsync();
                 GoToShell();
             }
             else
-                ShowLoginError(LocalizationService.Get("login_failed_msg"));
+            {
+                // result.Message lúc này là các key như "account_disabled", "login_failed_msg"...
+                ShowLoginError(LocalizationService.Get(result.Message));
+            }
         }
         catch (Exception ex)
         {

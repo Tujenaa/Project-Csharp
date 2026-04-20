@@ -35,16 +35,18 @@ public static class AuthService
     }
 
     // Đang nhập bằng username 
-    public static async Task<bool> LoginAsync(string username, string password)
+    public static async Task<(bool Success, string Message)> LoginAsync(string username, string password)
     {
         try
         {
             var api = new ApiService();
 
-            var user = await api.Login(username, password);
+            var result = await api.Login(username, password);
 
-            if (user == null)
-                return false;
+            if (result.User == null)
+                return (false, result.ErrorMessage ?? "Đăng nhập thất bại");
+
+            var user = result.User;
           
             Preferences.Set(KeyToken, Guid.NewGuid().ToString());
             Preferences.Set(KeyUsername, user.Username);
@@ -54,11 +56,11 @@ public static class AuthService
 
             Preferences.Set("user_id", user.Id); 
 
-            return true;
+            return (true, "Thành công");
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            return (false, ex.Message);
         }
     }
 

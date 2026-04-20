@@ -56,19 +56,14 @@ public class IndexModel : PageModel
             history = history?.Where(h => myPoiIds.Contains(h.PoiId)).ToList();
         }
 
-        var activeDevices = await Fetch<List<object>>(client, "device/active");
-        TotalDevices = activeDevices?.Count ?? 0;
-
         ApiError = pois is null && audios is null && history is null;
 
         if (IsAdmin)
         {
-            // FIX: Admin chỉ đếm POI đã APPROVED
             TotalPoi = pois?.Count(p => p.Status == "APPROVED") ?? 0;
         }
         else
         {
-            // Owner: đếm tất cả POI của mình (trừ REJECTED)
             TotalPoi = pois?.Count(p => p.Status != "REJECTED") ?? 0;
         }
 

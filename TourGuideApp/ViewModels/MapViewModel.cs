@@ -33,6 +33,21 @@ public class MapViewModel : INotifyPropertyChanged
             ActiveTourChanged?.Invoke();
         }
     }
+
+    private Tour? _currentTour;
+    public Tour? CurrentTour
+    {
+        get => _currentTour;
+        set { _currentTour = value; OnPropertyChanged(nameof(CurrentTour)); }
+    }
+
+    private string _currentDestinationName = string.Empty;
+    public string CurrentDestinationName
+    {
+        get => string.IsNullOrEmpty(_currentDestinationName) ? LocalizationService.Get("select_destination_placeholder") : _currentDestinationName;
+        set { _currentDestinationName = value; OnPropertyChanged(nameof(CurrentDestinationName)); }
+    }
+
     public bool IsTourSelected => ActiveTour != null;
     public event Action? ActiveTourChanged;
     public event Action<Tour?>? TourSelected;
@@ -42,7 +57,10 @@ public class MapViewModel : INotifyPropertyChanged
     double? userCourse; // Lần cập nhật hướng di chuyển gần nhất
 
     readonly HashSet<int> autoPlayedIds = new();
+    private bool _isLastPoiAudioPending = false;
     private bool _hasPromptedOnStartup = false;
+    private bool _isPromptActive = false;
+    private int _lastNearestId = -1;
 
     private const int AutoPlayDelaySeconds = 5;
     private readonly Dictionary<int, CancellationTokenSource> _pendingAutoPlay = new();
@@ -53,6 +71,13 @@ public class MapViewModel : INotifyPropertyChanged
     {
         get => _isTourActive;
         set { _isTourActive = value; OnPropertyChanged(nameof(IsTourActive)); }
+    }
+
+    private bool _isNavigationActive;
+    public bool IsNavigationActive
+    {
+        get => _isNavigationActive;
+        set { _isNavigationActive = value; OnPropertyChanged(nameof(IsNavigationActive)); }
     }
 
     public string MapHtml { get; }
@@ -72,6 +97,8 @@ public class MapViewModel : INotifyPropertyChanged
     public Command<Tour?> SelectTourCommand { get; }
     public Command StartTourCommand { get; }
     public Command CancelTourCommand { get; }
+    public Command StopAudioCommand { get; }
+    public Command<POI> ShowPOIOnMapCommand { get; set; }
 
     public Func<string, Task<string?>>? EvalJs { get; set; }
 
@@ -81,6 +108,7 @@ public class MapViewModel : INotifyPropertyChanged
 
         PlayAudioCommand = new Command<POI>(poi => _ = AudioPlaybackService.Instance.PlayAsync(poi));
         PauseAudioCommand = new Command<POI>(poi => AudioPlaybackService.Instance.Pause());
+        StopAudioCommand = new Command(() => _ = AudioPlaybackService.Instance.StopAsync());
 
         GoToDetailCommand = new Command<POI>(async poi =>
         {
@@ -90,6 +118,7 @@ public class MapViewModel : INotifyPropertyChanged
         });
 
         SelectRouteDestCommand = new Command<POI>(_ => { });
+        ShowPOIOnMapCommand = new Command<POI>(_ => { });
 
         SelectTourCommand = new Command<Tour?>(async (tour) =>
         {
@@ -129,10 +158,11 @@ public class MapViewModel : INotifyPropertyChanged
         {
             if (ActiveTour == null || !userLat.HasValue || !userLon.HasValue) return;
 
+            CurrentTour = ActiveTour;
             IsTourActive = true;
 
             // 1. Tìm POI gần nhất trong tour
-            var tourPois = (ActiveTour.POIs ?? new List<POI>()).Where(p => p.IsApprovedInTour).ToList();
+            var tourPois = (CurrentTour.POIs ?? new List<POI>()).Where(p => p.IsApprovedInTour).ToList();
             if (tourPois.Count == 0) return;
 
             var nearest = tourPois
@@ -141,6 +171,9 @@ public class MapViewModel : INotifyPropertyChanged
 
             // 2. Sắp xếp lại thứ tự theo khoảng cách tối ưu (Nearest Neighbor)
             _currentTourSequence = SortByNearestNeighbor(tourPois, userLat.Value, userLon.Value);
+
+            // Cập nhật điểm đến đầu tiên
+            CurrentDestinationName = _currentTourSequence.FirstOrDefault()?.Name ?? string.Empty;
 
             // 3. Chuẩn bị danh sách tọa độ cho JS (Bao gồm vị trí User đầu tiên)
             var routingPoints = new List<object> { new[] { userLon.Value, userLat.Value } };
@@ -160,7 +193,7 @@ public class MapViewModel : INotifyPropertyChanged
             MainThread.BeginInvokeOnMainThread(async () => {
                 await Application.Current.MainPage.DisplayAlert(
                     LocalizationService.Get("tour_start_title"),
-                    LocalizationService.Get("tour_start_msg", ActiveTour.Name), 
+                    LocalizationService.Get("tour_start_msg", CurrentTour.Name), 
                     LocalizationService.Get("ok"));
             });
 
@@ -170,6 +203,9 @@ public class MapViewModel : INotifyPropertyChanged
         CancelTourCommand = new Command(() =>
         {
             IsTourActive = false;
+            CurrentTour = null;
+            CurrentDestinationName = string.Empty;
+            _isLastPoiAudioPending = false;
             ResetAutoPlayState();
             if (EvalJs != null) _ = EvalJs("clearDirections()");
             RefreshNearbyOrder();
@@ -188,6 +224,25 @@ public class MapViewModel : INotifyPropertyChanged
             // RefreshNearbyOrder để cập nhật các nhãn khoảng cách nếu cần
             RefreshNearbyOrder();
         };
+
+        AudioPlaybackService.Instance.PlaybackStateChanged += OnPlaybackStateChanged;
+    }
+
+    private void OnPlaybackStateChanged()
+    {
+        if (!AudioPlaybackService.Instance.IsPlaying && _isLastPoiAudioPending)
+        {
+            _isLastPoiAudioPending = false;
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await Application.Current.MainPage.DisplayAlert(
+                    LocalizationService.Get("tour_completed_title"),
+                    LocalizationService.Get("tour_completed_msg"),
+                    LocalizationService.Get("ok")
+                );
+                CancelTourCommand.Execute(null);
+            });
+        }
     }
 
     // ── Property Changed ──────────────────────────────────────────────────────
@@ -222,16 +277,28 @@ public class MapViewModel : INotifyPropertyChanged
             userLon = location.Longitude;
         }
 
-        if (pois == null || pois.Count == 0) return;
+        if (tours != null)
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                AllTours.Clear();
+                foreach (var t in tours) AllTours.Add(t);
+            });
+        }
 
         allPOIs.Clear();
-        allPOIs.AddRange(pois);
+        if (pois != null) allPOIs.AddRange(pois);
 
-        MainThread.BeginInvokeOnMainThread(() =>
+        if (pois != null && tours != null)
         {
-            AllTours.Clear();
-            foreach (var t in tours) AllTours.Add(t);
-        });
+            var tourPoiIds = tours.SelectMany(t => t.POIs ?? new List<POI>()).Select(p => p.Id).ToHashSet();
+            foreach (var p in allPOIs)
+            {
+                p.IsInAnyTour = tourPoiIds.Contains(p.Id);
+            }
+        }
+
+        if (pois == null || pois.Count == 0) return;
 
         RefreshNearbyOrder();
 
@@ -256,7 +323,7 @@ public class MapViewModel : INotifyPropertyChanged
             await EvalJs($"setPOIs({BuildPOIJson(NearbyPOI)})");
     }
 
-    private void RefreshNearbyOrder()
+    public void RefreshNearbyOrder()
     {
         // LỌC:
         // - Nếu có Tour: Dùng IsApprovedInTour (Check cả trạng thái POI và trạng thái trong Tour)
@@ -318,6 +385,38 @@ public class MapViewModel : INotifyPropertyChanged
         }
     }
 
+    private void UpdateOnlyDistances()
+    {
+        if (!userLat.HasValue || !userLon.HasValue || _isPromptActive) return;
+
+        MainThread.BeginInvokeOnMainThread(() =>
+        {
+            POI? nearest = null;
+            double minDist = double.MaxValue;
+ 
+            foreach (var p in NearbyPOI)
+            {
+                double d = DistanceUtils.UpdatePoiDistance(p, userLat.Value, userLon.Value);
+                if (d < minDist)
+                {
+                    minDist = d;
+                    nearest = p;
+                }
+            }
+ 
+            foreach (var p in NearbyPOI)
+            {
+                p.IsNearest = (p == nearest);
+            }
+ 
+            if (nearest != null && nearest.Id != _lastNearestId && EvalJs != null)
+            {
+                _lastNearestId = nearest.Id;
+                _ = EvalJs($"highlightNearest({nearest.Id})");
+            }
+        });
+    }
+
     // ── Tìm kiếm POI ─────────────────────────────────────────────────────────
     public List<POI> SearchPOI(string query)
     {
@@ -333,49 +432,25 @@ public class MapViewModel : INotifyPropertyChanged
     }
 
     // ── Cập nhật khoảng cách ─────────────────────────────────────────────────
-    public void RefreshDistances() => RefreshNearbyOrder();
 
     public void ResetStartupFlag() => _hasPromptedOnStartup = false;
 
-    // ── Tạm Dừng (Pause) ──────────────────────────────────────────────────────
-    public void HandlePause(POI poi) => AudioPlaybackService.Instance.Pause();
-
-    // ── Phát / Tiếp tục (Play / Resume) ───────────────────────────────────────
-    public async Task HandlePlay(POI poi) => await AudioPlaybackService.Instance.PlayAsync(poi);
-
-    void StopAll() => AudioPlaybackService.Instance.Stop();
-
-    public void PlayPOIManually(POI poi) => _ = AudioPlaybackService.Instance.PlayAsync(poi);
 
     // ── Auto-play ─────────────────────────────────────────────────────────────
-    void CheckNearbyPOI(double lat, double lon)
+    private void CheckNearbyPOI(double lat, double lon)
     {
-        // 1. Tự động dừng nếu đi ra xa (Stop on Exit) - CHỈ ÁP DỤNG CHO AUTO-PLAY
-        var currentPlaying = AudioPlaybackService.Instance.CurrentPlayingPoi;
-        if (currentPlaying != null && AudioPlaybackService.Instance.IsCurrentPlayAuto)
-        {
-            double distToCurrent = DistanceUtils.GetDistance(lat, lon, currentPlaying.Latitude, currentPlaying.Longitude);
-            // Tăng vùng đệm lên 1.4 để đảm bảo âm thanh không bị ngắt quãng do sai số GPS
-            if (distToCurrent > currentPlaying.Radius * 1.4)
-            {
-                System.Diagnostics.Debug.WriteLine($"[MapViewModel] User left radius of {currentPlaying.Name}. Stopping audio.");
-                AudioPlaybackService.Instance.Stop();
-            }
-        }
-
-        // 2. Xác định danh sách nguồn POI
-        var sourceList = IsTourActive && ActiveTour != null
-            ? (ActiveTour.POIs ?? new List<POI>()).Where(p => p.IsApprovedInTour).ToList()
-            : allPOIs.Where(p => p.IsReady).ToList();
-
-        // 3. Lọc ra các POI đang ở trong bán kính và chưa được phát/đang chờ
+        if (_isPromptActive) return;
+        
         var candidates = new List<(POI Poi, double AngleDiff)>();
+        
+        // 1. Phân loại theo Tour (nếu đang đi Tour)
+        var sourceList = IsTourActive ? _currentTourSequence : allPOIs.Where(p => p.IsReady);
 
         foreach (var poi in sourceList)
         {
             double dist = DistanceUtils.GetDistance(lat, lon, poi.Latitude, poi.Longitude);
-
-            // Reset trạng thái "đã phát" khi đi xa hẳn
+            
+            // Xóa ID khỏi danh sách đã phát nếu người dùng đã đi xa khỏi bán kính (để có thể phát lại khi quay lại)
             if (dist > poi.Radius * 2 && autoPlayedIds.Contains(poi.Id))
                 autoPlayedIds.Remove(poi.Id);
 
@@ -388,6 +463,9 @@ public class MapViewModel : INotifyPropertyChanged
                     {
                         double bearing = DistanceUtils.GetBearing(lat, lon, poi.Latitude, poi.Longitude);
                         angleDiff = DistanceUtils.GetAngleDifference(userCourse.Value, bearing);
+                        
+                        // Chỉ tự động phát nếu POI nằm trong góc quan sát phía trước mặt (45 độ mỗi bên)
+                        if (angleDiff > 45) continue;
                     }
                     candidates.Add((poi, angleDiff));
                 }
@@ -405,7 +483,6 @@ public class MapViewModel : INotifyPropertyChanged
         }
 
         // 4. Sắp xếp candidates theo độ lệch góc (góc nhỏ nhất đứng trước)
-        // Nếu không có hướng (userCourse == null), thứ tự sẽ giữ nguyên theo sourceList
         var sortedCandidates = candidates.OrderBy(c => c.AngleDiff).Select(c => c.Poi).ToList();
 
         foreach (var poi in sortedCandidates)
@@ -413,7 +490,7 @@ public class MapViewModel : INotifyPropertyChanged
             // Nếu là startup -> Giữ nguyên logic prompt
             if (!_hasPromptedOnStartup)
             {
-                ProcessStartupPrompt(new List<POI> { poi });
+                ProcessStartupPrompt(sortedCandidates);
                 break; // Startup prompt chỉ xử lý 1 lần
             }
 
@@ -427,21 +504,29 @@ public class MapViewModel : INotifyPropertyChanged
 
     private void ProcessStartupPrompt(List<POI> inRange)
     {
+        _isPromptActive = true;
         _hasPromptedOnStartup = true;
         var first = inRange[0];
         foreach (var p in inRange) autoPlayedIds.Add(p.Id);
 
         MainThread.BeginInvokeOnMainThread(async () =>
         {
-            bool confirm = await Application.Current.MainPage.DisplayAlert(
-                LocalizationService.Get("autoplay_title"),
-                LocalizationService.Get("autoplay_msg", first.Name), 
-                LocalizationService.Get("start_now"), 
-                LocalizationService.Get("skip"));
-
-            if (confirm && SettingService.Instance.AutoPlay)
+            try
             {
-                await AudioPlaybackService.Instance.EnqueueRangeAsync(inRange);
+                bool confirm = await Application.Current.MainPage.DisplayAlert(
+                    LocalizationService.Get("autoplay_title"),
+                    LocalizationService.Get("autoplay_msg", first.Name), 
+                    LocalizationService.Get("start_now"), 
+                    LocalizationService.Get("skip"));
+
+                if (confirm && SettingService.Instance.AutoPlay)
+                {
+                    await AudioPlaybackService.Instance.EnqueueRangeAsync(inRange);
+                }
+            }
+            finally
+            {
+                _isPromptActive = false;
             }
         });
     }
@@ -471,7 +556,21 @@ public class MapViewModel : INotifyPropertyChanged
                         {
                             int idx = _currentTourSequence.FindIndex(x => x.Id == poi.Id);
                             if (idx != -1 && EvalJs != null)
+                            {
                                 _ = EvalJs($"updateProgress({idx + 1}, '{_currentTourPointsJson}')");
+
+                                // Cập nhật tên điểm đến kế tiếp
+                                if (idx + 1 < _currentTourSequence.Count)
+                                {
+                                    CurrentDestinationName = _currentTourSequence[idx + 1].Name ?? string.Empty;
+                                }
+                                else
+                                {
+                                    // Sắp đến điểm cuối -> đánh dấu để báo hoàn thành sau khi nghe xong
+                                    CurrentDestinationName = LocalizationService.Get("tour_completed_label");
+                                    _isLastPoiAudioPending = true;
+                                }
+                            }
                         }
 
                         System.Diagnostics.Debug.WriteLine($"[MapViewModel] Delay finished for {poi.Name}. Starting audio.");
@@ -490,7 +589,7 @@ public class MapViewModel : INotifyPropertyChanged
 
     private void ResetAutoPlayState()
     {
-        AudioPlaybackService.Instance.Stop();
+        _ = AudioPlaybackService.Instance.StopAsync();
         foreach (var cts in _pendingAutoPlay.Values) cts.Cancel();
         _pendingAutoPlay.Clear();
     }
@@ -536,7 +635,7 @@ public class MapViewModel : INotifyPropertyChanged
                     catch { /* Bỏ qua lỗi nếu WebView không active / disposed */ }
                 }
 
-                RefreshNearbyOrder();
+                UpdateOnlyDistances();
                 CheckNearbyPOI(loc.Latitude, loc.Longitude);
             }
 

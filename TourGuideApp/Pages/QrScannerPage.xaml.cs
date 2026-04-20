@@ -158,13 +158,13 @@ public partial class QrScannerPage : ContentPage
     {
         _isProcessingResult = true;
         BarcodeReader.IsScanning = false;
-        AudioPlaybackService.Instance.Stop();
+        _ = AudioPlaybackService.Instance.StopAsync();
         await Navigation.PopAsync();
     }
 
     private async void OnCloseResultClicked(object sender, EventArgs e)
     {
-        AudioPlaybackService.Instance.Stop();
+        _ = AudioPlaybackService.Instance.StopAsync();
         await HideResultCard();
         ScannedPoi = null;
         ResetScanner();
@@ -195,6 +195,6 @@ public partial class QrScannerPage : ContentPage
 
     private void OnStopAudioClicked(object sender, EventArgs e)
     {
-        AudioPlaybackService.Instance.Stop();
+        _ = AudioPlaybackService.Instance.StopAsync();
     }
 }

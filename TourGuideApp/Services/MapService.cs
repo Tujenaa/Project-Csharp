@@ -178,6 +178,7 @@ function highlightNearest(id) {
     m.setZIndexOffset(isNearest ? 500 : 100);
   });
 }
+
 // ── Routing ──────────────────────────────────────────────────────────────────
 let routeLine = null;
 let tourLegs = [];

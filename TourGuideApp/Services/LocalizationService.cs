@@ -37,7 +37,7 @@ namespace TourGuideApp.Services
                 ["not_found_title"] = "Không tìm thấy",
                 ["qr_not_recognized_msg"] = "Không có thông tin cho mã QR này.",
                 ["out_of_route_title"] = "Ngoài lộ trình tour",
-                ["out_of_route_msg"] = "Địa điểm \"{0}\" không thuộc tour hiện tại.\nBạn có muốn hủy tour và chỉ đường đến đây không?",
+                ["out_of_route_msg"] = "Bạn đang trong tour. Để chỉ đường đến địa điểm khác, bạn cần hủy tour hiện tại. Bạn có muốn tiếp tục không?",
                 ["cancel_tour_and_route"] = "Hủy tour & Chỉ đường",
                 ["keep_tour"] = "Giữ lại tour",
                 ["password_too_short"] = "Mật khẩu phải có ít nhất 6 ký tự.",
@@ -159,7 +159,12 @@ namespace TourGuideApp.Services
                 ["listen_audio"] = "Nghe audio",
                 ["distance_label"] = "Khoảng cách",
                 ["walking_time_label"] = "Thời gian đi bộ",
-                ["description_label"] = "Mô tả"
+                ["description_label"] = "Mô tả",
+                ["account_disabled"] = "Tài khoản của bạn đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.",
+                ["account_not_found"] = "Tài khoản không tồn tại.",
+                ["tour_completed_label"] = "Đã hoàn thành tour 🎉",
+                ["tour_completed_title"] = "Tour hoàn tất",
+                ["tour_completed_msg"] = "Bạn đã tham quan đầy đủ tất cả các địa điểm trong tour này. Cảm ơn bạn!"
             },
             ["en"] = new()
             {
@@ -189,7 +194,7 @@ namespace TourGuideApp.Services
                 ["not_found_title"] = "Not Found",
                 ["qr_not_recognized_msg"] = "No information available for this QR code.",
                 ["out_of_route_title"] = "Out of Route",
-                ["out_of_route_msg"] = "Location \"{0}\" is not part of the current tour.\nDo you want to cancel the tour and get directions here?",
+                ["out_of_route_msg"] = "You are currently in a tour. To get directions to another location, you need to cancel the current tour. Do you want to proceed?",
                 ["cancel_tour_and_route"] = "Cancel Tour & Get Directions",
                 ["keep_tour"] = "Keep Tour",
                 ["password_too_short"] = "Password must be at least 6 characters.",
@@ -311,7 +316,12 @@ namespace TourGuideApp.Services
                 ["listen_audio"] = "Listen to audio",
                 ["distance_label"] = "Distance",
                 ["walking_time_label"] = "Walking time",
-                ["description_label"] = "Description"
+                ["description_label"] = "Description",
+                ["account_disabled"] = "Your account has been disabled. Please contact the administrator.",
+                ["account_not_found"] = "Account not found.",
+                ["tour_completed_label"] = "Tour completed 🎉",
+                ["tour_completed_title"] = "Tour Finished",
+                ["tour_completed_msg"] = "You have visited all the locations in this tour. Thank you!"
             },
             ["ja"] = new()
             {
@@ -341,7 +351,7 @@ namespace TourGuideApp.Services
                 ["not_found_title"] = "見つかりません",
                 ["qr_not_recognized_msg"] = "このQRコードの情報はありません。",
                 ["out_of_route_title"] = "ルート外",
-                ["out_of_route_msg"] = "地点「{0}」は現在のツアーに含まれていません。ツアーをキャンセルしてここへのルートを表示しますか？",
+                ["out_of_route_msg"] = "現在ツアー中です。別の場所への案内を表示するには、現在のツアーをキャンセルする必要があります。続行しますか？",
                 ["cancel_tour_and_route"] = "ツアーキャンセル＆案内",
                 ["keep_tour"] = "ツアーを続ける",
                 ["password_too_short"] = "パスワードは6文字以上である必要があります。",
@@ -461,7 +471,12 @@ namespace TourGuideApp.Services
                 ["listen_audio"] = "オーディオを聴く",
                 ["distance_label"] = "距離",
                 ["walking_time_label"] = "徒歩時間",
-                ["description_label"] = "説明"
+                ["description_label"] = "説明",
+                ["account_disabled"] = "アカウントが無効になっています。管理者に連絡してください。",
+                ["account_not_found"] = "アカウントが見つかりません。",
+                ["tour_completed_label"] = "ツアー完了 🎉",
+                ["tour_completed_title"] = "ツアー終了",
+                ["tour_completed_msg"] = "このツアーのすべてのスポットを訪問しました。お疲れ様でした！"
             },
             ["zh"] = new()
             {
@@ -491,7 +506,7 @@ namespace TourGuideApp.Services
                 ["not_found_title"] = "未找到",
                 ["qr_not_recognized_msg"] = "暂无此二维码的信息。",
                 ["out_of_route_title"] = "偏离路线",
-                ["out_of_route_msg"] = "地点 \"{0}\" 不在当前游览路线中。\n是否取消游览并导航至此？",
+                ["out_of_route_msg"] = "您当前正在路线上。要导航到其他地点，您需要取消当前路线。是否继续？",
                 ["cancel_tour_and_route"] = "取消游览并导航",
                 ["keep_tour"] = "保留游览",
                 ["password_too_short"] = "密码必须至少为6个字符。",
@@ -611,7 +626,12 @@ namespace TourGuideApp.Services
                 ["listen_audio"] = "听取音频",
                 ["distance_label"] = "距离",
                 ["walking_time_label"] = "步行时间",
-                ["description_label"] = "描述"
+                ["description_label"] = "描述",
+                ["account_disabled"] = "您的账户已被禁用。请联系管理员。",
+                ["account_not_found"] = "账户不存在。",
+                ["tour_completed_label"] = "游览已完成 🎉",
+                ["tour_completed_title"] = "游览结束",
+                ["tour_completed_msg"] = "您已参观完此线路中的所有景点。谢谢！"
             }
         };
 

@@ -28,6 +28,7 @@ public partial class MapPage : ContentPage
         viewModel.TourSelected += OnTourSelected;
 
         viewModel.SelectRouteDestCommand = new Command<POI>(poi => _ = OnRouteDestSelectedWithTourCheckAsync(poi));
+        viewModel.ShowPOIOnMapCommand = new Command<POI>(poi => ShowDetailCard(poi));
 
         AudioPlaybackService.Instance.PlaybackStateChanged += OnPlaybackStateChanged;
     }
@@ -169,29 +170,31 @@ public partial class MapPage : ContentPage
         MainThread.BeginInvokeOnMainThread(() => UpdateTourChipHighlight(tour));
     }
 
-    void UpdateTourChipHighlight(Tour? selectedTour)
+    private void UpdateTourChipHighlight(Tour? selectedTour)
     {
-        // Reset chip "Tất cả"
-        chipAll.BackgroundColor = selectedTour == null
-            ? Color.FromArgb("#512BD4")
-            : Color.FromArgb("#F4F2FB");
-
-        if (chipAll.Content is Label chipAllLabel)
-            chipAllLabel.TextColor = selectedTour == null
-                ? Colors.White
-                : Color.FromArgb("#512BD4");
-
-        chipAll.Stroke = selectedTour == null ? Colors.Transparent : Color.FromArgb("#DDD6F3");
-
+        // Highlight nút "Tất cả" nếu tour == null
+        UpdateChipHighlight(chipAll, selectedTour == null);
+        
         // Highlight tour chip con tương ứng trong BindableLayout
         foreach (var child in tourChipsContainer.Children)
         {
-            if (child is not Border chip) continue;
-            var isActive = chip.BindingContext is Tour t && selectedTour != null && t.Id == selectedTour.Id;
-            chip.BackgroundColor = isActive ? Color.FromArgb("#512BD4") : Color.FromArgb("#F4F2FB");
-            chip.Stroke = isActive ? Colors.Transparent : Color.FromArgb("#DDD6F3");
-            if (chip.Content is Label lbl)
-                lbl.TextColor = isActive ? Colors.White : Color.FromArgb("#512BD4");
+            if (child is Border b)
+            {
+                bool isSelected = (b.BindingContext is Tour t && selectedTour != null && t.Id == selectedTour.Id);
+                UpdateChipHighlight(b, isSelected);
+            }
+        }
+    }
+
+    private void UpdateChipHighlight(Border border, bool isSelected)
+    {
+        border.BackgroundColor = isSelected ? Color.FromArgb("#512BD4") : Color.FromArgb("#F4F2FB");
+        border.Stroke = isSelected ? Colors.Transparent : Color.FromArgb("#DDD6F3");
+        
+        if (border.Content is Label lbl)
+        {
+            lbl.TextColor = isSelected ? Colors.White : Color.FromArgb("#512BD4");
+            lbl.FontAttributes = isSelected ? FontAttributes.Bold : FontAttributes.None;
         }
     }
 
@@ -232,15 +235,11 @@ public partial class MapPage : ContentPage
         if (query.Length == 0)
         {
             searchResultList.IsVisible = false;
-            lblOrPickList.IsVisible = true;
-            fullPoiList.IsVisible = true;
             return;
         }
         var results = viewModel.SearchPOI(query);
         searchResultList.ItemsSource = results;
         searchResultList.IsVisible = results.Count > 0;
-        lblOrPickList.IsVisible = false;
-        fullPoiList.IsVisible = false;
     }
 
     private void OnClearSearchTapped(object sender, EventArgs e)
@@ -248,8 +247,6 @@ public partial class MapPage : ContentPage
         searchEntry.Text = "";
         searchResultList.IsVisible = false;
         btnClearSearch.IsVisible = false;
-        lblOrPickList.IsVisible = true;
-        fullPoiList.IsVisible = true;
     }
 
     // ── Route dest ────────────────────────────────────────────────────────────
@@ -262,16 +259,15 @@ public partial class MapPage : ContentPage
     {
         if (poi == null) return;
 
-        if (viewModel.IsTourActive)
+        if (viewModel.IsTourActive && viewModel.CurrentTour != null)
         {
-            // Kiểm tra POI có trong danh sách tour hiện tại hay không
-            bool poiInTour = viewModel.NearbyPOI.Any(p => p.Id == poi.Id);
+            // Kiểm tra POI có trong danh sách tour ĐANG THỰC HIỆN hay không
+            bool poiInTour = viewModel.CurrentTour.POIs?.Any(p => p.Id == poi.Id) ?? false;
             if (poiInTour)
             {
                 // Reroute thông minh: Ưu tiên điểm vừa chọn nhưng vẫn giữ tour
                 await viewModel.RerouteTourToPOI(poi);
-                lblRouteDestination.Text = poi.Name;
-                lblRouteDestination.TextColor = Color.FromArgb("#1A1035");
+                viewModel.CurrentDestinationName = poi.Name;
                 btnClearRoute.IsVisible = true;
                 CloseSearchPanel();
                 ShowDetailCard(poi);
@@ -282,7 +278,7 @@ public partial class MapPage : ContentPage
                 // Điểm nằm ngoài tour -> Hỏi ý kiến người dùng
                 bool confirm = await DisplayAlert(
                     LocalizationService.Get("out_of_route_title"),
-                    LocalizationService.Get("out_of_route_msg", poi.Name),
+                    LocalizationService.Get("out_of_route_msg"),
                     LocalizationService.Get("cancel_tour_and_route"),
                     LocalizationService.Get("keep_tour"));
 
@@ -300,8 +296,7 @@ public partial class MapPage : ContentPage
     async Task OnRouteDestSelectedAsync(POI poi)
     {
         if (poi == null) return;
-        lblRouteDestination.Text = poi.Name;
-        lblRouteDestination.TextColor = Color.FromArgb("#1A1035");
+        viewModel.CurrentDestinationName = poi.Name;
         btnClearRoute.IsVisible = true;
         CloseSearchPanel();
 
@@ -340,8 +335,7 @@ public partial class MapPage : ContentPage
 
     private async void OnClearRouteTapped(object sender, EventArgs e)
     {
-        lblRouteDestination.Text = LocalizationService.Get("select_destination");
-        lblRouteDestination.TextColor = Color.FromArgb("#94A3B8");
+        viewModel.CurrentDestinationName = string.Empty;
         btnClearRoute.IsVisible = false;
         currentRoutePoi = null;  // Xóa route → reset về nearest
         if (viewModel.EvalJs != null)
@@ -378,7 +372,7 @@ public partial class MapPage : ContentPage
             var latStr = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var lonStr = lon.ToString(System.Globalization.CultureInfo.InvariantCulture);
             await mapWebView.EvaluateJavaScriptAsync($"setUserLocation({latStr},{lonStr}); flyTo({latStr},{lonStr},15);");
-            viewModel.RefreshDistances();
+            viewModel.RefreshNearbyOrder();
         }
         catch (Exception ex)
         {
@@ -467,6 +461,7 @@ public partial class MapPage : ContentPage
                 ? LocalizationService.Get("locations_nearby_format", count)
                 : LocalizationService.Get("no_locations_found");
     }
+
 
     void OnPOIUpdated()
     {

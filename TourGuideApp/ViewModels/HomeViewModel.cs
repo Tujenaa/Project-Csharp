@@ -81,7 +81,7 @@ public class HomeViewModel : INotifyPropertyChanged
 
         StopAudioCommand = new Command(() =>
         {
-            AudioPlaybackService.Instance.Stop();
+            _ = AudioPlaybackService.Instance.StopAsync();
         });
 
         GoToTourMapCommand = new Command<Tour>(async (tour) =>

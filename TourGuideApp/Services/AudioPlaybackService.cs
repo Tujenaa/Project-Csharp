@@ -35,6 +35,7 @@ public class AudioPlaybackService
     private readonly Stopwatch _listenStopwatch = new();
     private const double HistoryThresholdSeconds = 5.0;
     private const int PauseTimeoutSeconds = 60;
+    private const int QueueGapSeconds = 3;
     private bool _listenThresholdReached = false;
     private bool _historyRecorded = false;
     private readonly System.Timers.Timer _uiTimer;
@@ -51,6 +52,12 @@ public class AudioPlaybackService
 
     public event Action? PlaybackStateChanged;
     public event Action<int>? ListenSecondsChanged;
+    
+    /// <summary>
+    /// Delegate dùng để kiểm tra xem một POI có còn nằm trong bán kính cho phép phát tiếp hay không.
+    /// Trả về true nếu hợp lệ, false nếu cần skip.
+    /// </summary>
+    public Func<POI, bool>? LocationValidator { get; set; }
 
     private AudioPlaybackService()
     {
@@ -76,6 +83,12 @@ public class AudioPlaybackService
         await ProcessQueueAsync();
     }
 
+    public void ClearQueue()
+    {
+        _playQueue.Clear();
+        Debug.WriteLine("[AudioService] Play queue cleared.");
+    }
+
     public async Task EnqueueAsync(POI poi, bool isAutoPlay = true)
     {
         _playQueue.Enqueue((poi, isAutoPlay));
@@ -94,10 +107,31 @@ public class AudioPlaybackService
                 if (IsPlaying) break;
 
                 var next = _playQueue.Dequeue();
+
+                // Kiểm tra điều kiện vị trí nếu là AutoPlay
+                if (next.IsAutoPlay && LocationValidator != null && !LocationValidator(next.Poi))
+                {
+                    Debug.WriteLine($"[AudioService] Skipping '{next.Poi.Name}' - no longer in range.");
+                    continue;
+                }
+
                 await PlayAsync(next.Poi, next.IsAutoPlay);
 
                 while (IsPlaying)
                     await Task.Delay(500);
+
+                // Điểm tiếp theo trong hàng đợi
+                if (_playQueue.Count > 0)
+                {
+                    var nextPoi = _playQueue.Peek().Poi;
+                    
+                    // 1. Bắt đầu tải dữ liệu cho điểm tiếp theo NGAY LẬP TỨC (chạy ngầm)
+                    _ = SyncPoiDataAsync(nextPoi);
+
+                    // 2. Chờ khoảng nghỉ 3 giây song song với việc tải dữ liệu
+                    Debug.WriteLine($"[AudioService] Waiting {QueueGapSeconds}s before next POI: {nextPoi.Name}...");
+                    await Task.Delay(TimeSpan.FromSeconds(QueueGapSeconds));
+                }
             }
         }
         finally
@@ -124,7 +158,6 @@ public class AudioPlaybackService
             await StartSpeakingAsync(poi);
             return;
         }
-
         // ── PLAY MỚI hoặc đổi ngôn ngữ ──────────────────────────────────────
         await StopAsync();
 
@@ -137,13 +170,8 @@ public class AudioPlaybackService
         // Xóa thông báo cũ
         SetNoScriptMessage(null);
 
-        // --- ĐỒNG BỘ DỮ LIỆU TỪ API ---
-        if (ConnectivityService.IsConnected)
-        {
-            var freshPoi = await _apiService.GetPOIById(poi.Id);
-            if (freshPoi != null)
-                poi.Audios = freshPoi.Audios;
-        }
+        // --- ĐỒNG BỘ DỮ LIỆU TỪ API (Chỉ thực hiện nếu chưa được SyncPoiDataAsync tải trước) ---
+        await SyncPoiDataAsync(poi);
 
         string finalText = LanguageUtils.GetScript(poi, currentLang);
 
@@ -182,6 +210,25 @@ public class AudioPlaybackService
     ///   "Không có dữ liệu thuyết minh cho địa điểm này.
     ///    この地点の解説データはありません。"
     /// </summary>
+    public async Task SyncPoiDataAsync(POI poi)
+    {
+        if (poi == null) return;
+        
+        if (ConnectivityService.IsConnected)
+        {
+            try
+            {
+                var freshPoi = await _apiService.GetPOIById(poi.Id);
+                if (freshPoi != null)
+                    poi.Audios = freshPoi.Audios;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AudioService] SyncPoiDataAsync failed: {ex.Message}");
+            }
+        }
+    }
+
     private static string BuildNoScriptMessage(string lang)
     {
         return LocalizationService.Get("no_script_available");
@@ -231,6 +278,8 @@ public class AudioPlaybackService
         _pauseTimeoutCts?.Cancel();
         _pauseTimeoutCts = null;
 
+        ClearQueue();
+
         if (CurrentPlayingPoi != null && !_historyRecorded && ListenSeconds > 0)
         {
             _historyRecorded = true;
@@ -264,7 +313,6 @@ public class AudioPlaybackService
         PlaybackStateChanged?.Invoke();
     }
 
-    public void Stop() => _ = StopAsync();
 
     private async Task StartSpeakingAsync(POI poi)
     {

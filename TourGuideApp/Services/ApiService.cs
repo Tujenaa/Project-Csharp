@@ -209,17 +209,35 @@ public class ApiService
 
     // ── Auth ─────────────────────────────────────────────────────────────────
 
-    public async Task<UserDto?> Login(string username, string password)
+    public async Task<(UserDto? User, string? ErrorMessage)> Login(string username, string password)
     {
-        var response = await client.PostAsJsonAsync(
-            $"{ApiConfig.BaseUrl}users/login",
-            new { Username = username, Password = password });
+        try
+        {
+            var response = await client.PostAsJsonAsync(
+                $"{ApiConfig.BaseUrl}users/login",
+                new { Username = username, Password = password });
 
-        if (!response.IsSuccessStatusCode) return null;
+            if (response.IsSuccessStatusCode)
+            {
+                var user = await response.Content.ReadFromJsonAsync<UserDto>();
+                if (user != null) SessionService.CurrentUser = user;
+                return (user, null);
+            }
 
-        var user = await response.Content.ReadFromJsonAsync<UserDto>();
-        if (user != null) SessionService.CurrentUser = user;
-        return user;
+            if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                return (null, "account_disabled");
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return (null, "account_not_found");
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                return (null, "login_failed_msg");
+
+            var error = await response.Content.ReadAsStringAsync();
+            return (null, error);
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
     }
 
     public async Task<UserDto?> Register(string username, string name, string email, string password)

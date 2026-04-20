@@ -310,4 +310,4 @@ VALUES
 
 -- Cập nhật Tours sang PUBLISHED
 UPDATE Tours SET Status = 'PUBLISHED' WHERE Status = 'DRAFT';
-
+ALTER TABLE Users ADD IsActive BIT NOT NULL DEFAULT 1;

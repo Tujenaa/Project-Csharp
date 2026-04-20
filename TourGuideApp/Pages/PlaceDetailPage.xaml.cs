@@ -107,7 +107,7 @@ public partial class PlaceDetailPage : ContentPage
 
     private void OnStopTapped(object sender, EventArgs e)
     {
-        AudioPlaybackService.Instance.Stop();
+        _ = AudioPlaybackService.Instance.StopAsync();
     }
 
     private async void OnPlayTapped(object sender, EventArgs e)
@@ -120,10 +120,9 @@ public partial class PlaceDetailPage : ContentPage
     // Logic đã chuyển sang AudioPlaybackService
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-
     void StopPlayback()
     {
-        AudioPlaybackService.Instance.Stop();
+        _ = AudioPlaybackService.Instance.StopAsync();
     }
 
     void UpdateUI(bool playing)

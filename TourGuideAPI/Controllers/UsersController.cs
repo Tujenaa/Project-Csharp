@@ -37,15 +37,6 @@ namespace TourGuideAPI.Controllers
         {
             if (!string.IsNullOrWhiteSpace(user.PasswordHash))
                 user.PasswordHash = BC.HashPassword(user.PasswordHash);
-<<<<<<< HEAD
-            }
-            else
-            {
-                // Mặc định nếu không có pass (hiếm gặp)
-                user.PasswordHash = BC.HashPassword("123456");
-            }
-=======
->>>>>>> 52f2df7be72fb6846287e62b7cc53e9a7cf3cfe7
 
             user.IsActive = true; // Tài khoản mới luôn active
             _context.Users.Add(user);
@@ -61,12 +52,7 @@ namespace TourGuideAPI.Controllers
 
             existing.Username = user.Username;
 
-<<<<<<< HEAD
-            // Chỉ băm và cập nhật nếu password gửi lên khác với password hiện tại (đã băm)
-            // Điều này ngăn chặn việc băm đè mã hash cũ khi Web gửi ngược lại hash.
-=======
             // Chỉ hash nếu PasswordHash được gửi lên khác với hash hiện tại và không phải là một chuỗi rỗng
->>>>>>> 52f2df7be72fb6846287e62b7cc53e9a7cf3cfe7
             if (!string.IsNullOrWhiteSpace(user.PasswordHash) && user.PasswordHash != existing.PasswordHash)
             {
                 // Kiểm tra xem có vẻ là hash BCrypt chưa (thường bắt đầu bằng $2)
@@ -110,18 +96,13 @@ namespace TourGuideAPI.Controllers
             if (user == null)
                 return NotFound("Tài khoản không tồn tại");
 
-<<<<<<< HEAD
+            // 2. Kiểm tra mật khẩu
             if (string.IsNullOrWhiteSpace(req.Password) || !BC.Verify(req.Password, user.PasswordHash))
-                return Unauthorized("Sai mật khẩu");
-=======
-            // 2. Tài khoản bị vô hiệu hoá - Kiểm tra trước mật khẩu theo yêu cầu của bạn
+                return Unauthorized("Mật khẩu không đúng");
+
+            // 3. Kiểm tra trạng thái hoạt động
             if (!user.IsActive)
                 return StatusCode(403, "Tài khoản của bạn đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.");
-
-            // 3. Kiểm tra mật khẩu
-            if (!BC.Verify(req.Password, user.PasswordHash))
-                return Unauthorized("Mật khẩu không đúng");
->>>>>>> 52f2df7be72fb6846287e62b7cc53e9a7cf3cfe7
 
             return Ok(new
             {
@@ -180,12 +161,7 @@ namespace TourGuideAPI.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound("Người dùng không tồn tại");
 
-<<<<<<< HEAD
-            // Kiểm tra mật khẩu cũ bằng BCrypt
-            if (string.IsNullOrWhiteSpace(req.OldPassword) || !BC.Verify(req.OldPassword, user.PasswordHash))
-=======
             if (!BC.Verify(req.OldPassword, user.PasswordHash))
->>>>>>> 52f2df7be72fb6846287e62b7cc53e9a7cf3cfe7
                 return BadRequest("Mật khẩu cũ không chính xác");
 
             if (string.IsNullOrWhiteSpace(req.NewPassword))

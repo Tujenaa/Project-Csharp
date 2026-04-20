@@ -45,7 +45,6 @@ public class UsersModel : PageModel
         {
             existing.Username,
             PasswordHash = (string?)null, // Không thay đổi password khi đổi role
-            // existing.PasswordHash, // Bỏ mật khẩu ra khỏi payload cập nhật để tránh hỏng dữ liệu
             Role = NewRole,
             existing.Name,
             existing.Email,
