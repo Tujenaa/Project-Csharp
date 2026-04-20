@@ -196,6 +196,33 @@ public class LocalDbService
         }).Where(p => p.IsReady).ToList();
     }
 
+    /// <summary>Lấy một POI từ local DB theo ID.</summary>
+    public async Task<POI?> GetPOIByIdAsync(int id)
+    {
+        await InitAsync();
+        var c = await _db!.Table<CachedPOI>().Where(x => x.Id == id).FirstOrDefaultAsync();
+        if (c == null) return null;
+
+        return new POI
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Description,
+            Address = c.Address,
+            Phone = c.Phone,
+            Latitude = c.Latitude,
+            Longitude = c.Longitude,
+            Radius = c.Radius,
+            Audios = string.IsNullOrEmpty(c.AudiosJson)
+                ? new List<Audio>()
+                : JsonSerializer.Deserialize<List<Audio>>(c.AudiosJson, _caseInsensitive) ?? new List<Audio>(),
+            Images = string.IsNullOrEmpty(c.ImagesJson)
+                ? new List<string>()
+                : JsonSerializer.Deserialize<List<string>>(c.ImagesJson, _caseInsensitive) ?? new List<string>(),
+            Status = c.Status
+        };
+    }
+
     // ── Tour Cache ────────────────────────────────────────────────────────────
 
     public async Task SaveToursAsync(List<Tour> tours)

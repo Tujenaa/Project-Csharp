@@ -443,16 +443,6 @@
                                             <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold"
                                                    TextColor="#1A1035" LineBreakMode="TailTruncation"
                                                    VerticalOptions="Center"/>
-                                            
-                                            <!-- Badge TOUR nhỏ -->
-                                            <Border BackgroundColor="#512BD4" StrokeThickness="0"
-                                                    Padding="4,1" VerticalOptions="Center"
-                                                    IsVisible="{Binding IsInAnyTour}">
-                                                <Border.StrokeShape>
-                                                    <RoundRectangle CornerRadius="4"/>
-                                                </Border.StrokeShape>
-                                                <Label Text="TOUR" FontSize="9" FontAttributes="Bold" TextColor="White"/>
-                                            </Border>
                                         </HorizontalStackLayout>
                                         <Label Text="{Binding DistanceText}" FontSize="12" TextColor="#64748B"/>
                                     </VerticalStackLayout>

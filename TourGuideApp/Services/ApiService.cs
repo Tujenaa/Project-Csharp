@@ -83,7 +83,10 @@ public class ApiService
                 System.Diagnostics.Debug.WriteLine($"[API] GetPOIById failed: {ex.Message}");
             }
         }
-        return null;
+
+        // FALLBACK: Lấy dữ liệu từ SQLite nếu Offline hoặc API lỗi
+        System.Diagnostics.Debug.WriteLine($"[API] GetPOIById({id}) → fallback to local cache");
+        return await LocalDbService.Instance.GetPOIByIdAsync(id);
     }
 
     /// <summary>Top POI — offline fallback lấy 5 POI đầu trong cache.</summary>

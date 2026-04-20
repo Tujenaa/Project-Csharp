@@ -42,8 +42,9 @@ public class AudioPlaybackService
     private CancellationTokenSource? _pauseTimeoutCts;
 
     // ── Hàng đợi phát tuần tự ────────────────────────────────────────────────
-    private readonly Queue<(POI Poi, bool IsAutoPlay)> _playQueue = new();
-    private bool _isProcessingQueue = false;
+    private readonly List<(POI Poi, bool IsAutoPlay)> _playQueue = new();
+    private readonly SemaphoreSlim _queueLock = new(1, 1);
+    private bool _isManualInterrupt = false;
 
     public POI? CurrentPlayingPoi { get; private set; }
     public bool IsPlaying { get; private set; }
@@ -77,36 +78,55 @@ public class AudioPlaybackService
 
     public async Task EnqueueRangeAsync(IEnumerable<POI> pois, bool isAutoPlay = true)
     {
-        foreach (var poi in pois)
-            _playQueue.Enqueue((poi, isAutoPlay));
+        lock (_playQueue)
+        {
+            foreach (var poi in pois)
+                _playQueue.Add((poi, isAutoPlay));
+        }
 
         await ProcessQueueAsync();
     }
 
     public void ClearQueue()
     {
-        _playQueue.Clear();
+        lock (_playQueue)
+        {
+            _playQueue.Clear();
+        }
         Debug.WriteLine("[AudioService] Play queue cleared.");
     }
 
     public async Task EnqueueAsync(POI poi, bool isAutoPlay = true)
     {
-        _playQueue.Enqueue((poi, isAutoPlay));
+        lock (_playQueue)
+        {
+            _playQueue.Add((poi, isAutoPlay));
+        }
         await ProcessQueueAsync();
     }
 
     private async Task ProcessQueueAsync()
     {
-        if (_isProcessingQueue) return;
-        _isProcessingQueue = true;
+        // Giai đoạn 1: Khắc phục Race Condition bằng SemaphoreSlim
+        if (!await _queueLock.WaitAsync(0)) return;
 
         try
         {
-            while (_playQueue.Count > 0)
+            while (true)
             {
-                if (IsPlaying) break;
+                (POI Poi, bool IsAutoPlay) next;
+                lock (_playQueue)
+                {
+                    if (_playQueue.Count == 0) break;
+                    next = _playQueue[0];
+                    _playQueue.RemoveAt(0);
+                }
 
-                var next = _playQueue.Dequeue();
+                // Giai đoạn 3: Chờ nếu đang phát (bao gồm cả phát thủ công ngắt quãng)
+                while (IsPlaying)
+                {
+                    await Task.Delay(500);
+                }
 
                 // Kiểm tra điều kiện vị trí nếu là AutoPlay
                 if (next.IsAutoPlay && LocationValidator != null && !LocationValidator(next.Poi))
@@ -115,36 +135,77 @@ public class AudioPlaybackService
                     continue;
                 }
 
-                await PlayAsync(next.Poi, next.IsAutoPlay);
+                await PlayAsync(next.Poi, next.IsAutoPlay, isInternal: true);
 
+                // Chờ cho đến khi âm thanh hiện tại kết thúc (có thể là điểm hiện tại hoặc điểm chen ngang thủ công)
                 while (IsPlaying)
                     await Task.Delay(500);
 
-                // Điểm tiếp theo trong hàng đợi
-                if (_playQueue.Count > 0)
+                // Điểm tiếp theo trong hàng đợi (nếu có)
+                POI? nextInQueue = null;
+                lock (_playQueue)
                 {
-                    var nextPoi = _playQueue.Peek().Poi;
-                    
-                    // 1. Bắt đầu tải dữ liệu cho điểm tiếp theo NGAY LẬP TỨC (chạy ngầm)
-                    _ = SyncPoiDataAsync(nextPoi);
+                    if (_playQueue.Count > 0) nextInQueue = _playQueue[0].Poi;
+                }
 
-                    // 2. Chờ khoảng nghỉ 3 giây song song với việc tải dữ liệu
-                    Debug.WriteLine($"[AudioService] Waiting {QueueGapSeconds}s before next POI: {nextPoi.Name}...");
+                // Giai đoạn 4: Xử lý sau khi bị ngắt quãng thủ công
+                if (_isManualInterrupt)
+                {
+                    _isManualInterrupt = false;
+
+                    if (nextInQueue != null)
+                    {
+                        bool continueQueue = await MainThread.InvokeOnMainThreadAsync(async () =>
+                        {
+                            if (Application.Current?.MainPage == null) return true;
+                            return await Application.Current.MainPage.DisplayAlert(
+                                LocalizationService.Get("notification"),
+                                LocalizationService.Get("continue_journey_prompt", nextInQueue.Name),
+                                LocalizationService.Get("continue"),
+                                LocalizationService.Get("stop"));
+                        });
+
+                        if (!continueQueue)
+                        {
+                            ClearQueue();
+                            break;
+                        }
+                    }
+                }
+
+                if (nextInQueue != null)
+                {
+                    // 1. Tải dữ liệu cho điểm tiếp theo song song
+                    _ = SyncPoiDataAsync(nextInQueue);
+
+                    // 2. Chờ khoảng nghỉ 3 giây
+                    Debug.WriteLine($"[AudioService] Waiting {QueueGapSeconds}s before next POI: {nextInQueue.Name}...");
                     await Task.Delay(TimeSpan.FromSeconds(QueueGapSeconds));
                 }
             }
         }
         finally
         {
-            _isProcessingQueue = false;
+            _queueLock.Release();
         }
     }
 
-    public async Task PlayAsync(POI poi, bool isAutoPlay = false)
+    public async Task PlayAsync(POI poi, bool isAutoPlay = false, bool isInternal = false)
     {
         if (poi == null) return;
 
         _pauseTimeoutCts?.Cancel();
+
+        // Xử lý ưu tiên điểm thủ công: Nếu đang trong hàng đợi xử lý mà user bấm Play thủ công
+        if (!isInternal)
+        {
+            _isManualInterrupt = true;
+            // Xóa POI này khỏi hàng đợi nếu nó đang nằm chờ (để tránh phát lặp lại)
+            lock (_playQueue)
+            {
+                _playQueue.RemoveAll(x => x.Poi.Id == poi.Id);
+            }
+        }
 
         if (CurrentPlayingPoi?.Id == poi.Id && IsPlaying) return;
 
@@ -159,7 +220,7 @@ public class AudioPlaybackService
             return;
         }
         // ── PLAY MỚI hoặc đổi ngôn ngữ ──────────────────────────────────────
-        await StopAsync();
+        await StopAsync(clearQueue: !isInternal);
 
         CurrentPlayingPoi = poi;
         IsCurrentPlayAuto = isAutoPlay;
@@ -273,12 +334,13 @@ public class AudioPlaybackService
         StartPauseTimeout();
     }
 
-    public async Task StopAsync()
+    public async Task StopAsync(bool clearQueue = true)
     {
         _pauseTimeoutCts?.Cancel();
         _pauseTimeoutCts = null;
 
-        ClearQueue();
+        if (clearQueue)
+            ClearQueue();
 
         if (CurrentPlayingPoi != null && !_historyRecorded && ListenSeconds > 0)
         {

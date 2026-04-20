@@ -55,8 +55,11 @@ public class MapViewModel : INotifyPropertyChanged
     double? userLat;
     double? userLon;
     double? userCourse; // Lần cập nhật hướng di chuyển gần nhất
-
-    readonly HashSet<int> autoPlayedIds = new();
+ 
+    private readonly Dictionary<int, DateTime> _poiCooldowns = new();
+    private const int AutoPlayCooldownMinutes = 5;
+    private readonly HashSet<int> _promptedCooldownPoiIds = new();
+ 
     private bool _isLastPoiAudioPending = false;
     private bool _hasPromptedOnStartup = false;
     private bool _isPromptActive = false;
@@ -230,6 +233,12 @@ public class MapViewModel : INotifyPropertyChanged
 
     private void OnPlaybackStateChanged()
     {
+        // Cập nhật Cooldown khi bắt đầu phát một POI mới
+        if (AudioPlaybackService.Instance.IsPlaying && AudioPlaybackService.Instance.CurrentPlayingPoi != null)
+        {
+            _poiCooldowns[AudioPlaybackService.Instance.CurrentPlayingPoi.Id] = DateTime.Now;
+        }
+
         if (!AudioPlaybackService.Instance.IsPlaying && _isLastPoiAudioPending)
         {
             _isLastPoiAudioPending = false;
@@ -450,24 +459,43 @@ public class MapViewModel : INotifyPropertyChanged
         {
             double dist = DistanceUtils.GetDistance(lat, lon, poi.Latitude, poi.Longitude);
             
-            // Xóa ID khỏi danh sách đã phát nếu người dùng đã đi xa khỏi bán kính (để có thể phát lại khi quay lại)
-            if (dist > poi.Radius * 2 && autoPlayedIds.Contains(poi.Id))
-                autoPlayedIds.Remove(poi.Id);
+            // Xóa đánh dấu đã hỏi "nghe lại" nếu đi xa ra khỏi POI
+            if (dist > poi.Radius * 2 && _promptedCooldownPoiIds.Contains(poi.Id))
+            {
+                _promptedCooldownPoiIds.Remove(poi.Id);
+            }
+
+            // Logic Cooldown: Kiểm tra xem POI đã được phát trong vòng X phút chưa
+            bool isCoolingDown = false;
+            if (_poiCooldowns.TryGetValue(poi.Id, out var lastPlayed))
+            {
+                if (DateTime.Now - lastPlayed < TimeSpan.FromMinutes(AutoPlayCooldownMinutes))
+                {
+                    isCoolingDown = true;
+                }
+            }
+
+            double angleDiff = 0;
+            if (userCourse.HasValue)
+            {
+                double bearing = DistanceUtils.GetBearing(lat, lon, poi.Latitude, poi.Longitude);
+                angleDiff = DistanceUtils.GetAngleDifference(userCourse.Value, bearing);
+            }
 
             if (dist < poi.Radius)
             {
-                if (!autoPlayedIds.Contains(poi.Id) && !_pendingAutoPlay.ContainsKey(poi.Id))
+                if (!isCoolingDown)
                 {
-                    double angleDiff = 0;
-                    if (userCourse.HasValue)
-                    {
-                        double bearing = DistanceUtils.GetBearing(lat, lon, poi.Latitude, poi.Longitude);
-                        angleDiff = DistanceUtils.GetAngleDifference(userCourse.Value, bearing);
-                        
-                        // Chỉ tự động phát nếu POI nằm trong góc quan sát phía trước mặt (45 độ mỗi bên)
-                        if (angleDiff > 45) continue;
-                    }
-                    candidates.Add((poi, angleDiff));
+                    // Chỉ tự động phát nếu POI nằm trong góc quan sát phía trước mặt (45 độ mỗi bên)
+                    if (userCourse.HasValue && angleDiff > 45) continue;
+
+                    if (!_pendingAutoPlay.ContainsKey(poi.Id))
+                        candidates.Add((poi, angleDiff));
+                }
+                else if (!_promptedCooldownPoiIds.Contains(poi.Id) && !_isPromptActive)
+                {
+                    // Trường hợp trong cooldown: Hỏi người dùng có muốn nghe lại không
+                    ProcessCooldownPrompt(poi);
                 }
             }
             else
@@ -507,7 +535,10 @@ public class MapViewModel : INotifyPropertyChanged
         _isPromptActive = true;
         _hasPromptedOnStartup = true;
         var first = inRange[0];
-        foreach (var p in inRange) autoPlayedIds.Add(p.Id);
+        
+        // Đánh dấu cooldown cho toàn bộ các điểm trong vùng để không nhắc lại ngay
+        foreach (var p in inRange) 
+            _poiCooldowns[p.Id] = DateTime.Now;
 
         MainThread.BeginInvokeOnMainThread(async () =>
         {
@@ -546,7 +577,7 @@ public class MapViewModel : INotifyPropertyChanged
 
                 if (!token.IsCancellationRequested)
                 {
-                    autoPlayedIds.Add(poi.Id);
+                    _poiCooldowns[poi.Id] = DateTime.Now;
                     _pendingAutoPlay.Remove(poi.Id);
 
                     MainThread.BeginInvokeOnMainThread(async () =>
@@ -592,6 +623,34 @@ public class MapViewModel : INotifyPropertyChanged
         _ = AudioPlaybackService.Instance.StopAsync();
         foreach (var cts in _pendingAutoPlay.Values) cts.Cancel();
         _pendingAutoPlay.Clear();
+        _promptedCooldownPoiIds.Clear();
+    }
+
+    private void ProcessCooldownPrompt(POI poi)
+    {
+        _isPromptActive = true;
+        _promptedCooldownPoiIds.Add(poi.Id);
+
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try
+            {
+                bool confirm = await Application.Current.MainPage.DisplayAlert(
+                    LocalizationService.Get("re_listen_title"),
+                    LocalizationService.Get("re_listen_msg", poi.Name),
+                    LocalizationService.Get("re_listen_confirm"),
+                    LocalizationService.Get("skip"));
+
+                if (confirm)
+                {
+                    await AudioPlaybackService.Instance.EnqueueAsync(poi);
+                }
+            }
+            finally
+            {
+                _isPromptActive = false;
+            }
+        });
     }
 
     // ── Location tracking ─────────────────────────────────────────────────────
