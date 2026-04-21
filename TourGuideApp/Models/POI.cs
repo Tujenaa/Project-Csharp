@@ -18,7 +18,8 @@ public class POI : INotifyPropertyChanged
 
     public bool IsApproved => Status == "APPROVED";
     public bool IsReady => IsApproved && Audios != null && Audios.Count > 0;
-    public bool IsApprovedInTour => IsReady && (string.IsNullOrEmpty(TourRelationshipStatus) || TourRelationshipStatus == "APPROVED");
+    public bool HasAudio => Audios != null && Audios.Count > 0;
+    public bool IsApprovedInTour => IsApproved && (string.IsNullOrEmpty(TourRelationshipStatus) || TourRelationshipStatus == "APPROVED");
 
     
     public List<Audio> Audios { get; set; } = new();

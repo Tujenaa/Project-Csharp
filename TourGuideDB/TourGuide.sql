@@ -140,6 +140,18 @@ CREATE TABLE TourPOI (
 
     CONSTRAINT UQ_TourPOI UNIQUE (TourId, PoiId)
 );
+-- ========================
+-- USER ACTIVITIES 
+-- ========================
+CREATE TABLE UserActivities (
+    Id INT PRIMARY KEY IDENTITY(1,1),
+    UserId INT NULL,
+    Username NVARCHAR(255) NOT NULL,
+    Role NVARCHAR(50) NOT NULL,
+    ActivityType NVARCHAR(50) NOT NULL,
+    Details NVARCHAR(MAX) NOT NULL,
+    Timestamp DATETIME DEFAULT GETDATE()
+);
 
 -- ================================================
 -- DỮ LIỆU MẪU

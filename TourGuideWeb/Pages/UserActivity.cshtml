@@ -1,0 +1,264 @@
+@page
+@model GPSGuide.Web.Pages.UserActivityModel
+@{
+    ViewData["Title"] = "Hoạt động người dùng";
+    ViewData["Active"] = "user-activity";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/user-activity.css" asp-append-version="true" />
+}
+
+@if (!string.IsNullOrEmpty(Model.Msg))
+{
+    <div class="alert-activity">
+        <span><i class="bi bi-info-circle me-2"></i>@Model.Msg</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- Stat Cards -->
+<div class="stat-grid">
+    <div class="stat-card blue">
+        <div>
+            <div class="stat-label">Thiết bị online</div>
+            <div class="stat-value">@Model.TotalDevices</div>
+            <div class="stat-trend trend-blue"><i class="bi bi-broadcast"></i> live-now</div>
+        </div>
+        <div class="stat-icon-wrap icon-blue"><i class="bi bi-phone"></i></div>
+    </div>
+    <div class="stat-card cyan">
+        <div>
+            <div class="stat-label">Người dùng trực tuyến</div>
+            <div class="stat-value">@Model.ActiveUsers</div>
+            <div class="stat-trend trend-cyan">
+                <i class="bi bi-person-badge"></i> @Model.ActiveRegistered TV | 
+                <i class="bi bi-person-circle"></i> @Model.ActiveGuests Khách
+            </div>
+        </div>
+        <div class="stat-icon-wrap icon-cyan"><i class="bi bi-people"></i></div>
+    </div>
+    <div class="stat-card green">
+        <div>
+            <div class="stat-label">Tổng bản ghi</div>
+            <div class="stat-value">@Model.Activities.Count</div>
+            <div class="stat-trend trend-green"><i class="bi bi-database"></i> hoạt động lưu trữ</div>
+        </div>
+        <div class="stat-icon-wrap icon-green"><i class="bi bi-activity"></i></div>
+    </div>
+    <div class="stat-card orange">
+        <div>
+            <div class="stat-label">Lượt nghe hôm nay</div>
+            <div class="stat-value">@Model.TodayListens</div>
+            <div class="stat-trend trend-orange"><i class="bi bi-headphones"></i> LISTEN events</div>
+        </div>
+        <div class="stat-icon-wrap icon-orange"><i class="bi bi-headphones"></i></div>
+    </div>
+</div>
+
+<!-- Online Users Card -->
+<div class="activity-card" style="border-top: 4px solid #0ea5e9">
+    <div class="activity-card-header d-flex justify-content-between align-items-center">
+        <div class="header-title" style="color: #0369a1">
+            <i class="bi bi-person-check-fill"></i> Người dùng đang trực tuyến
+            <span class="badge rounded-pill bg-info ms-2" style="font-size:10px"></span>
+        </div>
+        <button class="btn btn-sm btn-link text-decoration-none" type="button" onclick="toggleOnlineUsers()" id="toggleBtn">
+            <i class="bi bi-chevron-up text-muted"></i>
+        </button>
+    </div>
+    <div class="activity-table-wrapper" id="onlineUsersTable">
+        <table class="activity-table">
+            <thead style="background: #0ea5e9">
+                <tr>
+                    <th>Người dùng</th>
+                    <th>Vai trò</th>
+                    <th>Hoạt động mới nhất</th>
+                    <th>Thiết bị</th>
+                    <th>Thời gian</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.OnlineUsers)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar" style="background:#e0f2fe;color:#0369a1"><i class="bi bi-person-fill"></i></div>
+                                <span style="font-weight:600;color:#111827">@user.Username</span>
+                            </div>
+                        </td>
+                        <td>
+                            @{
+                                var roleClass = user.Role switch { "ADMIN" => "admin", "OWNER" => "owner", _ => "guest" };
+                            }
+                            <span class="badge-role @roleClass">@user.Role</span>
+                        </td>
+                        <td>
+                            @{
+                                var actClass = user.ActivityType switch { "LOGIN" => "login", "LISTEN" => "listen", "APP_OPEN" => "appopen", _ => "other" };
+                                var actIcon = user.ActivityType switch { "LOGIN" => "bi-box-arrow-in-right", "LISTEN" => "bi-headphones", "APP_OPEN" => "bi-phone", _ => "bi-dot" };
+                            }
+                            <span class="badge-act @actClass">
+                                <i class="bi @actIcon"></i> @user.ActivityType
+                            </span>
+                        </td>
+                        <td><code style="font-size:11px;color:#6b7280">@user.DeviceId</code></td>
+                        <td><span class="time-chip">@user.Timestamp.ToString("HH:mm:ss")</span></td>
+                    </tr>
+                }
+                @if (!Model.OnlineUsers.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <i class="bi bi-moon-stars d-block mb-1" style="font-size:1.5rem"></i>
+                            Hiện không có ai đang trực tuyến.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="activity-card">
+    <div class="activity-card-header">
+        <div class="header-title">
+            <i class="bi bi-activity"></i> Nhật ký hoạt động
+        </div>
+        <div class="header-actions">
+            <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                <input class="form-check-input" type="checkbox" id="autoRefreshCheck" checked style="cursor:pointer">
+                <label class="form-check-label" for="autoRefreshCheck"
+                       style="font-size:12px;font-weight:600;color:#374151;cursor:pointer">
+                    Tự động cập nhật
+                </label>
+            </div>
+            <button onclick="location.reload()" class="btn-refresh">
+                <i class="bi bi-arrow-clockwise"></i> Làm mới
+            </button>
+            <form method="post" asp-page-handler="DeleteAll"
+                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử hoạt động? Thao tác này không thể hoàn tác.')">
+                <button type="submit" class="btn-delete">
+                    <i class="bi bi-trash3"></i> Xóa dữ liệu
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="activity-table-wrapper">
+        <table class="activity-table">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Người dùng</th>
+                    <th>Vai trò</th>
+                    <th>Hoạt động</th>
+                    <th>Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody id="activityBody">
+                @foreach (var item in Model.Activities)
+                {
+                    <tr>
+                        <td><span class="time-chip">@item.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</span></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="user-avatar"><i class="bi bi-person"></i></div>
+                                <span style="font-weight:600;color:#111827">@item.Username</span>
+                            </div>
+                        </td>
+                        <td>
+                            @{
+                                var roleClass = item.Role switch
+                                {
+                                    "ADMIN" => "admin",
+                                    "OWNER" => "owner",
+                                    _ => "guest"
+                                };
+                            }
+                            <span class="badge-role @roleClass">@item.Role</span>
+                        </td>
+                        <td>
+                            @{
+                                var actClass = item.ActivityType switch
+                                {
+                                    "LOGIN" => "login",
+                                    "LOGOUT" => "logout",
+                                    "LISTEN" => "listen",
+                                    "APP_OPEN" => "appopen",
+                                    _ => "other"
+                                };
+                                var actIcon = item.ActivityType switch
+                                {
+                                    "LOGIN" => "bi-box-arrow-in-right",
+                                    "LOGOUT" => "bi-box-arrow-right",
+                                    "LISTEN" => "bi-headphones",
+                                    "APP_OPEN" => "bi-phone",
+                                    _ => "bi-dot"
+                                };
+                            }
+                            <span class="badge-act @actClass">
+                                <i class="bi @actIcon"></i> @item.ActivityType
+                            </span>
+                        </td>
+                        <td>@item.Details</td>
+                    </tr>
+                }
+                @if (!Model.Activities.Any())
+                {
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <i class="bi bi-inbox d-block mb-1" style="font-size:1.5rem"></i>
+                            Chưa có hoạt động nào được ghi lại.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let refreshInterval = null;
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(() => {
+                if (document.getElementById('autoRefreshCheck').checked) location.reload();
+            }, 5000);
+        }
+
+        function toggleOnlineUsers() {
+            const table = document.getElementById('onlineUsersTable');
+            const btnIcon = document.querySelector('#toggleBtn i');
+            const isHidden = table.style.display === 'none';
+            
+            if (isHidden) {
+                table.style.display = 'block';
+                btnIcon.classList.replace('bi-chevron-down', 'bi-chevron-up');
+                localStorage.setItem('onlineUsersVisible', 'true');
+            } else {
+                table.style.display = 'none';
+                btnIcon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+                localStorage.setItem('onlineUsersVisible', 'false');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Restore toggle state
+            const isVisible = localStorage.getItem('onlineUsersVisible') !== 'false';
+            if (!isVisible) {
+                document.getElementById('onlineUsersTable').style.display = 'none';
+                document.querySelector('#toggleBtn i').classList.replace('bi-chevron-up', 'bi-chevron-down');
+            }
+
+            startAutoRefresh();
+            document.getElementById('autoRefreshCheck').addEventListener('change', e => {
+                if (e.target.checked) startAutoRefresh();
+                else clearInterval(refreshInterval);
+            });
+        });
+    </script>
+}

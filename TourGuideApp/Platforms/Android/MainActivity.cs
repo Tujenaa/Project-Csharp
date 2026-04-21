@@ -10,6 +10,10 @@ namespace TourGuideApp
                   Categories = new[] { Android.Content.Intent.CategoryDefault, Android.Content.Intent.CategoryBrowsable },
                   DataScheme = "tourguideapp",
                   DataHost = "guest")]
+    [IntentFilter(new[] { Android.Content.Intent.ActionView },
+                  Categories = new[] { Android.Content.Intent.CategoryDefault, Android.Content.Intent.CategoryBrowsable },
+                  DataScheme = "tourguideapp",
+                  DataHost = "poi")]
     public class MainActivity : MauiAppCompatActivity
     {
     }

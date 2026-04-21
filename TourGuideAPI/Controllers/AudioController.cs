@@ -12,6 +12,31 @@ namespace TourGuideAPI.Controllers
         private readonly AppDbContext _context;
         public AudioController(AppDbContext context) => _context = context;
 
+        private async Task LogOwnerAction(string action, string details)
+        {
+            try
+            {
+                var role = Request.Headers["X-Role"].ToString();
+                if (role != "OWNER") return;
+
+                var userIdStr = Request.Headers["X-UserId"].ToString();
+                var username = Request.Headers["X-Username"].ToString();
+                int? userId = int.TryParse(userIdStr, out var id) ? id : (int?)null;
+
+                _context.UserActivities.Add(new UserActivity
+                {
+                    UserId = userId,
+                    Username = string.IsNullOrEmpty(username) ? "Owner" : username,
+                    Role = "OWNER",
+                    ActivityType = action,
+                    Details = details,
+                    Timestamp = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
+            catch { }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -91,6 +116,8 @@ namespace TourGuideAPI.Controllers
                 "INSERT INTO Audio (PoiId, LanguageId, Script) VALUES ({0}, {1}, {2})",
                 req.PoiId, req.LanguageId, req.Script ?? "");
 
+            var poi = await _context.POI.AsNoTracking().FirstOrDefaultAsync(p => p.Id == req.PoiId);
+            await LogOwnerAction("CREATE_AUDIO", $"Owner đã tạo Audio cho điểm: {poi?.Name ?? req.PoiId.ToString()} (Ngôn ngữ ID: {req.LanguageId})");
             return Ok(new { req.PoiId, req.LanguageId, req.Script });
         }
 
@@ -101,6 +128,8 @@ namespace TourGuideAPI.Controllers
                 .Where(a => a.Id == id)
                 .ExecuteUpdateAsync(s => s.SetProperty(a => a.Script, req.Script ?? ""));
             if (rows == 0) return NotFound();
+            var updatedAudio = await _context.Audio.AsNoTracking().Include(x => x.POI).FirstOrDefaultAsync(x => x.Id == id);
+            await LogOwnerAction("UPDATE_AUDIO", $"Owner đã cập nhật nội dung Audio cho điểm: {updatedAudio?.POI?.Name ?? "N/A"}");
             return Ok(new { id, script = req.Script });
         }
 
@@ -111,6 +140,7 @@ namespace TourGuideAPI.Controllers
                 .Where(a => a.Id == id)
                 .ExecuteDeleteAsync();
             if (rows == 0) return NotFound();
+            await LogOwnerAction("DELETE_AUDIO", $"Owner đã xóa một bản ghi Audio (ID: {id})");
             return Ok();
         }
 

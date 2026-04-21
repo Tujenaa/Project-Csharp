@@ -476,6 +476,9 @@
                                                 <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
                                                     <Setter Property="IsVisible" Value="False"/>
                                                 </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding HasAudio}" Value="False">
+                                                    <Setter Property="IsVisible" Value="False"/>
+                                                </DataTrigger>
                                             </Border.Triggers>
                                             <Border.StrokeShape>
                                                 <RoundRectangle CornerRadius="10"/>
@@ -497,6 +500,9 @@
                                             <Border.Triggers>
                                                 <DataTrigger TargetType="Border" Binding="{Binding IsPlaying}" Value="True">
                                                     <Setter Property="IsVisible" Value="True"/>
+                                                </DataTrigger>
+                                                <DataTrigger TargetType="Border" Binding="{Binding HasAudio}" Value="False">
+                                                    <Setter Property="IsVisible" Value="False"/>
                                                 </DataTrigger>
                                             </Border.Triggers>
                                             <Border.StrokeShape>

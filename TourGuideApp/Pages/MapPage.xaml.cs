@@ -92,10 +92,21 @@ public partial class MapPage : ContentPage
                 }
                 catch { }
             }
-
-            await viewModel.PushMapDataAsync();
-            UpdatePOICountLabel();
         }
+
+        // ── Đợi ViewModel khởi tạo xong dữ liệu POI ──────────────────────────────
+        if (!viewModel.IsInitialized)
+        {
+            for (int i = 0; i < 50; i++) // Đọi tối đa 10 giây
+            {
+                if (viewModel.IsInitialized) break;
+                await Task.Delay(200);
+            }
+        }
+
+        // Đảm bảo dữ liệu mới nhất được đẩy lên bản đồ ngay khi mở
+        await viewModel.PushMapDataAsync();
+        UpdatePOICountLabel();
 
         // Nếu có tour được chọn từ HomePage
         if (MapTourState.SelectedTour != null)
@@ -114,6 +125,9 @@ public partial class MapPage : ContentPage
         if (MapTourState.FocusPoiId != null)
         {
             int poiId = MapTourState.FocusPoiId.Value;
+            // Gọi Refresh để đưa POI này vào danh sách hiển thị nếu nó chưa có (vd: chưa có audio)
+            viewModel.RefreshNearbyOrder(); 
+            
             MapTourState.FocusPoiId = null;
             var poi = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == poiId);
             if (poi != null)
@@ -127,6 +141,28 @@ public partial class MapPage : ContentPage
                     await viewModel.EvalJs($"highlightPOI({poiId})");
                     await viewModel.EvalJs($"flyTo({lat},{lon},16)");
                 }
+            }
+        }
+
+        // Nếu có POI được yêu cầu CHỈ ĐƯỜNG từ QrScannerPage
+        if (MapTourState.DirectionPoiId != null)
+        {
+            int poiId = MapTourState.DirectionPoiId.Value;
+            // Gọi Refresh để đưa POI này vào danh sách hiển thị nếu nó chưa có (vd: chưa có audio)
+            viewModel.RefreshNearbyOrder();
+
+            MapTourState.DirectionPoiId = null;
+            var poi = viewModel.NearbyPOI.FirstOrDefault(p => p.Id == poiId);
+
+            if (poi == null)
+            {
+                // Nếu vẫn chưa có trong Nearby sau khi refresh, thử lấy trực tiếp từ AllPOIs
+                poi = viewModel.AllPOIs.FirstOrDefault(p => p.Id == poiId);
+            }
+
+            if (poi != null)
+            {
+                await OnRouteDestSelectedWithTourCheckAsync(poi);
             }
         }
     }
@@ -444,6 +480,13 @@ public partial class MapPage : ContentPage
 
     void UpdateCardPlayButton(bool isPlaying)
     {
+        if (currentDetailPoi == null || !currentDetailPoi.HasAudio)
+        {
+            btnCardPlayAudio.IsVisible = false;
+            btnCardPauseAudio.IsVisible = false;
+            return;
+        }
+
         btnCardPlayAudio.IsVisible = !isPlaying;
         btnCardPauseAudio.IsVisible = isPlaying;
     }

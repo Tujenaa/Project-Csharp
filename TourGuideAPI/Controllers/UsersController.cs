@@ -87,10 +87,10 @@ namespace TourGuideAPI.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] UserLoginRequest req)
+        public async Task<IActionResult> Login([FromBody] UserLoginRequest req)
         {
-            var user = _context.Users
-                .FirstOrDefault(x => x.Username == req.Username);
+            var user = await _context.Users
+                .FirstOrDefaultAsync(x => x.Username == req.Username);
 
             // 1. Không tìm thấy user
             if (user == null)
@@ -103,6 +103,19 @@ namespace TourGuideAPI.Controllers
             // 3. Kiểm tra trạng thái hoạt động
             if (!user.IsActive)
                 return StatusCode(403, "Tài khoản của bạn đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.");
+
+            // Ghi log hoạt động
+            _context.UserActivities.Add(new UserActivity
+            {
+                UserId = user.Id,
+                Username = user.Name ?? user.Username,
+                Role = user.Role,
+                ActivityType = "LOGIN",
+                Details = $"Người dùng {user.Username} đã đăng nhập hệ thống.",
+                DeviceId = req.DeviceId,
+                Timestamp = DateTime.Now
+            });
+            await _context.SaveChangesAsync();
 
             return Ok(new
             {
@@ -170,6 +183,16 @@ namespace TourGuideAPI.Controllers
             user.PasswordHash = BC.HashPassword(req.NewPassword);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Đổi mật khẩu thành công" });
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> Logout([FromBody] UserActivity log)
+        {
+            log.ActivityType = "LOGOUT";
+            if (log.Timestamp == default) log.Timestamp = DateTime.Now;
+            _context.UserActivities.Add(log);
+            await _context.SaveChangesAsync();
+            return Ok();
         }
     }
 }

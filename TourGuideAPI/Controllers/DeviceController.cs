@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using TourGuideAPI.Services;
+using TourGuideAPI.Data;
+using TourGuideAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace TourGuideAPI.Controllers;
 
@@ -8,10 +11,12 @@ namespace TourGuideAPI.Controllers;
 public class DeviceController : ControllerBase
 {
     private readonly DeviceHeartbeatService _heartbeat;
+    private readonly AppDbContext _context;
 
-    public DeviceController(DeviceHeartbeatService heartbeat)
+    public DeviceController(DeviceHeartbeatService heartbeat, AppDbContext context)
     {
         _heartbeat = heartbeat;
+        _context = context;
     }
 
     // Mobile app gọi mỗi 30 giây để cập nhật vị trí
@@ -29,11 +34,35 @@ public class DeviceController : ControllerBase
 
     // Mobile app gọi khi tắt app hoặc vào background để xóa trạng thái ngay lập tức
     [HttpPost("offline")]
-    public IActionResult SetOffline([FromBody] OfflineRequest req)
+    public async Task<IActionResult> SetOffline([FromBody] OfflineRequest req)
     {
         if (!string.IsNullOrWhiteSpace(req.DeviceId))
         {
             _heartbeat.Remove(req.DeviceId);
+
+            // Ghi nhận vào UserActivity để Dashboard cập nhật Offline ngay lập tức
+            try
+            {
+                // Tìm hoạt động gần nhất của thiết bị này để lấy Username/UserId
+                var lastAct = _context.UserActivities
+                    .Where(a => a.DeviceId == req.DeviceId)
+                    .OrderByDescending(a => a.Timestamp)
+                    .FirstOrDefault();
+
+                var offlineActivity = new UserActivity
+                {
+                    DeviceId = req.DeviceId,
+                    UserId = lastAct?.UserId,
+                    Username = lastAct?.Username ?? "Khách",
+                    Role = lastAct?.Role ?? "GUEST",
+                    ActivityType = "OFFLINE",
+                    Details = $"Thiết bị {req.DeviceId} đã ngắt kết nối (thoát app/background).",
+                    Timestamp = DateTime.Now
+                };
+                _context.UserActivities.Add(offlineActivity);
+                await _context.SaveChangesAsync();
+            }
+            catch { /* Fail silently */ }
         }
         return Ok(new { status = "removed" });
     }

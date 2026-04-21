@@ -102,7 +102,7 @@ public partial class SettingsPage : ContentPage
         // Nếu là khách, không cần hỏi xác nhận, chuyển thẳng về trang đăng nhập
         if (AuthService.Username == "guest")
         {
-            AuthService.Logout();
+            await AuthService.Logout();
             if (Application.Current != null)
                 Application.Current.MainPage = new NavigationPage(new LoginPage());
             return;
@@ -116,7 +116,7 @@ public partial class SettingsPage : ContentPage
 
         if (!confirm) return;
 
-        AuthService.Logout();
+        await AuthService.Logout();
 
         // Chuyển hướng về trang đăng nhập
         if (Application.Current != null)

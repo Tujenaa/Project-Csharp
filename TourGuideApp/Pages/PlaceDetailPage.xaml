@@ -70,7 +70,8 @@
 
             <!-- ═══ Audio card ═══════════════════════════════════════════════ -->
             <Border Margin="18,16,18,0" BackgroundColor="#EDE7FF"
-                    Stroke="#D4C4FF" StrokeThickness="1.5">
+                    Stroke="#D4C4FF" StrokeThickness="1.5"
+                    IsVisible="{Binding HasAudio}">
                 <Border.StrokeShape>
                     <RoundRectangle CornerRadius="20"/>
                 </Border.StrokeShape>

@@ -7,5 +7,6 @@ namespace TourGuideAPI.Models
         public int LanguageId { get; set; }
         public string? LanguageCode { get; set; }
         public string? Script { get; set; }
+        public Language? Language { get; set; }
     }
 }

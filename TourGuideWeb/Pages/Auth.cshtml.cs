@@ -75,8 +75,32 @@ public class AuthModel : PageModel
             return Page();
         }
     }
-    public IActionResult OnPostLogout()
+    public async Task<IActionResult> OnPostLogout()
     {
+        var client = _http.CreateClient("API");
+        var userId = HttpContext.Session.GetString("UserId");
+        var username = HttpContext.Session.GetString("Username");
+        var role = HttpContext.Session.GetString("Role");
+
+        if (!string.IsNullOrEmpty(username))
+        {
+            try
+            {
+                var activity = new
+                {
+                    UserId = userId != null ? int.Parse(userId) : (int?)null,
+                    Username = username,
+                    Role = role,
+                    ActivityType = "LOGOUT",
+                    Details = $"Người dùng {username} đã đăng xuất từ trình duyệt.",
+                    DeviceId = "WEB_ADMIN",
+                    Timestamp = DateTime.Now
+                };
+                await client.PostAsJsonAsync("users/logout", activity);
+            }
+            catch { }
+        }
+
         HttpContext.Session.Clear();
         return RedirectToPage("/Auth");
     }

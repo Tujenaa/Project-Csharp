@@ -1,6 +1,10 @@
 using System;
+using TourGuideApp.Models;
 using TourGuideApp.Pages;
 using TourGuideApp.Services;
+using Microsoft.Maui.Devices;
+using Microsoft.Maui.Storage;
+using Microsoft.Maui.Networking;
 
 namespace TourGuideApp
 {
@@ -33,6 +37,16 @@ namespace TourGuideApp
             MainPage = AuthService.IsLoggedIn
                 ? (Page)new AppShell()
                 : new NavigationPage(new LoginPage());
+
+            // Ghi nhật ký mở App
+            if (ConnectivityService.IsConnected)
+            {
+                var api = new ApiService();
+                var userId = Preferences.Get("user_id", 0);
+                var username = Preferences.Get("user_username", "guest");
+                var role = username == "guest" ? "GUEST" : "CUSTOMER";
+                _ = api.LogActivity(userId, username, role, "APP_OPEN", $"Người dùng đã mở ứng dụng trên thiết bị {DeviceInfo.Current.Model}");
+            }
 
             // Lắng nghe thay đổi kết nối mạng
             Connectivity.Current.ConnectivityChanged += OnConnectivityChanged;
@@ -79,24 +93,51 @@ namespace TourGuideApp
             _heartbeat.Stop();
 
             // Thông báo ngay cho server là tôi offline
-            if (AuthService.IsLoggedIn)
-                _ = _heartbeat.NotifyOfflineAsync();
+            _ = _heartbeat.NotifyOfflineAsync();
         }
 
         protected override void OnAppLinkRequestReceived(Uri uri)
         {
             base.OnAppLinkRequestReceived(uri);
 
-            // Nếu đã đăng nhập thì không làm gì cả
-            if (AuthService.IsLoggedIn)
-                return;
+            // Nếu link là guest và chưa đăng nhập thì mới xử lý
+            bool isGuestLink = string.Equals(uri.Scheme, "tourguideapp", StringComparison.OrdinalIgnoreCase) && 
+                               string.Equals(uri.Host, "guest", StringComparison.OrdinalIgnoreCase);
 
-            // Kiểm tra link tourguideapp://guest
-            if (string.Equals(uri.Scheme, "tourguideapp", StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(uri.Host, "guest", StringComparison.OrdinalIgnoreCase))
+            if (isGuestLink && !AuthService.IsLoggedIn)
             {
                 AuthService.LoginOfflineAsGuest();
                 MainPage = new AppShell();
+                return;
+            }
+
+            // 2. Kiểm tra link tourguideapp://poi/{id}
+            if (string.Equals(uri.Scheme, "tourguideapp", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(uri.Host, "poi", StringComparison.OrdinalIgnoreCase))
+            {
+                // Parse ID từ path hoặc host
+                // Link có dạng: tourguideapp://poi/15
+                string lastSegment = uri.Segments.LastOrDefault()?.Trim('/') ?? "";
+                if (int.TryParse(lastSegment, out int poiId))
+                {
+                    if (!AuthService.IsLoggedIn)
+                        AuthService.LoginOfflineAsGuest();
+
+                    // Chuyển sang màn hình bản đồ và báo hiệu cần focus vào POI này
+                    MapTourState.FocusPoiId = poiId;
+                    MainPage = new AppShell();
+
+                    // Tự động phát audio sau khi app đã ổn định một chút
+                    _ = Task.Run(async () =>
+                    {
+                        await Task.Delay(2000); // Chờ cho API nạp xong POI
+                        var poi = await new ApiService().GetPOIById(poiId);
+                        if (poi != null)
+                        {
+                            await AudioPlaybackService.Instance.PlayAsync(poi);
+                        }
+                    });
+                }
             }
         }
 

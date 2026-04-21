@@ -134,14 +134,25 @@ public static class AuthService
         }
     }
     // Đăng xuất
-    public static void Logout()
+    public static async Task Logout()
     {
+        try
+        {
+            var userId = Preferences.Get("user_id", 0);
+            var username = Username;
+            var name = Name;
+
+            // Gọi API thông báo đăng xuất
+            var api = new ApiService();
+            await api.Logout(userId, username, username == "guest" ? "GUEST" : "CUSTOMER");
+        }
+        catch { }
+
         Preferences.Remove(KeyUsername);
         Preferences.Remove(KeyToken);
         Preferences.Remove(KeyEmail);
         Preferences.Remove(KeyName);
         Preferences.Remove(KeyPhone);
         Preferences.Remove("user_id");
-        Preferences.Remove(KeyUsername);
     }
 }

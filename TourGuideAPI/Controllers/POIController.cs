@@ -19,6 +19,31 @@ namespace TourGuideAPI.Controllers
             _env = env;
         }
 
+        private async Task LogOwnerAction(string action, string details)
+        {
+            try
+            {
+                var role = Request.Headers["X-Role"].ToString();
+                if (role != "OWNER") return;
+
+                var userIdStr = Request.Headers["X-UserId"].ToString();
+                var username = Request.Headers["X-Username"].ToString();
+                int? userId = int.TryParse(userIdStr, out var id) ? id : (int?)null;
+
+                _context.UserActivities.Add(new UserActivity
+                {
+                    UserId = userId,
+                    Username = string.IsNullOrEmpty(username) ? "Owner" : username,
+                    Role = "OWNER",
+                    ActivityType = action,
+                    Details = details,
+                    Timestamp = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
+            catch { /* Chặn lỗi ghi log làm hỏng nghiệp vụ chính */ }
+        }
+
         // ── APP: GET /api/poi — chỉ APPROVED ──
         [HttpGet]
         public async Task<IActionResult> GetPOI()
@@ -46,7 +71,8 @@ namespace TourGuideAPI.Controllers
                     PoiId = a.PoiId,
                     LanguageId = a.LanguageId,
                     LanguageCode = a.Language?.Code,
-                    Script = a.Script
+                    Script = a.Script,
+                    Language = a.Language
                 }).ToList(),
                 Images = _context.POIImages
                              .Where(img => img.PoiId == p.Id)
@@ -89,7 +115,8 @@ namespace TourGuideAPI.Controllers
                     PoiId = a.PoiId,
                     LanguageId = a.LanguageId,
                     LanguageCode = a.Language?.Code,
-                    Script = a.Script
+                    Script = a.Script,
+                    Language = a.Language
                 }).ToList(),
                 Images = _context.POIImages
                              .Where(img => img.PoiId == p.Id)
@@ -152,7 +179,8 @@ namespace TourGuideAPI.Controllers
                     PoiId = a.PoiId,
                     LanguageId = a.LanguageId,
                     LanguageCode = a.Language?.Code,
-                    Script = a.Script
+                    Script = a.Script,
+                    Language = a.Language
                 }).ToList(),
                 Images = _context.POIImages
                              .Where(img => img.PoiId == p.Id)
@@ -195,6 +223,7 @@ namespace TourGuideAPI.Controllers
             if (string.IsNullOrEmpty(poi.Status)) poi.Status = "PENDING";
             _context.POI.Add(poi);
             await _context.SaveChangesAsync();
+            await LogOwnerAction("CREATE_POI", $"Owner đã tạo điểm thuyết minh mới: {poi.Name}");
             return Ok(poi);
         }
 
@@ -231,6 +260,7 @@ namespace TourGuideAPI.Controllers
             }
 
             await _context.SaveChangesAsync();
+            await LogOwnerAction("UPDATE_POI", $"Owner đã cập nhật điểm thuyết minh: {existing.Name}");
             return Ok(existing);
         }
 
@@ -272,8 +302,10 @@ namespace TourGuideAPI.Controllers
             var images = _context.POIImages.Where(img => img.PoiId == id);
             _context.POIImages.RemoveRange(images);
 
+            var poiName = poi.Name;
             _context.POI.Remove(poi);
             await _context.SaveChangesAsync();
+            await LogOwnerAction("DELETE_POI", $"Owner đã xóa điểm thuyết minh: {poiName}");
             return Ok();
         }
 

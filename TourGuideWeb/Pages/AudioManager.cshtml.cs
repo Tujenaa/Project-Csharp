@@ -36,7 +36,13 @@ public class AudioManagerModel : PageModel
     {
         var c = _http.CreateClient("API");
         c.DefaultRequestHeaders.Remove("X-Role");
+        c.DefaultRequestHeaders.Remove("X-UserId");
+        c.DefaultRequestHeaders.Remove("X-Username");
+        
         c.DefaultRequestHeaders.Add("X-Role", Role);
+        c.DefaultRequestHeaders.Add("X-UserId", HttpContext.Session.GetString("UserId") ?? "0");
+        c.DefaultRequestHeaders.Add("X-Username", HttpContext.Session.GetString("Username") ?? "Unknown");
+        
         return c;
     }
 

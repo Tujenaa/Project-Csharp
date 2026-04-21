@@ -22,4 +22,4 @@ obj/
 .vs/
 *.user
 *.log
-
+*.keystore

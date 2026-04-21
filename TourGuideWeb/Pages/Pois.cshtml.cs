@@ -46,7 +46,13 @@ public class PoisModel : PageModel
     {
         var client = _http.CreateClient("API");
         client.DefaultRequestHeaders.Remove("X-Role");
+        client.DefaultRequestHeaders.Remove("X-UserId");
+        client.DefaultRequestHeaders.Remove("X-Username");
+        
         client.DefaultRequestHeaders.Add("X-Role", Role);
+        client.DefaultRequestHeaders.Add("X-UserId", MyUserId?.ToString() ?? "0");
+        client.DefaultRequestHeaders.Add("X-Username", HttpContext.Session.GetString("Username") ?? "Unknown");
+        
         return client;
     }
 

@@ -16,12 +16,37 @@ namespace TourGuideAPI.Controllers
             _context = context;
         }
 
+        private async Task LogOwnerAction(string action, string details)
+        {
+            try
+            {
+                var role = Request.Headers["X-Role"].ToString();
+                if (role != "OWNER") return;
+
+                var userIdStr = Request.Headers["X-UserId"].ToString();
+                var username = Request.Headers["X-Username"].ToString();
+                int? userId = int.TryParse(userIdStr, out var id) ? id : (int?)null;
+
+                _context.UserActivities.Add(new UserActivity
+                {
+                    UserId = userId,
+                    Username = string.IsNullOrEmpty(username) ? "Owner" : username,
+                    Role = "OWNER",
+                    ActivityType = action,
+                    Details = details,
+                    Timestamp = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
+            catch { }
+        }
+
         // GET /api/tours — tất cả tour (kèm POI)
         [HttpGet]
         public async Task<IActionResult> GetTours()
         {
             var tours = await _context.Tours.OrderByDescending(t => t.CreatedAt).ToListAsync();
-            var result = await BuildTourDtos(tours);
+            var result = await BuildTourDtos(tours, onlyApproved: false);
             return Ok(result);
         }
 
@@ -33,7 +58,7 @@ namespace TourGuideAPI.Controllers
                 .Where(t => t.Status == "PUBLISHED")
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
-            var result = await BuildTourDtos(tours);
+            var result = await BuildTourDtos(tours, onlyApproved: true);
             return Ok(result);
         }
 
@@ -43,7 +68,7 @@ namespace TourGuideAPI.Controllers
         {
             var tour = await _context.Tours.FindAsync(id);
             if (tour == null) return NotFound();
-            var dto = await BuildTourDto(tour);
+            var dto = await BuildTourDto(tour, onlyApproved: false); // Admin/Manager view
             return Ok(dto);
         }
 
@@ -60,7 +85,7 @@ namespace TourGuideAPI.Controllers
                 .Where(t => tourIds.Contains(t.Id))
                 .ToListAsync();
 
-            var result = await BuildTourDtos(tours);
+            var result = await BuildTourDtos(tours, onlyApproved: true);
             return Ok(result);
         }
 
@@ -95,6 +120,7 @@ namespace TourGuideAPI.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            await LogOwnerAction("CREATE_TOUR", $"Owner đã tạo Tour mới: {tour.Name}");
             return Ok(tour);
         }
 
@@ -127,7 +153,8 @@ namespace TourGuideAPI.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Ok(tour);
+            await LogOwnerAction("UPDATE_TOUR", $"Owner đã cập nhật Tour: {tour.Name}");
+            return Ok(await BuildTourDto(tour, onlyApproved: false));
         }
 
         // DELETE /api/tours/{id}
@@ -138,8 +165,10 @@ namespace TourGuideAPI.Controllers
             if (tour == null) return NotFound();
             var pois = _context.TourPOI.Where(tp => tp.TourId == id);
             _context.TourPOI.RemoveRange(pois);
+            var tourName = tour.Name;
             _context.Tours.Remove(tour);
             await _context.SaveChangesAsync();
+            await LogOwnerAction("DELETE_TOUR", $"Owner đã xóa Tour: {tourName}");
             return Ok();
         }
 
@@ -349,19 +378,30 @@ namespace TourGuideAPI.Controllers
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
-        private async Task<List<TourDto>> BuildTourDtos(List<Tour> tours)
+        private async Task<List<TourDto>> BuildTourDtos(List<Tour> tours, bool onlyApproved = true)
         {
             var result = new List<TourDto>();
             foreach (var t in tours)
-                result.Add(await BuildTourDto(t));
+                result.Add(await BuildTourDto(t, onlyApproved));
             return result;
         }
 
-        private async Task<TourDto> BuildTourDto(Tour tour)
+        private async Task<TourDto> BuildTourDto(Tour tour, bool onlyApproved = true)
         {
-            var tourPois = await _context.TourPOI
-                .Where(tp => tp.TourId == tour.Id && (tp.Status == "APPROVED" || tp.Status == "REMOVE_PENDING"))
-                .Join(_context.POI.Where(p => p.Status == "APPROVED"),
+            var tpQuery = _context.TourPOI.Where(tp => tp.TourId == tour.Id);
+            if (onlyApproved)
+            {
+                tpQuery = tpQuery.Where(tp => tp.Status == "APPROVED" || tp.Status == "REMOVE_PENDING");
+            }
+
+            var poiQuery = _context.POI.AsQueryable();
+            if (onlyApproved)
+            {
+                poiQuery = poiQuery.Where(p => p.Status == "APPROVED");
+            }
+
+            var tourPois = await tpQuery
+                .Join(poiQuery,
                     tp => tp.PoiId,
                     p => p.Id,
                     (tp, p) => new { POI = p, tp.Status, tp.OrderIndex })
@@ -394,7 +434,8 @@ namespace TourGuideAPI.Controllers
                         PoiId = a.PoiId,
                         LanguageId = a.LanguageId,
                         LanguageCode = a.Language?.Code,
-                        Script = a.Script
+                        Script = a.Script,
+                        Language = a.Language
                     }).ToList(),
                     Images = await _context.POIImages
                         .Where(img => img.PoiId == p.Id)

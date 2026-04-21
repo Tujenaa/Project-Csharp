@@ -153,12 +153,9 @@
                             IsEnabled="False"/>
                 </VerticalStackLayout>
 
-                <!-- ── Audio controls + Nút xem chi tiết ──────────────────────
-                     IsPlaying=False → Play HIỆN, Pause+Stop ẨN
-                     IsPlaying=True  → Play ẨN,  Pause+Stop HIỆN
-                ─────────────────────────────────────────────────────────────-->
+                <!-- ── Audio controls + Nút xem chi tiết ──────────────────────────────── -->
                 <Grid Grid.Row="2"
-                      ColumnDefinitions="Auto,Auto,Auto,*"
+                      ColumnDefinitions="Auto,Auto,Auto,Auto,*"
                       ColumnSpacing="10">
 
                     <!-- PLAY -->
@@ -172,7 +169,7 @@
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
                                          Binding="{Binding ScannedPoi.IsPlaying}" Value="True">
-                                <Setter Property="IsVisible" Value="False"/>
+                                 <Setter Property="IsVisible" Value="False"/>
                             </DataTrigger>
                         </Border.Triggers>
                         <Border.GestureRecognizers>
@@ -228,9 +225,25 @@
                                WidthRequest="20" HeightRequest="20"
                                HorizontalOptions="Center" VerticalOptions="Center"/>
                     </Border>
+                    
+                    <!-- CHỈ ĐƯỜNG -->
+                    <Border Grid.Column="3"
+                            BackgroundColor="#F4F2FB"
+                            Stroke="#DDD6F3" StrokeThickness="1"
+                            WidthRequest="46" HeightRequest="46">
+                        <Border.StrokeShape>
+                            <RoundRectangle CornerRadius="14"/>
+                        </Border.StrokeShape>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnDirectionClicked"/>
+                        </Border.GestureRecognizers>
+                        <Image Source="ic_directions.svg"
+                               WidthRequest="22" HeightRequest="22"
+                               HorizontalOptions="Center" VerticalOptions="Center"/>
+                    </Border>
 
                     <!-- Xem chi tiết -->
-                    <Border Grid.Column="3"
+                    <Border Grid.Column="4"
                             BackgroundColor="#512BD4"
                             Stroke="Transparent" StrokeThickness="0"
                             HeightRequest="46">

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Net.Http.Json;
 
@@ -36,7 +36,13 @@ public class TourManagerModel : PageModel
     {
         var client = _http.CreateClient("API");
         client.DefaultRequestHeaders.Remove("X-Role");
+        client.DefaultRequestHeaders.Remove("X-UserId");
+        client.DefaultRequestHeaders.Remove("X-Username");
+        
         client.DefaultRequestHeaders.Add("X-Role", Role);
+        client.DefaultRequestHeaders.Add("X-UserId", HttpContext.Session.GetString("UserId") ?? "0");
+        client.DefaultRequestHeaders.Add("X-Username", HttpContext.Session.GetString("Username") ?? "Unknown");
+        
         return client;
     }
 

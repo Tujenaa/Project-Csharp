@@ -18,7 +18,6 @@ public class IndexModel : PageModel
     public int TotalAudio { get; set; }
     public int TotalHistory { get; set; }
     public int TotalUsers { get; set; }
-    public int TotalDevices { get; set; }
     public bool ApiError { get; set; }
     public string ApiUrl { get; set; } = "";
     public List<HistoryItem> RecentHistory { get; set; } = [];
@@ -43,8 +42,6 @@ public class IndexModel : PageModel
             audios = await Fetch<List<AudioItem>>(client, "audio");
             history = await Fetch<List<HistoryItem>>(client, "history");
             users = await Fetch<List<UserItem>>(client, "users");
-            var activeDevices = await Fetch<List<object>>(client, "device/active");
-            TotalDevices = activeDevices?.Count ?? 0;
         }
         else
         {

@@ -57,6 +57,22 @@ namespace TourGuideAPI.Controllers
             if (history.PlayTime == default) history.PlayTime = DateTime.Now;
             _context.History.Add(history);
             await _context.SaveChangesAsync();
+
+            // Ghi log hoạt động
+            var poi = await _context.POI.FindAsync(history.PoiId);
+            var userObj = history.UserId.HasValue ? await _context.Users.FindAsync(history.UserId.Value) : null;
+            _context.UserActivities.Add(new UserActivity
+            {
+                UserId = history.UserId,
+                Username = userObj?.Name ?? "Khách",
+                Role = userObj?.Role ?? "GUEST",
+                ActivityType = "LISTEN",
+                Details = $"Đã nghe thuyết minh tại điểm: {poi?.Name ?? "Không xác định"}",
+                DeviceId = history.DeviceId,
+                Timestamp = DateTime.Now
+            });
+            await _context.SaveChangesAsync();
+
             return Ok(history);
         }
 

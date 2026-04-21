@@ -58,6 +58,9 @@
                     <a href="/Users" class="nav-item @(ViewData["Active"]?.ToString() == "users" ? "active" : "")">
                         <i class="bi bi-people"></i><span>Người dùng</span>
                     </a>
+                    <a href="/UserActivity" class="nav-item @(ViewData["Active"]?.ToString() == "user-activity" ? "active" : "")">
+                        <i class="bi bi-activity"></i><span>Hoạt động người dùng</span>
+                    </a>
                     <a href="/Approval" class="nav-item @(ViewData["Active"]?.ToString() == "approval" ? "active" : "")">
                         <i class="bi bi-clipboard-check"></i>
                         <span>Phê duyệt</span>

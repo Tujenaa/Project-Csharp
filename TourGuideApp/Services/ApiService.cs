@@ -12,7 +12,7 @@ public class ApiService
 
     public static class ApiConfig
     {
-        private const string DevHostIp = "192.168.1.18"; 
+        private const string DevHostIp = "192.168.1.22"; 
         private const string DevPort = "5266";
 
         public static string BaseUrl
@@ -50,7 +50,7 @@ public class ApiService
                 if (pois != null && pois.Count > 0)
                 {
                     _ = LocalDbService.Instance.SavePOIsAsync(pois);
-                    return pois.Where(p => p.IsReady).ToList();
+                    return pois.Where(p => p.IsApproved).ToList();
                 }
             }
             catch (Exception ex)
@@ -61,7 +61,7 @@ public class ApiService
 
         System.Diagnostics.Debug.WriteLine("[API] GetPOI → using offline cache");
         var cached = await LocalDbService.Instance.GetCachedPOIsAsync();
-        return cached.Where(p => p.IsReady).ToList();
+        return cached.Where(p => p.IsApproved).ToList();
     }
 
     /// <summary>Lấy thông tin một POI từ API và cập nhật cache lẻ.</summary>
@@ -107,7 +107,7 @@ public class ApiService
         }
 
         var cached = await LocalDbService.Instance.GetCachedPOIsAsync();
-        return cached.Where(p => p.IsReady).Take(2).ToList();
+        return cached.Where(p => p.IsApproved).Take(2).ToList();
     }
 
     public async Task<int> GetPoiCount()
@@ -118,7 +118,7 @@ public class ApiService
             catch { }
         }
         var cached = await LocalDbService.Instance.GetCachedPOIsAsync();
-        return cached.Count(p => p.IsReady);
+        return cached.Count(p => p.IsApproved);
     }
 
     public async Task<int> GetAudioCount()
@@ -144,7 +144,12 @@ public class ApiService
         {
             try
             {
-                var json = JsonSerializer.Serialize(new { poiId, userId, listenDuration });
+                var json = JsonSerializer.Serialize(new { 
+                    poiId, 
+                    userId, 
+                    listenDuration,
+                    deviceId = $"{DeviceInfo.Current.Name}_{DeviceInfo.Current.Model}"
+                });
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 await client.PostAsync($"{ApiConfig.BaseUrl}history", content);
                 _ = SyncPendingHistoriesAsync(userId);
@@ -193,7 +198,8 @@ public class ApiService
                 var json = JsonSerializer.Serialize(new { 
                     poiId = item.PoiId, 
                     userId = item.UserId,
-                    listenDuration = item.ListenDuration
+                    listenDuration = item.ListenDuration,
+                    deviceId = $"{DeviceInfo.Current.Name}_{DeviceInfo.Current.Model}"
                 });
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync($"{ApiConfig.BaseUrl}history", content);
@@ -218,7 +224,11 @@ public class ApiService
         {
             var response = await client.PostAsJsonAsync(
                 $"{ApiConfig.BaseUrl}users/login",
-                new { Username = username, Password = password });
+                new { 
+                    Username = username, 
+                    Password = password,
+                    DeviceId = $"{DeviceInfo.Current.Name}_{DeviceInfo.Current.Model}"
+                });
 
             if (response.IsSuccessStatusCode)
             {
@@ -241,6 +251,47 @@ public class ApiService
         {
             return (null, ex.Message);
         }
+    }
+
+    public async Task Logout(int? userId, string username, string role)
+    {
+        try
+        {
+            var activity = new 
+            {
+                UserId = userId == 0 ? null : userId,
+                Username = username,
+                Role = role,
+                ActivityType = "LOGOUT",
+                Details = $"Người dùng {username} đã đăng xuất từ thiết bị.",
+                DeviceId = $"{DeviceInfo.Current.Name}_{DeviceInfo.Current.Model}",
+                Timestamp = DateTime.Now
+            };
+            await client.PostAsJsonAsync($"{ApiConfig.BaseUrl}users/logout", activity);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[API] Logout failed: {ex.Message}");
+        }
+    }
+
+    public async Task LogActivity(int? userId, string username, string role, string activityType, string details)
+    {
+        try
+        {
+            var activity = new
+            {
+                UserId = userId == 0 ? null : userId,
+                Username = username,
+                Role = role,
+                ActivityType = activityType,
+                Details = details,
+                DeviceId = $"{DeviceInfo.Current.Name}_{DeviceInfo.Current.Model}",
+                Timestamp = DateTime.Now
+            };
+            await client.PostAsJsonAsync($"{ApiConfig.BaseUrl}user-activity", activity);
+        }
+        catch { }
     }
 
     public async Task<UserDto?> Register(string username, string name, string email, string password)
@@ -286,7 +337,7 @@ public class ApiService
                     _ = LocalDbService.Instance.SaveToursAsync(tours);
                     foreach (var t in tours)
                     {
-                        if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsApprovedInTour).ToList();
+                        if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsApproved).ToList();
                     }
                     return tours.Where(t => t.POIs != null && t.POIs.Count > 0).ToList();
                 }
@@ -301,7 +352,7 @@ public class ApiService
         var cachedTours = await LocalDbService.Instance.GetCachedToursAsync();
         foreach (var t in cachedTours)
         {
-            if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsApprovedInTour).ToList();
+            if (t.POIs != null) t.POIs = t.POIs.Where(p => p.IsApproved).ToList();
         }
         return cachedTours.Where(t => t.POIs != null && t.POIs.Count > 0).ToList();
     }
