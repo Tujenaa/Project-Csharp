@@ -14,6 +14,15 @@ namespace TourGuideApp
                   Categories = new[] { Android.Content.Intent.CategoryDefault, Android.Content.Intent.CategoryBrowsable },
                   DataScheme = "tourguideapp",
                   DataHost = "poi")]
+    [IntentFilter(new[] { Android.Content.Intent.ActionView },
+                  Categories = new[] { Android.Content.Intent.CategoryDefault, Android.Content.Intent.CategoryBrowsable },
+                  DataScheme = "https",
+                  DataHost = "tujenaa.github.io",
+                  DataPathPrefix = "/Project-Csharp")]
+    [IntentFilter(new[] { Android.Content.Intent.ActionView },
+                  Categories = new[] { Android.Content.Intent.CategoryDefault, Android.Content.Intent.CategoryBrowsable },
+                  DataScheme = "https",
+                  DataHost = "tourguide.vn")]
     public class MainActivity : MauiAppCompatActivity
     {
     }

@@ -87,7 +87,7 @@ public partial class QrScannerPage : ContentPage
         if (first == null) return;
 
         string code = first.DisplayValue;
-        int? id = ParseScannedCode(code);
+        int? id = QrCodeService.ParsePoiId(code);
         if (id == null) return;
 
         _isProcessingResult = true;
@@ -191,30 +191,6 @@ public partial class QrScannerPage : ContentPage
         await Shell.Current.GoToAsync("//map");
     }
 
-    private int? ParseScannedCode(string code)
-    {
-        if (string.IsNullOrWhiteSpace(code)) return null;
-
-        // Hỗ trợ định dạng cũ: https://poi:123
-        if (code.StartsWith("https://poi:"))
-        {
-            if (int.TryParse(code.Replace("https://poi:", ""), out int id)) return id;
-        }
-
-        // Hỗ trợ định dạng Custom Scheme: tourguideapp://poi/123
-        if (code.StartsWith("tourguideapp://poi/"))
-        {
-            if (int.TryParse(code.Replace("tourguideapp://poi/", ""), out int id)) return id;
-        }
-
-        // Hỗ trợ định dạng URL chuẩn: https://tourguide.vn/poi/123
-        if (code.StartsWith("https://tourguide.vn/poi/"))
-        {
-            if (int.TryParse(code.Replace("https://tourguide.vn/poi/", ""), out int id)) return id;
-        }
-
-        return null;
-    }
 
     // ── Audio controls ────────────────────────────────────────────────────────
 

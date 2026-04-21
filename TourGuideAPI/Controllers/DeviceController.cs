@@ -56,7 +56,7 @@ public class DeviceController : ControllerBase
                     Username = lastAct?.Username ?? "Khách",
                     Role = lastAct?.Role ?? "GUEST",
                     ActivityType = "OFFLINE",
-                    Details = $"Thiết bị {req.DeviceId} đã ngắt kết nối (thoát app/background).",
+                    Details = $"Thiết bị {req.DeviceId} đã ngắt kết nối.",
                     Timestamp = DateTime.Now
                 };
                 _context.UserActivities.Add(offlineActivity);

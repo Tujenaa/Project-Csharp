@@ -377,6 +377,7 @@ public class MapViewModel : INotifyPropertyChanged
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 NearbyPOI.Clear();
+                _lastNearestId = -1; // Reset để trigger highlight lại khi có data
                 POIUpdated?.Invoke();
             });
             return;
@@ -449,7 +450,9 @@ public class MapViewModel : INotifyPropertyChanged
                 p.IsNearest = (p == nearest);
             }
  
-            if (nearest != null && nearest.Id != _lastNearestId && EvalJs != null)
+            // Luôn đảm bảo Highlight marker gần nhất trên bản đồ.
+            // Nếu nearest.Id khác với _lastNearestId, ta cập nhật lại.
+            if (nearest != null && EvalJs != null && (nearest.Id != _lastNearestId))
             {
                 _lastNearestId = nearest.Id;
                 _ = EvalJs($"highlightNearest({nearest.Id})");
@@ -482,6 +485,7 @@ public class MapViewModel : INotifyPropertyChanged
         if (_isPromptActive) return;
         
         var candidates = new List<(POI Poi, double AngleDiff)>();
+        var cooldownEntries = new List<POI>();
         
         // 1. Phân loại theo Tour (nếu đang đi Tour)
         var sourceList = IsTourActive ? _currentTourSequence : allPOIs.Where(p => p.IsApproved);
@@ -526,13 +530,13 @@ public class MapViewModel : INotifyPropertyChanged
                     if (!_pendingAutoPlay.ContainsKey(poi.Id) && poi.HasAudio)
                         candidates.Add((poi, angleDiff));
                 }
-                else if (!_promptedCooldownPoiIds.Contains(poi.Id) && !_isPromptActive)
+                else if (!_promptedCooldownPoiIds.Contains(poi.Id))
                 {
-                    // Trường hợp quay lại trong thời gian cooldown: Hỏi người dùng có muốn nghe lại không
+                    // Trường hợp quay lại trong thời gian cooldown: Thu thập để hỏi một lần
                     // Không hỏi nếu đang phát chính POI đó
                     if (AudioPlaybackService.Instance.CurrentPlayingPoi?.Id == poi.Id) continue;
                     
-                    if (poi.HasAudio) ProcessCooldownPrompt(poi);
+                    if (poi.HasAudio) cooldownEntries.Add(poi);
                 }
             }
             else
@@ -564,6 +568,12 @@ public class MapViewModel : INotifyPropertyChanged
             {
                 StartDelayedAutoPlay(poi);
             }
+        }
+
+        // 5. Xử lý thông báo nghe lại gom nhóm
+        if (cooldownEntries.Count > 0 && !_isPromptActive)
+        {
+            ProcessCooldownPromptRange(cooldownEntries);
         }
     }
 
@@ -664,10 +674,33 @@ public class MapViewModel : INotifyPropertyChanged
         _playedInVisitPoiIds.Clear();
     }
 
-    private void ProcessCooldownPrompt(POI poi)
+    private void ProcessCooldownPromptRange(List<POI> pois)
     {
+        if (pois == null || pois.Count == 0) return;
+
         _isPromptActive = true;
-        _promptedCooldownPoiIds.Add(poi.Id);
+
+        // Sắp xếp theo khoảng cách để lấy điểm gần nhất làm đại diện
+        var sorted = pois.OrderBy(p => userLat.HasValue && userLon.HasValue
+            ? DistanceUtils.GetDistance(userLat.Value, userLon.Value, p.Latitude, p.Longitude)
+            : 0).ToList();
+
+        // Đánh dấu tất cả là đã hỏi để không hiện lại ngay lập tức
+        foreach (var p in sorted)
+            _promptedCooldownPoiIds.Add(p.Id);
+
+        var first = sorted[0];
+        string message;
+
+        if (sorted.Count == 1)
+        {
+            message = LocalizationService.Get("re_listen_msg", first.Name);
+        }
+        else
+        {
+            // "Bạn đang ở gần [A] và [X] địa điểm khác. Bạn có muốn nghe lại không?"
+            message = LocalizationService.Get("re_listen_multi_msg", first.Name, sorted.Count - 1);
+        }
 
         MainThread.BeginInvokeOnMainThread(async () =>
         {
@@ -675,13 +708,13 @@ public class MapViewModel : INotifyPropertyChanged
             {
                 bool confirm = await Application.Current.MainPage.DisplayAlert(
                     LocalizationService.Get("re_listen_title"),
-                    LocalizationService.Get("re_listen_msg", poi.Name),
+                    message,
                     LocalizationService.Get("re_listen_confirm"),
                     LocalizationService.Get("skip"));
 
                 if (confirm)
                 {
-                    await AudioPlaybackService.Instance.EnqueueAsync(poi);
+                    await AudioPlaybackService.Instance.EnqueueRangeAsync(sorted);
                 }
             }
             finally

@@ -100,45 +100,62 @@ namespace TourGuideApp
         {
             base.OnAppLinkRequestReceived(uri);
 
-            // Nếu link là guest và chưa đăng nhập thì mới xử lý
-            bool isGuestLink = string.Equals(uri.Scheme, "tourguideapp", StringComparison.OrdinalIgnoreCase) && 
-                               string.Equals(uri.Host, "guest", StringComparison.OrdinalIgnoreCase);
+            // 1. Phân tích POI ID từ link
+            int? poiId = QrCodeService.ParsePoiId(uri);
 
-            if (isGuestLink && !AuthService.IsLoggedIn)
+            MainThread.BeginInvokeOnMainThread(async () =>
             {
-                AuthService.LoginOfflineAsGuest();
-                MainPage = new AppShell();
-                return;
-            }
-
-            // 2. Kiểm tra link tourguideapp://poi/{id}
-            if (string.Equals(uri.Scheme, "tourguideapp", StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(uri.Host, "poi", StringComparison.OrdinalIgnoreCase))
-            {
-                // Parse ID từ path hoặc host
-                // Link có dạng: tourguideapp://poi/15
-                string lastSegment = uri.Segments.LastOrDefault()?.Trim('/') ?? "";
-                if (int.TryParse(lastSegment, out int poiId))
+                if (poiId.HasValue)
                 {
+                    // LƯU Ý QUAN TRỌNG: Phải thực hiện đăng nhập khách TRƯỚC khi chuyển trang
                     if (!AuthService.IsLoggedIn)
+                    {
                         AuthService.LoginOfflineAsGuest();
+                    }
 
-                    // Chuyển sang màn hình bản đồ và báo hiệu cần focus vào POI này
-                    MapTourState.FocusPoiId = poiId;
+                    // Lưu ID để MapPage xử lý khi load
+                    MapTourState.FocusPoiId = poiId.Value;
+
+                    // Chờ một chút ngắn để đảm bảo các tiến trình khởi tạo măc định của MAUI/Activity đã ổn định
+                    await Task.Delay(500);
+
+                    // Buộc chuyển sang AppShell bất kể đang ở Login hay Home
                     MainPage = new AppShell();
 
-                    // Tự động phát audio sau khi app đã ổn định một chút
+                    // Phát audio sau khi giao diện đã ổn định hẳn
                     _ = Task.Run(async () =>
                     {
-                        await Task.Delay(2000); // Chờ cho API nạp xong POI
-                        var poi = await new ApiService().GetPOIById(poiId);
-                        if (poi != null)
+                        try
                         {
-                            await AudioPlaybackService.Instance.PlayAsync(poi);
+                            await Task.Delay(2000); 
+                            var poi = await new ApiService().GetPOIById(poiId.Value);
+                            if (poi != null)
+                            {
+                                await AudioPlaybackService.Instance.PlayAsync(poi);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[App] AutoPlay error: {ex.Message}");
                         }
                     });
                 }
-            }
+                else
+                {
+                    // 2. Nếu không có POI, kiểm tra link guest thuần túy: tourguideapp://guest
+                    bool isGuestLink = string.Equals(uri.Scheme, "tourguideapp", StringComparison.OrdinalIgnoreCase) && 
+                                       string.Equals(uri.Host, "guest", StringComparison.OrdinalIgnoreCase);
+
+                    if (isGuestLink)
+                    {
+                        if (!AuthService.IsLoggedIn)
+                            AuthService.LoginOfflineAsGuest();
+
+                        await Task.Delay(500);
+                        MainPage = new AppShell();
+                    }
+                }
+            });
         }
 
         protected override void CleanUp()

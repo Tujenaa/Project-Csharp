@@ -12,7 +12,7 @@ public class ApiService
 
     public static class ApiConfig
     {
-        private const string DevHostIp = "192.168.1.22"; 
+        private const string DevHostIp = "192.168.1.60"; 
         private const string DevPort = "5266";
 
         public static string BaseUrl

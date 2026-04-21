@@ -37,6 +37,8 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
 let userMarker = null;
 let userLatLng = null;
 let poiMarkers = [];
+let selectedPoiId = -1;
+let nearestPoiId = -1;
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const userIcon = L.divIcon({
@@ -130,6 +132,22 @@ function clearRoutes() {
   clearDirections();
 }
 
+// Cập nhật toàn bộ icon marker dựa trên state
+function refreshMarkerIcons() {
+  poiMarkers.forEach(m => {
+    if (m.poiId === selectedPoiId) {
+      m.setIcon(makePOIIcon('selected'));
+      m.setZIndexOffset(1000);
+    } else if (m.poiId === nearestPoiId) {
+      m.setIcon(makePOIIcon('nearest'));
+      m.setZIndexOffset(500);
+    } else {
+      m.setIcon(makePOIIcon(false));
+      m.setZIndexOffset(100);
+    }
+  });
+}
+
 /// Đặt markers POI – KHÔNG vẽ đường nối, KHÔNG auto nav route
 function setPOIs(jsonArray) {
   clearMarkers();
@@ -153,6 +171,9 @@ function setPOIs(jsonArray) {
     poiMarkers.push(m);
   });
 
+  // Áp dụng lại highlight nếu có
+  refreshMarkerIcons();
+
   // Fit bounds để thấy tất cả markers + user
   const allPoints = pois.map(p => [p.latitude, p.longitude]);
   if (userLatLng) allPoints.push(userLatLng);
@@ -163,20 +184,14 @@ function setPOIs(jsonArray) {
 
 // Highlight khi người dùng bấm chọn thủ công → màu Cam
 function highlightPOI(id) {
-  poiMarkers.forEach(m => {
-    const isSelected = (m.poiId === id);
-    m.setIcon(makePOIIcon(isSelected ? 'selected' : false));
-    m.setZIndexOffset(isSelected ? 1000 : 100);
-  });
+  selectedPoiId = id;
+  refreshMarkerIcons();
 }
 
 // Highlight điểm gần nhất tự động → màu Tím
 function highlightNearest(id) {
-  poiMarkers.forEach(m => {
-    const isNearest = (m.poiId === id);
-    m.setIcon(makePOIIcon(isNearest ? 'nearest' : false));
-    m.setZIndexOffset(isNearest ? 500 : 100);
-  });
+  nearestPoiId = id;
+  refreshMarkerIcons();
 }
 
 // ── Routing ──────────────────────────────────────────────────────────────────

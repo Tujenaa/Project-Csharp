@@ -441,16 +441,26 @@ public partial class MapPage : ContentPage
         }
     }
 
-    private void OnCloseDetailCardTapped(object sender, EventArgs e)
+    private async void OnCloseDetailCardTapped(object sender, EventArgs e)
     {
         poiDetailCard.IsVisible = false;
         currentDetailPoi = null;
 
-        // Nếu vẫn đang có đường chỉ đường → giữ highlight cam cho POI đó
-        if (currentRoutePoi != null && viewModel.EvalJs != null)
-            _ = viewModel.EvalJs($"highlightPOI({currentRoutePoi.Id})");
-        else
-            HighlightNearestIfNoSelection();
+        if (viewModel.EvalJs != null)
+        {
+            // Nếu vẫn đang có đường chỉ đường → giữ highlight cam cho POI đó
+            if (currentRoutePoi != null)
+            {
+                await viewModel.EvalJs($"highlightPOI({currentRoutePoi.Id})");
+            }
+            else
+            {
+                // Xóa highlight Cam, trả lại quyền ưu tiên cho điểm gần nhất
+                await viewModel.EvalJs("highlightPOI(-1)");
+            }
+        }
+        
+        HighlightNearestIfNoSelection();
     }
 
     private void OnCardPlayAudioTapped(object sender, EventArgs e)
@@ -535,13 +545,11 @@ public partial class MapPage : ContentPage
 
     void HighlightNearestIfNoSelection()
     {
-        // Nếu đang có route, ưu tiên highlight điểm đến thay vì nearest
-        if (currentRoutePoi != null && viewModel.EvalJs != null)
-        {
-            _ = viewModel.EvalJs($"highlightPOI({currentRoutePoi.Id})");
-            return;
-        }
-        if (currentDetailPoi == null && viewModel.NearbyPOI.Count > 0 && viewModel.EvalJs != null)
+        if (viewModel.EvalJs == null) return;
+
+        // Nếu đang có route, highlight của route (Cam) đã được xử lý bởi logic selectedPoiId.
+        // Ta chỉ cần đảm bảo điểm gần nhất (Tím) được cập nhật.
+        if (viewModel.NearbyPOI.Count > 0)
         {
             var closest = viewModel.NearbyPOI.First();
             _ = viewModel.EvalJs($"highlightNearest({closest.Id})");
