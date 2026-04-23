@@ -8,7 +8,14 @@ namespace GPSGuide.Web.Pages;
 public class ApprovalModel : PageModel
 {
     private readonly IHttpClientFactory _http;
-    public ApprovalModel(IHttpClientFactory http) => _http = http;
+    private readonly IConfiguration _config;
+    public ApprovalModel(IHttpClientFactory http, IConfiguration config)
+    {
+        _http = http;
+        _config = config;
+    }
+
+    public string ApiBaseUrl => (_config["ApiUrl"] ?? "http://localhost:5266/api/").TrimEnd('/');
 
     [TempData] public string Msg { get; set; } = "";
     public List<POI> AllPois { get; set; } = [];
@@ -32,6 +39,33 @@ public class ApprovalModel : PageModel
         try
         {
             AllPois = await Api.GetFromJsonAsync<List<POI>>("poi/all") ?? [];
+            var reqs = await Api.GetFromJsonAsync<List<ApprovalRequestDto>>("ApprovalRequests") ?? [];
+            foreach (var req in reqs.Where(r => r.EntityType == "POI" && r.Status == "PENDING"))
+            {
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(req.Content);
+                    var root = doc.RootElement;
+                    
+                    var data = new POI
+                    {
+                        Id = -req.Id,
+                        Name = (root.TryGetProperty("Name", out var n) || root.TryGetProperty("name", out n)) ? n.GetString() ?? "" : "",
+                        Description = (root.TryGetProperty("Description", out var d) || root.TryGetProperty("description", out d)) ? d.GetString() : "",
+                        Status = "PENDING",
+                        OwnerId = req.RequesterId,
+                        OwnerName = req.RequesterName
+                    };
+
+                    // Toạ độ & bán kính
+                    if ((root.TryGetProperty("Latitude", out var lat) || root.TryGetProperty("latitude", out lat))) data.Latitude = lat.GetDouble();
+                    if ((root.TryGetProperty("Longitude", out var lng) || root.TryGetProperty("longitude", out lng))) data.Longitude = lng.GetDouble();
+                    if ((root.TryGetProperty("Radius", out var rad) || root.TryGetProperty("radius", out rad))) data.Radius = rad.GetInt32();
+
+                    AllPois.Add(data);
+                } catch { }
+            }
+            
             PendingTourPois = await Api.GetFromJsonAsync<List<TourPoiPending>>("tours/pois/all-pending") ?? [];
             RemovePendingTourPois = await Api.GetFromJsonAsync<List<TourPoiPending>>("tours/pois/all-remove-pending") ?? [];
             ApprovedTourPois = await Api.GetFromJsonAsync<List<TourPoiPending>>("tours/pois/all-approved") ?? [];
@@ -45,6 +79,14 @@ public class ApprovalModel : PageModel
     public async Task<IActionResult> OnPostApproveAsync()
     {
         if (!IsAdmin) return RedirectToPage("/Index");
+
+        if (PoiId < 0)
+        {
+            await Api.PutAsJsonAsync($"ApprovalRequests/{-PoiId}/approve", new { });
+            Msg = "Đã duyệt POI thành công.";
+            return RedirectToPage();
+        }
+
         // Load pending TourPOI của POI này trước khi duyệt
         var allPending = await Api.GetFromJsonAsync<List<TourPoiPending>>("tours/pois/all-pending") ?? [];
         var poiTours = allPending.Where(tp => tp.PoiId == PoiId).ToList();
@@ -62,7 +104,14 @@ public class ApprovalModel : PageModel
     public async Task<IActionResult> OnPostRejectAsync()
     {
         if (!IsAdmin) return RedirectToPage("/Index");
-        await Api.PutAsJsonAsync($"poi/{PoiId}/reject", new { Reason });
+        if (PoiId < 0)
+        {
+            await Api.PutAsJsonAsync($"ApprovalRequests/{-PoiId}/reject", new { Reason });
+        }
+        else
+        {
+            await Api.PutAsJsonAsync($"poi/{PoiId}/reject", new { Reason });
+        }
         Msg = "Đã từ chối POI.";
         return RedirectToPage();
     }
@@ -110,4 +159,6 @@ public class ApprovalModel : PageModel
 
     public record TourPoiPending(int TourPOIId, int TourId, string? TourName,
         int PoiId, string? PoiName, string? Address, int OrderIndex, string Status);
+        
+    public record ApprovalRequestDto(int Id, string EntityType, string RequestType, string Content, string Status, int? RequesterId, string? RequesterName);
 }

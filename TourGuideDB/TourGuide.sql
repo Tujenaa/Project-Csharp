@@ -143,14 +143,16 @@ CREATE TABLE TourPOI (
 -- ========================
 -- USER ACTIVITIES 
 -- ========================
-CREATE TABLE UserActivities (
-    Id INT PRIMARY KEY IDENTITY(1,1),
-    UserId INT NULL,
-    Username NVARCHAR(255) NOT NULL,
-    Role NVARCHAR(50) NOT NULL,
-    ActivityType NVARCHAR(50) NOT NULL,
-    Details NVARCHAR(MAX) NOT NULL,
-    Timestamp DATETIME DEFAULT GETDATE()
+CREATE TABLE [UserActivities] (
+    [Id] int NOT NULL IDENTITY,
+    [UserId] int NULL,
+    [Username] nvarchar(max) NOT NULL DEFAULT 'Khách',
+    [Role] nvarchar(max) NOT NULL DEFAULT 'GUEST',
+    [ActivityType] nvarchar(max) NOT NULL,
+    [Details] nvarchar(max) NOT NULL,
+    [DeviceId] nvarchar(max) NULL,
+    [Timestamp] datetime2 NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT [PK_UserActivities] PRIMARY KEY ([Id])
 );
 
 -- ================================================

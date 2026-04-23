@@ -142,7 +142,7 @@
                     <tr data-status="@p.Status">
                         <td style="color:#9ca3af;font-size:12px;font-family:var(--mono)">#@p.Id</td>
                         <td>
-                            <div style="font-weight:600;color:#111827">@p.Name</div>
+                            <div style="font-weight:600;color:#111827">@p.Name.Replace("[CHỜ DUYỆT] ", "")</div>
                             @if (!string.IsNullOrEmpty(p.Description))
                             {
                                 <div class="poi-meta">@(p.Description.Length > 80 ? p.Description[..80] + "…" : p.Description)</div>
@@ -180,6 +180,12 @@
                             <div class="approval-actions">
                                 @if (p.Status == "PENDING")
                                 {
+                                    if (p.Id < 0)
+                                    {
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openReqDetail(@p.Id)" style="white-space:nowrap;margin-right:4px">
+                                            <i class="bi bi-eye"></i> Xem nội dung
+                                        </button>
+                                    }
                                     <form method="post" asp-page-handler="Approve" style="display:inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="PoiId" value="@p.Id" />
@@ -520,7 +526,85 @@
     </div>
 </div>
 
+<!-- Modal Xem Chi tiết Yêu cầu POI -->
+<div id="reqDetailModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)closeReqDetail()">
+    <div class="modal-box" style="max-width:600px;width:90%" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h4>Chi tiết yêu cầu phê duyệt</h4>
+            <button type="button" class="btn btn-ghost btn-icon" onclick="closeReqDetail()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="modal-body" style="padding:20px;max-height:60vh;overflow-y:auto">
+            <div id="reqDetailContent" style="font-family:var(--mono);font-size:13px;background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap;word-break:break-word">
+                Đang tải...
+            </div>
+        </div>
+        <div class="modal-footer" style="padding:16px 20px;border-top:1px solid var(--border);text-align:right">
+            <button type="button" class="btn btn-ghost" onclick="closeReqDetail()">Đóng</button>
+        </div>
+    </div>
+</div>
+
 <script>
+    async function openReqDetail(negativeId) {
+        document.getElementById('reqDetailModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        var reqId = -negativeId;
+        var ctt = document.getElementById('reqDetailContent');
+        ctt.innerHTML = 'Đang tải thông tin...';
+        
+        const apiUrl = "@Model.ApiBaseUrl";
+        
+        try {
+            const res = await fetch(apiUrl + '/ApprovalRequests/' + reqId);
+            if (!res.ok) throw new Error('Failed to fetch');
+            const req = await res.json();
+            
+            let html = `<div style="margin-bottom:12px;font-size:14px"><b>Loại yêu cầu:</b> ${(req.requestType || req.RequestType) === 'CREATE' ? '<span class="badge badge-green">Thêm mới POI</span>' : '<span class="badge badge-yellow">Cập nhật POI</span>'}</div>`;
+            
+            const rawContent = req.content || req.Content;
+            const pData = typeof rawContent === 'string' ? JSON.parse(rawContent) : rawContent;
+            
+            // Helper để lấy giá trị không phân biệt hoa thường
+            const getVal = (obj, key) => obj[key.charAt(0).toLowerCase() + key.slice(1)] || obj[key.charAt(0).toUpperCase() + key.slice(1)] || "";
+
+            html += `<table class="tg-table" style="margin-bottom:16px">`;
+            html += `<tr><td style="width:120px;font-weight:600;color:#6b7280;background:#f9fafb">Tên POI</td><td><b>${getVal(pData, 'name')}</b></td></tr>`;
+            html += `<tr><td style="font-weight:600;color:#6b7280;background:#f9fafb">Toạ độ</td><td style="font-family:var(--mono);color:#5b21b6">${getVal(pData, 'latitude') || 0}, ${getVal(pData, 'longitude') || 0}</td></tr>`;
+            html += `<tr><td style="font-weight:600;color:#6b7280;background:#f9fafb">Bán kính</td><td>${getVal(pData, 'radius') || 0} m</td></tr>`;
+            html += `<tr><td style="font-weight:600;color:#6b7280;background:#f9fafb">SĐT</td><td>${getVal(pData, 'phone') || '<em style="color:#9ca3af">Không có</em>'}</td></tr>`;
+            html += `<tr><td style="font-weight:600;color:#6b7280;background:#f9fafb">Địa chỉ</td><td>${getVal(pData, 'address') || '<em style="color:#9ca3af">Không có</em>'}</td></tr>`;
+            html += `<tr><td style="font-weight:600;color:#6b7280;background:#f9fafb">Mô tả</td><td style="white-space:pre-wrap">${getVal(pData, 'description') || '<em style="color:#9ca3af">Không có</em>'}</td></tr>`;
+            html += `</table>`;
+
+            // Hiển thị danh sách ảnh đính kèm (nếu có)
+            const images = pData.images_objects || pData.Images_objects || pData.images || pData.Images;
+            if (images && images.length > 0) {
+                html += `<div style="font-weight:600;margin-bottom:10px;font-size:13px;color:#374151"><i class="bi bi-images"></i> Ảnh đính kèm (${images.length}):</div>`;
+                html += `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">`;
+                images.forEach(img => {
+                    const url = img.imageUrl || img.ImageUrl;
+                    const fullUrl = url.startsWith('http') ? url : (apiUrl.replace('/api', '') + url);
+                    html += `<img src="${fullUrl}" style="width:120px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb" 
+                                onerror="this.src='https://placehold.co/120x90?text=Error'" />`;
+                });
+                html += `</div>`;
+            }
+            
+            ctt.innerHTML = html;
+            ctt.style.background = 'transparent';
+            ctt.style.padding = '0';
+        } catch (err) {
+            console.error('Fetch error:', err);
+            ctt.innerHTML = `<span style="color:red">Lỗi tải dữ liệu.</span><br/><small style="color:#9ca3af">${apiUrl}/ApprovalRequests/${reqId}</small>`;
+        }
+    }
+    function closeReqDetail() {
+        document.getElementById('reqDetailModal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
     function openReject(id, name) {
         document.getElementById('rejectPoiId').value = id;
         document.getElementById('rejectPoiName').textContent = name;

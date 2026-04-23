@@ -3,31 +3,38 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Antiforgery;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddRazorPages().AddMvcOptions(options =>
 {
     options.Filters.Add<GPSGuide.Web.Filters.PendingCountFilter>();
 });
+
 builder.Services.AddHttpClient("API", client =>
 {
     var url = builder.Configuration["ApiUrl"] ?? "http://localhost:5266/api/";
     if (!url.EndsWith("/")) url += "/";
     client.BaseAddress = new Uri(url);
 });
+
 builder.Services.AddHttpClient("ImageProxy");
+
 builder.Services.AddDistributedMemoryCache();
+
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(8);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+    options.Cookie.Name = ".GPSGuide.Session";
 });
 
 // Tắt antiforgery validation để tránh lỗi khi HTTPS
 builder.Services.AddAntiforgery(options =>
 {
     options.Cookie.SameSite = SameSiteMode.Lax;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None;
     options.HeaderName = "X-CSRF-TOKEN";
 });
 
@@ -43,6 +50,14 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 
 app.UseStaticFiles();
 app.UseRouting();
+
+// Fix Edge Tracking Prevention: đặt CookiePolicy trước UseSession
+app.UseCookiePolicy(new CookiePolicyOptions
+{
+    MinimumSameSitePolicy = SameSiteMode.Lax,
+    Secure = CookieSecurePolicy.None
+});
+
 app.UseSession();
 
 // Proxy ảnh từ API
@@ -71,7 +86,7 @@ app.MapGet("/img-proxy", async (string url, IHttpClientFactory httpFactory, ICon
 // Proxy danh sách thiết bị online để tránh lỗi CORS/Mixed Content trên điện thoại thật
 app.MapGet("/api-device-proxy/active", async (IHttpClientFactory httpFactory) =>
 {
-    try 
+    try
     {
         var client = httpFactory.CreateClient("API");
         var resp = await client.GetAsync("device/active");

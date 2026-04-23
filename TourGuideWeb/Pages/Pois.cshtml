@@ -20,7 +20,7 @@
 <div class="poi-shell">
     <div class="poi-map-wrap">
         <div class="map-topbar">
-            <span class="map-count"><i class="bi bi-geo-alt-fill"></i> @Model.Pois.Count điểm thuyết minh</span>
+            <span class="map-count"><i class="bi bi-geo-alt-fill"></i> @Model.Pois.Count(p => p.Status == "APPROVED") điểm thuyết minh</span>
             <button class="btn btn-primary btn-sm" onclick="openModal()">
                 <i class="bi bi-plus-lg"></i> Thêm POI
             </button>
@@ -52,7 +52,7 @@
 
                         <div class="poi-item-body">
                             <div style="display:flex;align-items:center;gap:6px">
-                                <div class="poi-item-name">@p.Name</div>
+                                <div class="poi-item-name">@p.Name.Replace("[CHỜ DUYỆT] ", "")</div>
                                 @if (p.Status == "PENDING") {
                                     <span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:10px;font-weight:600">⏳ Chờ duyệt</span>
                                 } else if (p.Status == "REJECTED") {
@@ -245,11 +245,15 @@
     const IS_ADMIN   = @(Model.IsAdmin ? "true" : "false");
     const ROLE_HDR   = { 'Content-Type': 'application/json', 'X-Role': IS_ADMIN ? 'ADMIN' : 'OWNER' };
     
-    // BIẾN THEO DÕI THAY ĐỔI FORM (Chống gửi nhầm POI PENDING)
     let isPoiDirty = false;
-
-    // *** FIX: Set chứa imageId cần xóa, chỉ gửi khi submit ***
     let _pendingDeleteIds = new Set();
+
+    @{
+        foreach(var p in Model.Pois) {
+            p.Name = p.Name.Replace("[CHỜ DUYỆT] ", "").Replace("[CHỜ DUYỆT]", "").Trim();
+        }
+    }
+    const POIS = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pois));
 
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('poiForm').addEventListener('input', function(e) {
@@ -258,36 +262,21 @@
         const imgInput = document.getElementById('imageFileInput');
         if(imgInput) imgInput.addEventListener('change', () => isPoiDirty = true);
 
+        const MAP_POIS = POIS.filter(p => p.Status === 'APPROVED' || (p.Latitude !== 0 && p.Longitude !== 0));
         let clat=10.7769, clng=106.7009;
-        if(POIS.length){ clat=POIS.reduce((s,p)=>s+p.lat,0)/POIS.length; clng=POIS.reduce((s,p)=>s+p.lng,0)/POIS.length; }
+        if(MAP_POIS.length){ clat=MAP_POIS.reduce((s,p)=>s+p.Latitude,0)/MAP_POIS.length; clng=MAP_POIS.reduce((s,p)=>s+p.Longitude,0)/MAP_POIS.length; }
         mainMap=L.map('mainMap').setView([clat,clng],14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(mainMap);
-        POIS.forEach(p=>{
-            const m=L.marker([p.lat,p.lng],{icon:mkIcon(false)}).addTo(mainMap);
-            m.bindTooltip(`<b>${p.name}</b>`,{direction:'top',offset:[0,-20]});
-            m.on('click',()=>selectPoiById(p.id));
-            markers[p.id]=m;
-            circles[p.id]=L.circle([p.lat,p.lng],{radius:p.radius,color:'#e94560',fillColor:'#e94560',fillOpacity:.08,weight:1.5}).addTo(mainMap);
+        MAP_POIS.forEach(p=>{
+            const m=L.marker([p.Latitude,p.Longitude],{icon:mkIcon(false)}).addTo(mainMap);
+            m.bindTooltip(`<b>${p.Name}</b>`,{direction:'top',offset:[0,-20]});
+            m.on('click',()=>selectPoiById(p.Id));
+            markers[p.Id]=m;
+            circles[p.Id]=L.circle([p.Latitude,p.Longitude],{radius:p.Radius,color:'#e94560',fillColor:'#e94560',fillOpacity:.08,weight:1.5}).addTo(mainMap);
         });
     });
 
     function toAbsUrl(url) { return url ? '/img-proxy?url=' + encodeURIComponent(url) : ''; }
-
-    const POIS = JSON.parse('@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Pois.Select(p => new {
-        id     = p.Id,
-        name   = p.Name,
-        desc   = p.Description ?? "",
-        lat    = p.Latitude,
-        lng    = p.Longitude,
-        radius = p.Radius,
-        owner  = p.OwnerId.HasValue ? "#" + p.OwnerId.Value : "—",
-        njs    = p.Name,
-        djs    = p.Description ?? "",
-        oarg   = p.OwnerId.HasValue ? p.OwnerId.Value.ToString() : "null",
-        img    = p.ImageUrl ?? "",
-        status = p.Status,
-        images = p.Images.Select(i => new { id = i.Id, imageUrl = i.ImageUrl, isThumbnail = i.IsThumbnail })
-    })).Replace("'", "\\'"))');
 
     let mainMap, markers={}, circles={}, selectedId=null;
 
@@ -296,7 +285,7 @@
     }
 
     function selectPoiById(id){
-        const poi=POIS.find(p=>p.id===id); if(!poi) return;
+        const poi=POIS.find(p=>p.Id===id); if(!poi) return;
         if(selectedId!==null){
             const oldEl=document.getElementById('item-'+selectedId);
             if(oldEl) oldEl.classList.remove('selected');
@@ -305,7 +294,7 @@
         selectedId=id;
         const el=document.getElementById('item-'+id);
         if(el){ el.classList.add('selected'); el.scrollIntoView({behavior:'smooth',block:'nearest'}); }
-        if(markers[id]){ markers[id].setIcon(mkIcon(true)); mainMap.flyTo([poi.lat,poi.lng],16,{duration:.8}); }
+        if(mainMap && markers[id]){ markers[id].setIcon(mkIcon(true)); mainMap.flyTo([poi.Latitude,poi.Longitude],16,{duration:.8}); }
         document.getElementById('poiRightPanel').classList.add('detail-active');
         showDetail(poi);
     }
@@ -315,7 +304,7 @@
         if(selectedId!==null){
             const el=document.getElementById('item-'+selectedId);
             if(el) el.classList.remove('selected');
-            if(markers[selectedId]) markers[selectedId].setIcon(mkIcon(false));
+            if(mainMap && markers[selectedId]) markers[selectedId].setIcon(mkIcon(false));
             selectedId = null;
         }
     }
@@ -324,48 +313,43 @@
         document.getElementById('detailPlaceholder').style.display='none';
         document.getElementById('detailContent').style.display='flex';
 
-        let thumb = (poi.status !== 'REJECTED' && poi.images && poi.images.length > 0)
-            ? (poi.images.find(i => i.isThumbnail) || poi.images[0])
+        let thumb = (poi.Status !== 'REJECTED' && poi.Images && poi.Images.length > 0)
+            ? (poi.Images.find(i => i.IsThumbnail) || poi.Images[0])
             : null;
 
         let finalImgUrl = '';
-        if (thumb && thumb.imageUrl) finalImgUrl = toAbsUrl(thumb.imageUrl);
-        else if (poi.status !== 'REJECTED' && poi.img) finalImgUrl = toAbsUrl(poi.img);
+        if (thumb && thumb.ImageUrl) finalImgUrl = toAbsUrl(thumb.ImageUrl);
+        else if (poi.Status !== 'REJECTED' && poi.ImageUrl) finalImgUrl = toAbsUrl(poi.ImageUrl);
 
         document.getElementById('detailImg').src = finalImgUrl;
         
         const thumbsWrap = document.getElementById('detailThumbs');
-        if (poi.status !== 'REJECTED' && poi.images && poi.images.length > 1) {
+        if (poi.Status !== 'REJECTED' && poi.Images && poi.Images.length > 1) {
             thumbsWrap.style.display = 'flex';
-            thumbsWrap.innerHTML = poi.images.map(img => `<img src="${toAbsUrl(img.imageUrl)}" onclick="document.getElementById('detailImg').src='${toAbsUrl(img.imageUrl)}'" style="width:52px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:2px solid ${img.isThumbnail ? '#7c3aed' : '#e5e7eb'};flex-shrink:0" />`).join('');
+            thumbsWrap.innerHTML = poi.Images.map(img => `<img src="${toAbsUrl(img.ImageUrl)}" onclick="document.getElementById('detailImg').src='${toAbsUrl(img.ImageUrl)}'" style="width:52px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:2px solid ${img.IsThumbnail ? '#7c3aed' : '#e5e7eb'};flex-shrink:0" />`).join('');
         } else {
             thumbsWrap.style.display = 'none';
         }
 
-        document.getElementById('detailRadius').textContent = poi.radius + ' m';
-        document.getElementById('detailName').textContent = poi.name;
-        document.getElementById('detailNavTitle').textContent = poi.name;
-        document.getElementById('detailDesc').textContent = poi.desc || 'Chưa có mô tả.';
-        document.getElementById('detailLat').textContent = poi.lat.toFixed(6);
-        document.getElementById('detailLng').textContent = poi.lng.toFixed(6);
-        document.getElementById('detailR').textContent = poi.radius + ' m';
-        document.getElementById('detailOwner').textContent = poi.owner;
-        loadPoiTours(poi.id);
+        document.getElementById('detailRadius').textContent = poi.Radius + ' m';
+        document.getElementById('detailName').textContent = poi.Name;
+        document.getElementById('detailNavTitle').textContent = poi.Name;
+        document.getElementById('detailDesc').textContent = poi.Description || 'Chưa có mô tả.';
+        document.getElementById('detailLat').textContent = poi.Latitude.toFixed(6);
+        document.getElementById('detailLng').textContent = poi.Longitude.toFixed(6);
+        document.getElementById('detailR').textContent = poi.Radius + ' m';
+        document.getElementById('detailOwner').textContent = poi.OwnerId ? "#" + poi.OwnerId : "—";
+        loadPoiTours(poi.Id);
     }
 
-    function editCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) editPoi(p.id,p.njs,p.djs,p.lat,p.lng,p.radius,p.oarg,p.img); }
-    function deleteCurrentPoi(){ const p=POIS.find(x=>x.id===selectedId); if(p) confirmDelete(p.id,p.name); }
+    function editCurrentPoi(){ const p=POIS.find(x=>x.Id===selectedId); if(p) editPoi(p.Id,p.Name,p.Description,p.Latitude,p.Longitude,p.Radius,p.OwnerId,p.ImageUrl); }
+    function deleteCurrentPoi(){ const p=POIS.find(x=>x.Id===selectedId); if(p) confirmDelete(p.Id,p.Name); }
 
-    // *** FIX: Đánh dấu xóa thay vì xóa ngay — ẩn UI, lưu id vào _pendingDeleteIds ***
     function deleteImage(imageId) {
         _pendingDeleteIds.add(imageId);
         isPoiDirty = true;
-
-        // Ẩn thẻ ảnh trong modal
         const imgWrap = document.getElementById('imgwrap-' + imageId);
         if (imgWrap) imgWrap.style.display = 'none';
-
-        // Ẩn luôn section "Ảnh hiện tại" nếu không còn ảnh nào hiển thị
         const grid = document.getElementById('currentImagesGrid');
         if (grid) {
             const visible = Array.from(grid.querySelectorAll('[id^="imgwrap-"]'))
@@ -427,7 +411,7 @@
     }
     
     function placeMarker(lat,lng,r){
-        isPoiDirty = true; // Đánh dấu form có thay đổi khi đặt marker mới
+        isPoiDirty = true;
         if(_pmk)_pm.removeLayer(_pmk); drawCircle(lat,lng,r);
         _pmk=L.marker([lat,lng],{draggable:true}).addTo(_pm);
         document.getElementById('fLat').value=lat.toFixed(6); document.getElementById('fLng').value=lng.toFixed(6);

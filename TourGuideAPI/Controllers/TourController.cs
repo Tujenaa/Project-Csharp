@@ -47,6 +47,28 @@ namespace TourGuideAPI.Controllers
         {
             var tours = await _context.Tours.OrderByDescending(t => t.CreatedAt).ToListAsync();
             var result = await BuildTourDtos(tours, onlyApproved: false);
+
+            // Thêm các tour đang chờ duyệt (mới tạo)
+            var pendingRequests = await _context.ApprovalRequests
+                .Where(r => r.EntityType == "TOUR" && r.RequestType == "CREATE" && r.Status == "PENDING")
+                .ToListAsync();
+
+            foreach (var req in pendingRequests)
+            {
+                try {
+                    var data = System.Text.Json.JsonSerializer.Deserialize<TourCreateRequest>(req.Content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (data != null) {
+                        result.Insert(0, new TourDto {
+                            Id = -req.Id, // ID âm
+                            Name = "[CHỜ DUYỆT] " + data.Name,
+                            Description = data.Description,
+                            ThumbnailUrl = data.ThumbnailUrl,
+                            Status = "PENDING"
+                        });
+                    }
+                } catch { }
+            }
+
             return Ok(result);
         }
 
@@ -93,35 +115,62 @@ namespace TourGuideAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateTour([FromBody] TourCreateRequest req)
         {
-            var tour = new Tour
-            {
-                Name = req.Name,
-                Description = req.Description,
-                ThumbnailUrl = req.ThumbnailUrl,
-                Status = req.Status ?? "PUBLISHED",
-                CreatedBy = req.CreatedBy,
-                CreatedAt = DateTime.Now
-            };
-            _context.Tours.Add(tour);
-            await _context.SaveChangesAsync();
+            var role = Request.Headers["X-Role"].ToString();
+            var isAdmin = role == "ADMIN";
+            var userIdStr = Request.Headers["X-UserId"].ToString();
+            int.TryParse(userIdStr, out var userId);
+            var username = Request.Headers["X-Username"].ToString();
 
-            // Thêm POI vào tour
-            if (req.PoiIds != null)
+            if (isAdmin)
             {
-                for (int i = 0; i < req.PoiIds.Count; i++)
+                var tour = new Tour
                 {
-                    _context.TourPOI.Add(new TourPOI
-                    {
-                        TourId = tour.Id,
-                        PoiId = req.PoiIds[i],
-                        OrderIndex = i + 1
-                    });
-                }
+                    Name = req.Name,
+                    Description = req.Description,
+                    ThumbnailUrl = req.ThumbnailUrl,
+                    Status = req.Status ?? "PUBLISHED",
+                    CreatedBy = req.CreatedBy,
+                    CreatedAt = DateTime.Now
+                };
+                _context.Tours.Add(tour);
                 await _context.SaveChangesAsync();
-            }
 
-            await LogOwnerAction("CREATE_TOUR", $"Owner đã tạo Tour mới: {tour.Name}");
-            return Ok(tour);
+                // Thêm POI vào tour
+                if (req.PoiIds != null)
+                {
+                    for (int i = 0; i < req.PoiIds.Count; i++)
+                    {
+                        _context.TourPOI.Add(new TourPOI
+                        {
+                            TourId = tour.Id,
+                            PoiId = req.PoiIds[i],
+                            OrderIndex = i + 1,
+                            Status = "APPROVED"
+                        });
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(tour);
+            }
+            else
+            {
+                // Owner tạo → tạo yêu cầu duyệt
+                var request = new ApprovalRequest
+                {
+                    EntityType = "TOUR",
+                    RequestType = "CREATE",
+                    Content = System.Text.Json.JsonSerializer.Serialize(req),
+                    RequesterId = userId,
+                    RequesterName = username,
+                    Status = "PENDING",
+                    CreatedAt = DateTime.Now
+                };
+                _context.ApprovalRequests.Add(request);
+                await _context.SaveChangesAsync();
+                await LogOwnerAction("REQUEST_CREATE_TOUR", $"Owner đã gửi yêu cầu tạo Tour mới: {req.Name}");
+                return Ok(new { message = "Yêu cầu tạo Tour mới đã được gửi và đang chờ duyệt.", requestId = request.Id });
+            }
         }
 
         // PUT /api/tours/{id}
@@ -131,30 +180,57 @@ namespace TourGuideAPI.Controllers
             var tour = await _context.Tours.FindAsync(id);
             if (tour == null) return NotFound();
 
-            tour.Name = req.Name ?? tour.Name;
-            tour.Description = req.Description ?? tour.Description;
-            tour.ThumbnailUrl = req.ThumbnailUrl ?? tour.ThumbnailUrl;
-            tour.Status = req.Status ?? tour.Status;
+            var role = Request.Headers["X-Role"].ToString();
+            var isAdmin = role == "ADMIN";
+            var userIdStr = Request.Headers["X-UserId"].ToString();
+            int.TryParse(userIdStr, out var userId);
+            var username = Request.Headers["X-Username"].ToString();
 
-            // Cập nhật danh sách POI
-            if (req.PoiIds != null)
+            if (isAdmin)
             {
-                var existing = _context.TourPOI.Where(tp => tp.TourId == id);
-                _context.TourPOI.RemoveRange(existing);
-                for (int i = 0; i < req.PoiIds.Count; i++)
-                {
-                    _context.TourPOI.Add(new TourPOI
-                    {
-                        TourId = id,
-                        PoiId = req.PoiIds[i],
-                        OrderIndex = i + 1
-                    });
-                }
-            }
+                tour.Name = req.Name ?? tour.Name;
+                tour.Description = req.Description ?? tour.Description;
+                tour.ThumbnailUrl = req.ThumbnailUrl ?? tour.ThumbnailUrl;
+                tour.Status = req.Status ?? tour.Status;
 
-            await _context.SaveChangesAsync();
-            await LogOwnerAction("UPDATE_TOUR", $"Owner đã cập nhật Tour: {tour.Name}");
-            return Ok(await BuildTourDto(tour, onlyApproved: false));
+                // Cập nhật danh sách POI
+                if (req.PoiIds != null)
+                {
+                    var existing = _context.TourPOI.Where(tp => tp.TourId == id);
+                    _context.TourPOI.RemoveRange(existing);
+                    for (int i = 0; i < req.PoiIds.Count; i++)
+                    {
+                        _context.TourPOI.Add(new TourPOI
+                        {
+                            TourId = id,
+                            PoiId = req.PoiIds[i],
+                            OrderIndex = i + 1
+                        });
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(await BuildTourDto(tour, onlyApproved: false));
+            }
+            else
+            {
+                // Owner sửa → tạo yêu cầu duyệt
+                var request = new ApprovalRequest
+                {
+                    EntityId = id,
+                    EntityType = "TOUR",
+                    RequestType = "UPDATE",
+                    Content = System.Text.Json.JsonSerializer.Serialize(req),
+                    RequesterId = userId,
+                    RequesterName = username,
+                    Status = "PENDING",
+                    CreatedAt = DateTime.Now
+                };
+                _context.ApprovalRequests.Add(request);
+                await _context.SaveChangesAsync();
+                await LogOwnerAction("REQUEST_UPDATE_TOUR", $"Owner đã gửi yêu cầu cập nhật Tour: {tour.Name}");
+                return Ok(new { message = "Yêu cầu cập nhật Tour đã được gửi và đang chờ duyệt.", requestId = request.Id });
+            }
         }
 
         // DELETE /api/tours/{id}

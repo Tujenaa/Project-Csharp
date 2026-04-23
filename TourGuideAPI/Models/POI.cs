@@ -18,5 +18,6 @@ namespace TourGuideAPI.Models
         [NotMapped] public string? ImageUrl { get; set; }
         
         public List<Audio> Audios { get; set; } = new();
+        public List<POIImage> Images { get; set; } = new();
     }
 }

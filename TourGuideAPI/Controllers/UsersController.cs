@@ -56,7 +56,7 @@ namespace TourGuideAPI.Controllers
             if (!string.IsNullOrWhiteSpace(user.PasswordHash) && user.PasswordHash != existing.PasswordHash)
             {
                 // Kiểm tra xem có vẻ là hash BCrypt chưa (thường bắt đầu bằng $2)
-                if (!user.PasswordHash.StartsWith("$2a$") && !user.PasswordHash.StartsWith("$2b$"))
+                if (!user.PasswordHash.StartsWith("$2"))
                 {
                     existing.PasswordHash = BC.HashPassword(user.PasswordHash);
                 }
@@ -89,44 +89,80 @@ namespace TourGuideAPI.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginRequest req)
         {
-            var user = await _context.Users
-                .FirstOrDefaultAsync(x => x.Username == req.Username);
-
-            // 1. Không tìm thấy user
-            if (user == null)
-                return NotFound("Tài khoản không tồn tại");
-
-            // 2. Kiểm tra mật khẩu
-            if (string.IsNullOrWhiteSpace(req.Password) || !BC.Verify(req.Password, user.PasswordHash))
-                return Unauthorized("Mật khẩu không đúng");
-
-            // 3. Kiểm tra trạng thái hoạt động
-            if (!user.IsActive)
-                return StatusCode(403, "Tài khoản của bạn đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.");
-
-            // Ghi log hoạt động
-            _context.UserActivities.Add(new UserActivity
+            try
             {
-                UserId = user.Id,
-                Username = user.Name ?? user.Username,
-                Role = user.Role,
-                ActivityType = "LOGIN",
-                Details = $"Người dùng {user.Username} đã đăng nhập hệ thống.",
-                DeviceId = req.DeviceId,
-                Timestamp = DateTime.Now
-            });
-            await _context.SaveChangesAsync();
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(x => x.Username == req.Username);
 
-            return Ok(new
+                // 1. Không tìm thấy user
+                if (user == null)
+                {
+                    await LogFailedLogin(req.Username, "NOT_FOUND", req.DeviceId);
+                    return NotFound("Tài khoản không tồn tại");
+                }
+
+                // 2. Kiểm tra mật khẩu
+                if (string.IsNullOrWhiteSpace(req.Password) || !BC.Verify(req.Password, user.PasswordHash))
+                {
+                    await LogFailedLogin(req.Username, "WRONG_PASSWORD", req.DeviceId, user.Id, user.Role);
+                    return Unauthorized("Mật khẩu không đúng");
+                }
+
+                // 3. Kiểm tra trạng thái hoạt động
+                if (!user.IsActive)
+                {
+                    await LogFailedLogin(req.Username, "INACTIVE", req.DeviceId, user.Id, user.Role);
+                    return StatusCode(403, "Tài khoản của bạn đã bị vô hiệu hoá. Vui lòng liên hệ quản trị viên.");
+                }
+
+                // Ghi log hoạt động thành công
+                _context.UserActivities.Add(new UserActivity
+                {
+                    UserId = user.Id,
+                    Username = user.Name ?? user.Username,
+                    Role = user.Role,
+                    ActivityType = "LOGIN",
+                    Details = $"Người dùng {user.Username} đã đăng nhập hệ thống.",
+                    DeviceId = req.DeviceId,
+                    Timestamp = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    user.Id,
+                    user.Username,
+                    user.Name,
+                    user.Email,
+                    user.Phone,
+                    user.Role,
+                    user.IsActive
+                });
+            }
+            catch (Exception ex)
             {
-                user.Id,
-                user.Username,
-                user.Name,
-                user.Email,
-                user.Phone,
-                user.Role,
-                user.IsActive
-            });
+                // Trả về lỗi chi tiết để debug
+                return StatusCode(500, $"Lỗi hệ thống: {ex.Message}. Chi tiết: {ex.InnerException?.Message}");
+            }
+        }
+
+        private async Task LogFailedLogin(string? username, string reason, string? deviceId, int? userId = null, string role = "GUEST")
+        {
+            try
+            {
+                _context.UserActivities.Add(new UserActivity
+                {
+                    UserId = userId,
+                    Username = username ?? "Unknown",
+                    Role = role,
+                    ActivityType = "FAILED_LOGIN",
+                    Details = $"Đăng nhập thất bại. Lý do: {reason}",
+                    DeviceId = deviceId,
+                    Timestamp = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
+            catch { /* Tránh lỗi ghi log làm hỏng login */ }
         }
 
         [HttpPost("register")]

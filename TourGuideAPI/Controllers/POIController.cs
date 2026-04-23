@@ -143,13 +143,99 @@ namespace TourGuideAPI.Controllers
 
         // ── WEB: GET /api/poi/owner/{ownerId} ──
         [HttpGet("owner/{ownerId}")]
-        public async Task<IActionResult> GetByOwner(int ownerId) =>
-            Ok(await _context.POI.Where(p => p.OwnerId == ownerId).ToListAsync());
+        public async Task<IActionResult> GetByOwner(int ownerId)
+        {
+            var pois = await _context.POI.Where(p => p.OwnerId == ownerId).ToListAsync();
+
+            // Lấy thêm các yêu cầu tạo mới đang chờ duyệt của owner này
+            var pendingCreates = await _context.ApprovalRequests
+                .Where(r => r.RequesterId == ownerId && r.EntityType == "POI" && r.RequestType == "CREATE" && r.Status == "PENDING")
+                .ToListAsync();
+
+            // ✅ FIX: map đầy đủ các trường bao gồm Latitude, Longitude, Radius
+            var result = pois.Select(p => new POIDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Address = p.Address,
+                Status = p.Status,
+                Latitude = p.Latitude,
+                Longitude = p.Longitude,
+                Radius = p.Radius
+            }).ToList();
+
+            foreach (var req in pendingCreates)
+            {
+                try
+                {
+                    var data = JsonSerializer.Deserialize<POI>(req.Content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (data != null)
+                    {
+                        // ✅ FIX: map đầy đủ tọa độ từ ApprovalRequest
+                        result.Add(new POIDto
+                        {
+                            Id = -req.Id, // Dùng ID âm để phân biệt hàng ảo
+                            Name = data.Name,
+                            Description = data.Description,
+                            Address = data.Address,
+                            Status = "PENDING",
+                            Latitude = data.Latitude,
+                            Longitude = data.Longitude,
+                            Radius = data.Radius
+                        });
+                    }
+                }
+                catch { }
+            }
+
+            return Ok(result);
+        }
 
         // ── ADMIN: GET /api/poi/pending ──
         [HttpGet("pending")]
-        public async Task<IActionResult> GetPending() =>
-            Ok(await _context.POI.Where(p => p.Status == "PENDING").ToListAsync());
+        public async Task<IActionResult> GetPending()
+        {
+            // Kết hợp POI có Status PENDING (cũ) và các ApprovalRequest (mới)
+            var oldPending = await _context.POI.Where(p => p.Status == "PENDING").ToListAsync();
+            var newRequests = await _context.ApprovalRequests
+                .Where(r => r.EntityType == "POI" && r.Status == "PENDING")
+                .ToListAsync();
+
+            var result = oldPending.Select(p => new {
+                p.Id,
+                p.Name,
+                p.Description,
+                p.Status,
+                OwnerId = (int?)p.OwnerId,
+                RequestType = "UPDATE (LEGACY)",
+                RequestId = (int?)null
+            }).ToList();
+
+            foreach (var req in newRequests)
+            {
+                try
+                {
+                    var data = JsonSerializer.Deserialize<POI>(req.Content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (data != null)
+                    {
+                        result.Add(new
+                        {
+                            Id = req.EntityId ?? 0,
+                            Name = data.Name,
+                            Description = data.Description,
+                            Status = "PENDING",
+                            OwnerId = (int?)req.RequesterId,
+                            RequestType = req.RequestType,
+                            RequestId = (int?)req.Id
+                        });
+                    }
+                }
+                catch { }
+            }
+
+            return Ok(result);
+        }
 
         // ── WEB: GET /api/poi/{id} ──
         [HttpGet("{id}")]
@@ -195,6 +281,18 @@ namespace TourGuideAPI.Controllers
         [HttpGet("{id}/images")]
         public async Task<IActionResult> GetImages(int id)
         {
+            if (id < 0)
+            {
+                var req = await _context.ApprovalRequests.FindAsync(-id);
+                if (req == null) return Ok(new List<POIImage>());
+                try
+                {
+                    var data = JsonSerializer.Deserialize<POI>(req.Content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    return Ok(data?.Images ?? new List<POIImage>());
+                }
+                catch { return Ok(new List<POIImage>()); }
+            }
+
             var images = await _context.POIImages
                 .Where(img => img.PoiId == id)
                 .ToListAsync();
@@ -218,50 +316,105 @@ namespace TourGuideAPI.Controllers
             catch (Exception ex) { return BadRequest($"JSON lỗi: {ex.Message}"); }
             if (poi == null) return BadRequest("Deserialize null");
             if (string.IsNullOrWhiteSpace(poi.Name)) return BadRequest("Name rỗng");
+
+            var role = Request.Headers["X-Role"].ToString();
+            var userIdStr = Request.Headers["X-UserId"].ToString();
+            int.TryParse(userIdStr, out var userId);
+            var username = Request.Headers["X-Username"].ToString();
+
+            if (role == "OWNER")
+            {
+                // Owner tạo → tạo yêu cầu duyệt
+                var request = new ApprovalRequest
+                {
+                    EntityType = "POI",
+                    RequestType = "CREATE",
+                    Content = raw,
+                    RequesterId = userId,
+                    RequesterName = username,
+                    Status = "PENDING",
+                    CreatedAt = DateTime.Now
+                };
+                _context.ApprovalRequests.Add(request);
+                await _context.SaveChangesAsync();
+                await LogOwnerAction("REQUEST_CREATE_POI", $"Owner đã gửi yêu cầu tạo điểm mới: {poi.Name}");
+                return Ok(new { message = "Yêu cầu tạo điểm mới đã được gửi và đang chờ duyệt.", requestId = request.Id });
+            }
+
+            // Admin tạo → thêm thẳng
             poi.Id = 0;
             poi.OwnerName = null;
-            if (string.IsNullOrEmpty(poi.Status)) poi.Status = "PENDING";
+            if (string.IsNullOrEmpty(poi.Status)) poi.Status = "APPROVED";
             _context.POI.Add(poi);
             await _context.SaveChangesAsync();
-            await LogOwnerAction("CREATE_POI", $"Owner đã tạo điểm thuyết minh mới: {poi.Name}");
             return Ok(poi);
         }
 
         // ── WEB: PUT /api/poi/{id} ──
-        // Admin sửa thẳng; Owner sửa → về PENDING chờ duyệt lại
+        // Admin sửa thẳng; Owner sửa → tạo yêu cầu duyệt, không đè lên bản cũ
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] POI poi)
         {
+            var role = Request.Headers["X-Role"].ToString();
+            var isAdmin = role == "ADMIN";
+            var userIdStr = Request.Headers["X-UserId"].ToString();
+            int.TryParse(userIdStr, out var userId);
+            var username = Request.Headers["X-Username"].ToString();
+
+            if (id < 0)
+            {
+                if (isAdmin) return BadRequest("Admin không thể sửa điểm đang chờ duyệt");
+                var req = await _context.ApprovalRequests.FindAsync(-id);
+                if (req == null || req.Status != "PENDING") return NotFound();
+                
+                // Keep original request type but update the content with new POI data
+                req.Content = JsonSerializer.Serialize(poi);
+                await _context.SaveChangesAsync();
+                await LogOwnerAction("UPDATE_PENDING_POI", $"Owner đã cập nhật điểm chờ duyệt: {poi.Name}");
+                return Ok(new { message = "Yêu cầu đã được cập nhật.", requestId = req.Id });
+            }
+
             var existing = await _context.POI.FindAsync(id);
             if (existing == null) return NotFound();
 
-            var isAdmin = Request.Headers.TryGetValue("X-Role", out var role) && role == "ADMIN";
-
-            existing.Name = poi.Name;
-            existing.Description = poi.Description;
-            existing.Address = poi.Address;
-            existing.Phone = poi.Phone;
-            existing.Latitude = poi.Latitude;
-            existing.Longitude = poi.Longitude;
-            existing.Radius = poi.Radius;
-            existing.OwnerId = poi.OwnerId;
-            existing.ImageUrl = poi.ImageUrl ?? existing.ImageUrl;
-            existing.RejectReason = poi.RejectReason;
-
             if (isAdmin)
             {
+                existing.Name = poi.Name;
+                existing.Description = poi.Description;
+                existing.Address = poi.Address;
+                existing.Phone = poi.Phone;
+                existing.Latitude = poi.Latitude;
+                existing.Longitude = poi.Longitude;
+                existing.Radius = poi.Radius;
+                existing.OwnerId = poi.OwnerId;
+                existing.ImageUrl = poi.ImageUrl ?? existing.ImageUrl;
+                existing.RejectReason = poi.RejectReason;
+
                 if (!string.IsNullOrEmpty(poi.Status))
                     existing.Status = poi.Status;
+
+                await _context.SaveChangesAsync();
+                return Ok(existing);
             }
             else
             {
-                // Owner sửa → chờ duyệt lại
-                existing.Status = "PENDING";
+                // Owner sửa → tạo yêu cầu duyệt
+                var request = new ApprovalRequest
+                {
+                    EntityId = id,
+                    EntityType = "POI",
+                    RequestType = "UPDATE",
+                    Content = JsonSerializer.Serialize(poi),
+                    RequesterId = userId,
+                    RequesterName = username,
+                    Status = "PENDING",
+                    CreatedAt = DateTime.Now
+                };
+                _context.ApprovalRequests.Add(request);
+                await _context.SaveChangesAsync();
+                await LogOwnerAction("REQUEST_UPDATE_POI", $"Owner đã gửi yêu cầu cập nhật điểm: {existing.Name}");
+                return Ok(new { message = "Yêu cầu cập nhật đã được gửi và đang chờ duyệt.", requestId = request.Id });
             }
-
-            await _context.SaveChangesAsync();
-            await LogOwnerAction("UPDATE_POI", $"Owner đã cập nhật điểm thuyết minh: {existing.Name}");
-            return Ok(existing);
         }
 
         // ── ADMIN: PUT /api/poi/{id}/approve ──
@@ -292,21 +445,54 @@ namespace TourGuideAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var poi = await _context.POI.FindAsync(id);
-            if (poi == null) return NotFound();
+            try
+            {
+                if (id < 0)
+                {
+                    var req = await _context.ApprovalRequests.FindAsync(-id);
+                    if (req != null)
+                    {
+                        _context.ApprovalRequests.Remove(req);
+                        await _context.SaveChangesAsync();
+                    }
+                    return Ok();
+                }
 
-            var audios = _context.Audio.Where(a => a.PoiId == id);
-            _context.Audio.RemoveRange(audios);
-            var histories = _context.History.Where(h => h.PoiId == id);
-            _context.History.RemoveRange(histories);
-            var images = _context.POIImages.Where(img => img.PoiId == id);
-            _context.POIImages.RemoveRange(images);
+                var poi = await _context.POI.FindAsync(id);
+                if (poi == null) return NotFound();
+                var poiName = poi.Name;
 
-            var poiName = poi.Name;
-            _context.POI.Remove(poi);
-            await _context.SaveChangesAsync();
-            await LogOwnerAction("DELETE_POI", $"Owner đã xóa điểm thuyết minh: {poiName}");
-            return Ok();
+                // Phase 1: Xóa tất cả bản ghi con có FK NO_ACTION trước
+                var histories = await _context.History.Where(h => h.PoiId == id).ToListAsync();
+                if (histories.Any()) _context.History.RemoveRange(histories);
+
+                var images = await _context.POIImages.Where(img => img.PoiId == id).ToListAsync();
+                if (images.Any()) _context.POIImages.RemoveRange(images);
+
+                var audios = await _context.Audio.Where(a => a.PoiId == id).ToListAsync();
+                if (audios.Any()) _context.Audio.RemoveRange(audios);
+
+                var tourPois = await _context.TourPOI.Where(tp => tp.PoiId == id).ToListAsync();
+                if (tourPois.Any()) _context.TourPOI.RemoveRange(tourPois);
+
+                var reqs = await _context.ApprovalRequests.Where(r => r.EntityType == "POI" && r.EntityId == id).ToListAsync();
+                if (reqs.Any()) _context.ApprovalRequests.RemoveRange(reqs);
+
+                // Lưu xóa bản ghi con trước
+                await _context.SaveChangesAsync();
+
+                // Phase 2: Xóa POI chính
+                _context.POI.Remove(poi);
+                await _context.SaveChangesAsync();
+
+                try { await LogOwnerAction("DELETE_POI", $"Owner đã xóa điểm thuyết minh: {poiName}"); } catch { }
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                var inner = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                return StatusCode(500, $"Lỗi xóa POI: {inner}");
+            }
         }
 
         // ── ADMIN: DELETE /api/poi/rejected ──
@@ -355,14 +541,46 @@ namespace TourGuideAPI.Controllers
         [HttpPost("{id}/image")]
         public async Task<IActionResult> UploadImage(int id, IFormFile file)
         {
-            var p = await _context.POI.FindAsync(id);
-            if (p == null) return NotFound();
             if (file == null || file.Length == 0) return BadRequest("No file");
 
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
             var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp" };
             if (!allowed.Contains(ext)) return BadRequest("Chỉ hỗ trợ jpg/png/webp");
             if (file.Length > 5_242_880) return BadRequest("Ảnh tối đa 5MB");
+
+            // Xử lý POI CHỜ DUYỆT (Id âm)
+            if (id < 0)
+            {
+                var req = await _context.ApprovalRequests.FindAsync(-id);
+                if (req == null) return NotFound("Không tìm thấy yêu cầu chờ duyệt.");
+
+                var dirP = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads", "poi", "pending");
+                Directory.CreateDirectory(dirP);
+                var fileNameP = $"pending_{(-id)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{ext}";
+                var pathP = Path.Combine(dirP, fileNameP);
+
+                using (var stream = new FileStream(pathP, FileMode.Create))
+                    await file.CopyToAsync(stream);
+
+                var imageUrl = $"/uploads/poi/pending/{fileNameP}";
+
+                try
+                {
+                    var data = JsonSerializer.Deserialize<POI>(req.Content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (data != null)
+                    {
+                        if (data.Images == null) data.Images = new List<POIImage>();
+                        data.Images.Add(new POIImage { ImageUrl = imageUrl });
+                        req.Content = JsonSerializer.Serialize(data);
+                        await _context.SaveChangesAsync();
+                        return Ok(new { imageUrl });
+                    }
+                }
+                catch { return BadRequest("Lỗi xử lý dữ liệu yêu cầu."); }
+            }
+
+            var p = await _context.POI.FindAsync(id);
+            if (p == null) return NotFound();
 
             var dir = Path.Combine(_env.WebRootPath ?? "wwwroot", "uploads", "poi");
             Directory.CreateDirectory(dir);
@@ -372,18 +590,18 @@ namespace TourGuideAPI.Controllers
             using (var stream = new FileStream(path, FileMode.Create))
                 await file.CopyToAsync(stream);
 
-            var imageUrl = $"/uploads/poi/{fileName}";
+            var finalUrl = $"/uploads/poi/{fileName}";
             var isFirst = !await _context.POIImages.AnyAsync(img => img.PoiId == id);
             _context.POIImages.Add(new POIImage
             {
                 PoiId = id,
-                ImageUrl = imageUrl,
+                ImageUrl = finalUrl,
                 IsThumbnail = isFirst
             });
-            if (isFirst) p.ImageUrl = imageUrl;
+            if (isFirst) p.ImageUrl = finalUrl;
 
             await _context.SaveChangesAsync();
-            return Ok(new { imageUrl });
+            return Ok(new { imageUrl = finalUrl });
         }
     }
 

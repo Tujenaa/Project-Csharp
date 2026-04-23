@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace GPSGuide.Web.Models;
 public class POI
@@ -16,8 +16,12 @@ public class POI
     public string? ImageUrl { get; set; }
     public string Status { get; set; } = "APPROVED";
     public string? RejectReason { get; set; }
-    [JsonIgnore]
+    
+    [JsonPropertyName("images_objects")] // Dùng tên khác để tránh đè lên property 'images' (strings) từ API DTO
     public List<POIImage> Images { get; set; } = new();
+
+    [JsonPropertyName("images")] // Map với 'images' (List<string>) từ POIDto
+    public List<string> ImageUrls { get; set; } = new();
 }
 
 public class POIImage

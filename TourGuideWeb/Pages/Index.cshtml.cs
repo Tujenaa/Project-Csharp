@@ -61,7 +61,7 @@ public class IndexModel : PageModel
         }
         else
         {
-            TotalPoi = pois?.Count(p => p.Status != "REJECTED") ?? 0;
+            TotalPoi = pois?.Count(p => p.Status == "APPROVED") ?? 0;
         }
 
         TotalAudio = audios?.Count ?? 0;

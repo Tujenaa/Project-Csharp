@@ -14,6 +14,8 @@ namespace TourGuideAPI.Data
         public DbSet<Tour> Tours { get; set; }
         public DbSet<TourPOI> TourPOI { get; set; }
         public DbSet<UserActivity> UserActivities { get; set; }
+        public DbSet<ApprovalRequest> ApprovalRequests { get; set; }
+        public DbSet<QRCode> QRCodes { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<POI>().ToTable("POI");
@@ -24,6 +26,8 @@ namespace TourGuideAPI.Data
             modelBuilder.Entity<Tour>().ToTable("Tours");
             modelBuilder.Entity<TourPOI>().ToTable("TourPOI");
             modelBuilder.Entity<UserActivity>().ToTable("UserActivities");
+            modelBuilder.Entity<ApprovalRequest>().ToTable("ApprovalRequests");
+            modelBuilder.Entity<QRCode>().ToTable("QRCodes");
             modelBuilder.Entity<POI>().Ignore(p => p.OwnerName);
             modelBuilder.Entity<POI>().Ignore(p => p.ImageUrl);
             modelBuilder.Entity<Audio>()
