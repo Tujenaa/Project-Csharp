@@ -1,0 +1,362 @@
+@page
+@model GPSGuide.Web.Pages.QrCodeManagerModel
+@{
+    ViewData["Title"] = "Quản lý mã QR (Dựa trên App)";
+}
+
+<div class="qr-management app-theme">
+    <div class="qr-header-app">
+        <div class="header-content">
+            <div class="app-icon-wrap">
+                <i class="bi bi-broadcast-pin"></i>
+            </div>
+            <div class="title-group">
+                <h2>Hệ thống mã QR TourGuide</h2>
+                <p>Quản lý các điểm quét mã QR tương thích với ứng dụng di động.</p>
+            </div>
+        </div>
+        <button class="btn btn-app-primary" onclick="openQrModal()">
+            <i class="bi bi-plus"></i> Tạo mã QR mới
+        </button>
+    </div>
+
+    <div class="card app-card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="app-table" id="qrTable">
+                    <thead>
+                        <tr>
+                            <th>IDENTIFIER</th>
+                            <th>ĐỊA ĐIỂM</th>
+                            <th>NỘI DUNG (APP LINK)</th>
+                            <th class="text-center">QR PREVIEW</th>
+                            <th>NGÀY TẠO</th>
+                            <th class="text-right">THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var q in Model.QrCodes)
+                        {
+                            <tr>
+                                <td class="id-cell">
+                                    @if(q.Id > 0) { <span>#@q.Id</span> } else { <span class="badge-native">APP NATIVE</span> }
+                                    <span class="qr-name">@q.Name</span>
+                                </td>
+                                <td>
+                                    @if (q.PoiId != null)
+                                    {
+                                        <div class="poi-link-box">
+                                            <i class="bi bi-geo-alt-fill"></i>
+                                            <span>@q.PoiName</span>
+                                            @if(q.Id == 0) { <span class="native-tag">Mặc định</span> }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted italic">Mã QR tự do</span>
+                                    }
+                                </td>
+                                <td><code class="app-link-tag">@q.Content</code></td>
+                                <td class="text-center">
+                                    <div class="qr-trigger" onclick="zoomQr('@Html.Encode(q.Content)', '@Html.Encode(q.Name)')">
+                                        <canvas class="qr-canvas-mini" data-content="@q.Content"></canvas>
+                                        <div class="qr-hover-overlay"><i class="bi bi-arrows-angle-expand"></i></div>
+                                    </div>
+                                </td>
+                                <td class="date-cell">@q.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td class="text-right actions-cell">
+                                    @* Fix: avoid JSON in onclick attribute to prevent quote breakage *@
+                                    <button class="btn-app-icon" 
+                                            onclick="prepareEdit(@q.Id, '@Html.Encode(q.Name)', '@(q.PoiId?.ToString() ?? "")', '@Html.Encode(q.Content)')" 
+                                            title="Tùy chỉnh">
+                                        <i class="bi bi-gear-fill"></i>
+                                    </button>
+                                    
+                                    @if (q.Id > 0)
+                                    {
+                                        <button class="btn-app-icon btn-app-danger" onclick="confirmDelete(@q.Id, '@Html.Encode(q.Name)')" title="Xóa">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-app-icon disabled-btn" disabled title="Mã QR mặc định không thể xóa">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Form -->
+<div id="qrModal" class="modal-backdrop-app" style="display:none" onclick="if(event.target===this)closeQrModal()">
+    <div class="modal-content-app shadow-premium" onclick="event.stopPropagation()">
+        <div class="modal-header-app">
+            <h4 id="modalTitle">Thiết lập mã QR</h4>
+            <button class="btn-close-app" onclick="closeQrModal()">✕</button>
+        </div>
+        <form method="post" id="qrForm">
+            <div class="modal-body-app">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="fId" />
+                <input type="hidden" name="action" id="fAction" value="save" />
+                
+                <div class="form-group-app">
+                    <label>Tên mã QR (Ghi chú)</label>
+                    <input type="text" name="name" id="fName" placeholder="VD: QR Cổng chính nhà hát" required />
+                </div>
+
+                <div class="form-group-app">
+                    <label>Chọn điểm thuyết minh</label>
+                    <div class="select-wrapper">
+                        <select name="poiId" id="fPoiId" onchange="autoFillContent()">
+                            <option value="">-- Tùy chọn điểm quét --</option>
+                            @foreach (var p in Model.POIS)
+                            {
+                                <option value="@p.Id">@p.Name (#@p.Id)</option>
+                            }
+                        </select>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                </div>
+
+                <div class="form-group-app">
+                    <label>Nội dung mã hóa (Logic của App)</label>
+                    <input type="text" name="content" id="fContent" placeholder="tourguideapp://poi/..." required />
+                    <div class="logic-hints">
+                        <span onclick="setContent('tourguideapp://poi/')">Scheme App</span>
+                        <span onclick="setContent('https://tourguide.vn/poi/')">Website</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-app">
+                <button type="button" class="btn-cancel" onclick="closeQrModal()">Hủy bỏ</button>
+                <button type="submit" class="btn-app-submit">Xác nhận Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Zoom Modal -->
+<div id="zoomModal" class="modal-backdrop-app" style="display:none" onclick="if(event.target===this)closeZoom()">
+    <div class="modal-content-app zoom-box" onclick="event.stopPropagation()">
+        <div class="zoom-header">
+            <h4 id="zoomTitle">QR Code Preview</h4>
+            <button class="btn-close-app" onclick="closeZoom()">✕</button>
+        </div>
+        <div class="zoom-body">
+            <div class="qr-display-frame">
+                <canvas id="zoomCanvas"></canvas>
+                <div class="qr-scan-line"></div>
+            </div>
+            <div class="qr-meta">
+                <label>Data String:</label>
+                <p id="zoomText"></p>
+            </div>
+        </div>
+        <div class="zoom-footer">
+            <button class="btn-download-app" onclick="downloadZoomedQr()">
+                <i class="bi bi-file-earmark-arrow-down"></i> Tải xuống (.PNG)
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --app-primary: #512BD4;
+        --app-accent: #9B7FEA;
+        --app-bg-dark: #1A1035;
+        --app-card-bg: #FFFFFF;
+        --app-text: #1A1035;
+        --app-text-muted: #64748B;
+        --app-border: #E8E3F5;
+        --app-danger: #F43F5E;
+    }
+
+    .app-theme { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+    .qr-header-app {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--app-bg-dark);
+        padding: 30px 40px;
+        border-radius: 24px;
+        color: white;
+        margin-bottom: 30px;
+        box-shadow: 0 12px 30px rgba(26, 16, 53, 0.15);
+    }
+
+    .header-content { display: flex; align-items: center; gap: 20px; }
+    .app-icon-wrap {
+        width: 50px;
+        height: 50px;
+        background: var(--app-accent);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: white;
+    }
+    .title-group h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+    .title-group p { margin: 4px 0 0; color: #B2A7D4; font-size: 14px; }
+
+    .btn-app-primary {
+        background: white; color: var(--app-primary); border: none;
+        padding: 12px 24px; border-radius: 12px; font-weight: 600;
+        cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+    }
+    .btn-app-primary:hover { background: var(--app-accent); color: white; transform: translateY(-2px); }
+
+    .app-card { border-radius: 24px; border: 1px solid var(--app-border); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+    .app-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .app-table th {
+        padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 700;
+        color: var(--app-text-muted); letter-spacing: 1px; text-transform: uppercase;
+        border-bottom: 1px solid var(--app-border); background: #F9FAFB;
+    }
+    .app-table td { padding: 18px 24px; border-bottom: 1px solid var(--app-border); vertical-align: middle; color: var(--app-text); }
+    
+    .id-cell { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--app-accent); width: 220px; }
+    .badge-native { font-size: 9px; background: #EEE; color: #666; padding: 2px 5px; border-radius: 4px; margin-bottom: 4px; display: inline-block; }
+    .native-tag { font-size: 10px; background: #D1FAE5; color: #065F46; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+    .qr-name { display: block; color: var(--app-text); font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; margin-top: 2px; }
+    
+    .poi-link-box { display: inline-flex; align-items: center; gap: 8px; background: #F4F2FB; padding: 6px 12px; border-radius: 10px; color: var(--app-primary); font-weight: 500; font-size: 13px; }
+    .app-link-tag { background: #F1F5F9; color: #475569; padding: 4px 10px; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 12px; }
+
+    .qr-trigger { position: relative; width: 50px; height: 50px; cursor: pointer; background: #fff; border: 1.5px solid var(--app-border); border-radius: 12px; padding: 3px; }
+    .qr-hover-overlay { position: absolute; inset: 0; background: rgba(81, 43, 212, 0.4); border-radius: 10px; display: none; align-items: center; justify-content: center; color: white; }
+    .qr-trigger:hover .qr-hover-overlay { display: flex; }
+
+    .btn-app-icon { background: #F4F2FB; border: none; width: 36px; height: 36px; border-radius: 10px; color: var(--app-primary); cursor: pointer; transition: 0.2s; }
+    .btn-app-icon:hover { background: var(--app-primary); color: white; }
+    .btn-app-danger { color: var(--app-danger); background: #FFF1F2; }
+    .btn-app-danger:hover { background: var(--app-danger); color: white; }
+    
+    .disabled-btn { opacity: 0.3; cursor: not-allowed; }
+
+    .modal-backdrop-app { position: fixed; inset: 0; background: rgba(26, 16, 53, 0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-content-app { background: white; border-radius: 28px; width: 500px; max-width: 100%; position: relative; overflow: hidden; }
+    .modal-header-app { padding: 24px 30px; border-bottom: 1px solid var(--app-border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-header-app h4 { margin: 0; font-size: 18px; color: var(--app-text); }
+    .btn-close-app { background: #F4F2FB; border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--app-primary); cursor: pointer; }
+
+    .modal-body-app { padding: 30px; }
+    .form-group-app { margin-bottom: 20px; }
+    .form-group-app label { display: block; font-size: 12px; font-weight: 700; color: var(--app-text-muted); text-transform: uppercase; margin-bottom: 8px; }
+    .form-group-app input, .form-group-app select { width: 100%; padding: 12px 16px; border: 2px solid var(--app-border); border-radius: 14px; outline: none; transition: 0.2s; font-size: 14px; }
+    .form-group-app input:focus, .form-group-app select:focus { border-color: var(--app-accent); }
+    
+    .logic-hints { display: flex; gap: 10px; margin-top: 8px; }
+    .logic-hints span { font-size: 11px; background: #EEE; padding: 2px 8px; border-radius: 4px; cursor: pointer; color: var(--app-primary); font-weight: 600; }
+    .logic-hints span:hover { background: var(--app-primary); color: white; }
+
+    .modal-footer-app { padding: 20px 30px; background: #F9FAFB; display: flex; gap: 12px; justify-content: flex-end; }
+    .btn-cancel { background: transparent; border: none; color: var(--app-text-muted); font-weight: 600; cursor: pointer; }
+    .btn-app-submit { background: var(--app-primary); color: white; border: none; padding: 12px 30px; border-radius: 14px; font-weight: 700; cursor: pointer; }
+
+    .zoom-box { background: var(--app-bg-dark); color: white; text-align: center; border-radius: 32px; width: 420px; }
+    .zoom-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .qr-display-frame {
+        position: relative; background: #FFFFFF; padding: 30px; border-radius: 20px; margin: 20px auto; width: fit-content;
+        box-shadow: 0 0 30px rgba(155, 127, 234, 0.3);
+    }
+    #zoomCanvas { width: 240px !important; height: 240px !important; }
+    .qr-scan-line { position: absolute; left: 30px; right: 30px; height: 2px; background: var(--app-accent); opacity: 0.6; top: 30px; animation: scan 3s infinite linear; }
+    @@keyframes scan { 0% { top: 30px; } 100% { top: 270px; } }
+    
+    .qr-meta { padding: 0 40px 24px; text-align: left; }
+    .qr-meta label { font-size: 10px; color: #888; text-transform: uppercase; }
+    .qr-meta p { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--app-accent); margin: 4px 0 0; }
+    .btn-download-app { width: 100%; background: var(--app-primary); color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 700; cursor: pointer; }
+</style>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderMinis();
+        });
+
+        function renderMinis() {
+            document.querySelectorAll('.qr-canvas-mini').forEach(v => {
+                new QRious({ element: v, value: v.dataset.content, size: 44, level: 'M' });
+            });
+        }
+
+        function openQrModal() {
+            document.getElementById('modalTitle').textContent = 'Tạo mã QR nội bộ';
+            document.getElementById('fId').value = '';
+            document.getElementById('qrForm').reset();
+            document.getElementById('qrModal').style.display = 'flex';
+        }
+
+        function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
+
+        // Fix: Use individual parameters to avoid JSON parsing issues in attribute
+        function prepareEdit(id, name, poiId, content) {
+            document.getElementById('modalTitle').textContent = id > 0 ? 'Cập nhật cấu hình QR' : 'Tùy chỉnh mã QR mặc định';
+            document.getElementById('fId').value = id;
+            document.getElementById('fName').value = decodeHtml(name);
+            document.getElementById('fPoiId').value = poiId;
+            document.getElementById('fContent').value = decodeHtml(content);
+            document.getElementById('qrModal').style.display = 'flex';
+        }
+
+        function setContent(prefix) {
+            const pid = document.getElementById('fPoiId').value;
+            document.getElementById('fContent').value = prefix + (pid || '{id}');
+        }
+
+        function autoFillContent() {
+            const sid = document.getElementById('fPoiId').value;
+            if(sid) document.getElementById('fContent').value = `tourguideapp://poi/${sid}`;
+        }
+
+        function zoomQr(content, name) {
+            document.getElementById('zoomTitle').textContent = decodeHtml(name);
+            document.getElementById('zoomText').textContent = decodeHtml(content);
+            new QRious({
+                element: document.getElementById('zoomCanvas'),
+                value: decodeHtml(content),
+                size: 300,
+                level: 'H'
+            });
+            document.getElementById('zoomModal').style.display = 'flex';
+        }
+
+        function closeZoom() { document.getElementById('zoomModal').style.display = 'none'; }
+
+        function downloadZoomedQr() {
+            const canvas = document.getElementById('zoomCanvas');
+            const link = document.createElement('a');
+            link.download = `TourGuide_QR_${document.getElementById('zoomTitle').textContent}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function confirmDelete(id, name) {
+            if(confirm(`Bạn có chắc chắn muốn xóa bản tùy chỉnh QR "${decodeHtml(name)}"?`)) {
+                const f = document.getElementById('qrForm');
+                document.getElementById('fId').value = id;
+                document.getElementById('fAction').value = 'delete';
+                f.submit();
+            }
+        }
+
+        function decodeHtml(html) {
+            var txt = document.createElement("textarea");
+            txt.innerHTML = html;
+            return txt.value;
+        }
+    </script>
+}
