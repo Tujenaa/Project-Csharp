@@ -156,6 +156,35 @@ CREATE TABLE [UserActivities] (
 );
 
 -- ================================================
+-- BẢNG PHÊ DUYỆT (Quan trọng nhất cho Owner/Admin)
+-- ================================================
+CREATE TABLE [ApprovalRequests] (
+    [Id]           INT IDENTITY (1, 1) NOT NULL,
+    [EntityId]     INT            NULL,          -- ID của đối tượng (POI Id, Tour Id...)
+    [EntityType]   NVARCHAR (MAX) NOT NULL,     -- "POI", "TOUR"
+    [RequestType]  NVARCHAR (MAX) NOT NULL,     -- "CREATE", "UPDATE", "DELETE"
+    [Content]      NVARCHAR (MAX) NOT NULL,     -- Dữ liệu JSON mới chờ duyệt
+    [RequesterId]  INT            NOT NULL,     -- ID người gửi (Owner)
+    [RequesterName] NVARCHAR (MAX) NOT NULL,     -- Tên người gửi
+    [Status]       NVARCHAR (MAX) NOT NULL DEFAULT 'PENDING', -- PENDING, APPROVED, REJECTED
+    [AdminNote]    NVARCHAR (MAX) NULL,
+    [CreatedAt]    DATETIME2 (7)  NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT [PK_ApprovalRequests] PRIMARY KEY CLUSTERED ([Id] ASC)
+);
+
+-- ================================================
+-- BẢNG QUẢN LÝ MÃ QR (Cho tính năng Web QR Manager)
+-- ================================================
+CREATE TABLE [QRCodes] (
+    [Id]          INT IDENTITY (1, 1) NOT NULL,
+    [PoiId]       INT            NOT NULL,      -- Link tới POI
+    [CustomUrl]   NVARCHAR (MAX) NULL,          -- URL tùy chỉnh nếu có
+    [CreatedAt]   DATETIME2 (7)  NOT NULL DEFAULT GETDATE(),
+    [CreatedBy]   INT            NOT NULL,      -- ID người tạo
+    [IsActive]    BIT            NOT NULL DEFAULT 1,
+    CONSTRAINT [PK_QRCodes] PRIMARY KEY CLUSTERED ([Id] ASC)
+);
+-- ================================================
 -- DỮ LIỆU MẪU
 -- ================================================
 
@@ -325,3 +354,12 @@ VALUES
 -- Cập nhật Tours sang PUBLISHED
 UPDATE Tours SET Status = 'PUBLISHED' WHERE Status = 'DRAFT';
 ALTER TABLE Users ADD IsActive BIT NOT NULL DEFAULT 1;
+
+-- ================================================
+-- CẬP NHẬT CỘT CÒN THIẾU TRONG BẢNG USERS
+-- ================================================
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Users') AND name = 'IsActive')
+BEGIN
+    ALTER TABLE Users ADD IsActive BIT NOT NULL DEFAULT 1;
+END
+GO

@@ -37,7 +37,7 @@ namespace GPSGuide.Web.Pages
                 // 1. Lấy danh sách POI (đã được duyệt) - Đây chính là các QR mặc định của App
                 string poiEndpoint = IsAdmin ? "poi/all" : $"poi/owner/{MyUserId}";
                 POIS = await client.GetFromJsonAsync<List<POI>>(poiEndpoint) ?? new();
-                POIS = POIS.Where(p => p.Status == "APPROVED").ToList();
+                // Bỏ lọc APPROVED để người dùng thấy được cả điểm đang chờ duyệt trong danh sách chọn
 
                 // 2. Lấy danh sách các bản tùy chỉnh QR từ database (nếu có)
                 var savedQrs = await client.GetFromJsonAsync<List<QRCodeDto>>("qrcodes") ?? new();

@@ -37,12 +37,11 @@ public static class MauiProgram
 
         // --- VIEWMODELS ---
         builder.Services.AddSingleton<MapViewModel>();
-        builder.Services.AddTransient<AccountViewModel>(); 
 
         // --- PAGES ---
         builder.Services.AddTransient<MapPage>();
-        builder.Services.AddTransient<AccountPage>();
         builder.Services.AddTransient<SettingsPage>();
+        builder.Services.AddTransient<WelcomePage>();
 
         var app = builder.Build();
 

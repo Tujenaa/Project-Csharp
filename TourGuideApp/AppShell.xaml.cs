@@ -16,8 +16,6 @@ namespace TourGuideApp
             
             heartbeat?.Start();
 
-            // Ẩn tab Lịch sử nếu là khách
-            HistoryTab.IsVisible = AuthService.Username != "guest";
         }
     }
 }

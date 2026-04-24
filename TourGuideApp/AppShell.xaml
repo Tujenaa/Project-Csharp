@@ -25,9 +25,6 @@
             <ShellContent Route="map" ContentTemplate="{DataTemplate pages:MapPage}"/>
         </Tab>
 
-        <Tab x:Name="HistoryTab" Title="{services:Translate Key='history_title'}" Icon="history.png">
-            <ShellContent Route="history" ContentTemplate="{DataTemplate pages:HistoryPage}"/>
-        </Tab>
 
         <Tab Title="{services:Translate Key='settings_title'}" Icon="settings.png">
             <ShellContent Route="settings" ContentTemplate="{DataTemplate pages:SettingsPage}"/>

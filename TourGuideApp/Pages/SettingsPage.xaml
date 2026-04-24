@@ -13,54 +13,9 @@
 
             <!-- ── Header ── -->
             <Grid BackgroundColor="#1A1035" Padding="22,52,22,26">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <Label Grid.Row="0" Text="{services:Translate Key='settings_title'}"
+                <Label Text="{services:Translate Key='settings_title'}"
                        FontSize="22" FontAttributes="Bold"
-                       TextColor="White" Margin="0,0,0,16"/>
-
-                <!-- Profile card — tappable → AccountPage -->
-                <Border Grid.Row="1" BackgroundColor="#2D1B6E"
-                        Stroke="#512BD4" StrokeThickness="1">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="18"/>
-                    </Border.StrokeShape>
-                    <Border.GestureRecognizers>
-                        <TapGestureRecognizer Tapped="OnProfileCardTapped"/>
-                    </Border.GestureRecognizers>
-                    <Grid Padding="16" ColumnSpacing="14">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="52"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Avatar -->
-                        <Border Grid.Column="0" BackgroundColor="#512BD4"
-                                WidthRequest="52" HeightRequest="52" StrokeThickness="0">
-                            <Border.StrokeShape>
-                                <RoundRectangle CornerRadius="16"/>
-                            </Border.StrokeShape>
-                            <Label x:Name="AvatarLabel" Text="U" FontSize="20" FontAttributes="Bold"
-                                   TextColor="White" HorizontalOptions="Center" VerticalOptions="Center"/>
-                        </Border>
-
-                        <!-- Name / email -->
-                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="3">
-                            <Label x:Name="NameLabel" Text="{services:Translate Key='user'}"
-                                   FontSize="16" FontAttributes="Bold" TextColor="White"/>
-                            <Label x:Name="EmailLabel" Text=""
-                                   FontSize="12" TextColor="#9B7FEA"/>
-                        </VerticalStackLayout>
-
-                        <!-- Arrow -->
-                        <Label Grid.Column="2" Text="›" FontSize="24"
-                               TextColor="#9B7FEA" VerticalOptions="Center"/>
-                    </Grid>
-                </Border>
+                       TextColor="White"/>
             </Grid>
 
             <!-- ── ỨNG DỤNG ── -->
@@ -158,19 +113,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Logout -->
-            <Button x:Name="LogoutButton"
-                    Text="{services:Translate Key='logout_button'}"
-                    Clicked="OnLogoutClicked"
-                    BackgroundColor="#FEF0F3"
-                    TextColor="#E94560"
-                    BorderColor="#FCA5A5"
-                    BorderWidth="1"
-                    CornerRadius="14"
-                    HeightRequest="50"
-                    FontSize="14"
-                    FontAttributes="Bold"
-                    Margin="18,16,18,32"/>
+
 
         </VerticalStackLayout>
     </ScrollView>

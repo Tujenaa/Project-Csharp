@@ -18,10 +18,8 @@ namespace TourGuideApp
 
             InitializeComponent();
 
-            if (AuthService.IsLoggedIn)
+            if (AuthService.Username == "guest" || Preferences.Get("is_first_run_complete", false))
             {
-                _ = TourGuideApp.ViewModels.HistoryStore.LoadFromApiAsync();
-
                 // Sync history offline queue khi có mạng
                 if (ConnectivityService.IsConnected)
                 {
@@ -30,13 +28,16 @@ namespace TourGuideApp
                         _ = new ApiService().SyncPendingHistoriesAsync(userId);
                 }
 
-                // Bắt đầu gửi vị trí GPS lên server (chỉ khi đã đăng nhập)
+                // Bắt đầu gửi vị trí GPS lên server
                 _heartbeat.Start();
+                
+                AuthService.LoginOfflineAsGuest();
+                MainPage = new AppShell();
             }
-
-            MainPage = AuthService.IsLoggedIn
-                ? (Page)new AppShell()
-                : new NavigationPage(new LoginPage());
+            else
+            {
+                MainPage = new NavigationPage(new WelcomePage());
+            }
 
             // Ghi nhật ký mở App
             if (ConnectivityService.IsConnected)
@@ -77,7 +78,7 @@ namespace TourGuideApp
             mapVm?.ResetStartupFlag();
 
             // Tiếp tục gửi heartbeat khi app trở lại foreground
-            if (AuthService.IsLoggedIn)
+            if (Preferences.Get("is_first_run_complete", false))
             {
                 System.Diagnostics.Debug.WriteLine("[App] Resuming... starting heartbeat");
                 _heartbeat.Start();
@@ -108,8 +109,9 @@ namespace TourGuideApp
                 if (poiId.HasValue)
                 {
                     // LƯU Ý QUAN TRỌNG: Phải thực hiện đăng nhập khách TRƯỚC khi chuyển trang
-                    if (!AuthService.IsLoggedIn)
+                    if (!Preferences.Get("is_first_run_complete", false))
                     {
+                        Preferences.Set("is_first_run_complete", true);
                         AuthService.LoginOfflineAsGuest();
                     }
 
@@ -148,8 +150,11 @@ namespace TourGuideApp
 
                     if (isGuestLink)
                     {
-                        if (!AuthService.IsLoggedIn)
+                        if (!Preferences.Get("is_first_run_complete", false))
+                        {
+                            Preferences.Set("is_first_run_complete", true);
                             AuthService.LoginOfflineAsGuest();
+                        }
 
                         await Task.Delay(500);
                         MainPage = new AppShell();
@@ -162,7 +167,7 @@ namespace TourGuideApp
         {
             Connectivity.Current.ConnectivityChanged -= OnConnectivityChanged;
             _heartbeat.Stop();
-            if (AuthService.IsLoggedIn)
+            if (Preferences.Get("is_first_run_complete", false))
                 _ = _heartbeat.NotifyOfflineAsync();
             base.CleanUp();
         }
