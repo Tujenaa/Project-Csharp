@@ -447,6 +447,7 @@ namespace TourGuideAPI.Controllers
         {
             try
             {
+                // 1. Xử lý xóa yêu cầu đang chờ duyệt (Id âm)
                 if (id < 0)
                 {
                     var req = await _context.ApprovalRequests.FindAsync(-id);
@@ -458,31 +459,61 @@ namespace TourGuideAPI.Controllers
                     return Ok();
                 }
 
+                // 2. Tìm POI thật
                 var poi = await _context.POI.FindAsync(id);
                 if (poi == null) return NotFound();
                 var poiName = poi.Name;
 
-                // Phase 1: Xóa tất cả bản ghi con có FK NO_ACTION trước
+                // 3. Xử lý xóa tất cả các bảng liên quan trong một đợt
+                
+                // Lấy danh sách AudioId để xóa ApprovalRequests liên quan đến Audio
+                var audioIds = await _context.Audio.Where(a => a.PoiId == id).Select(a => a.Id).ToListAsync();
+
+                // Xóa History
                 var histories = await _context.History.Where(h => h.PoiId == id).ToListAsync();
                 if (histories.Any()) _context.History.RemoveRange(histories);
-
+                
+                // Xóa Images và File vật lý
                 var images = await _context.POIImages.Where(img => img.PoiId == id).ToListAsync();
-                if (images.Any()) _context.POIImages.RemoveRange(images);
+                if (images.Any())
+                {
+                    foreach (var img in images)
+                    {
+                        if (!string.IsNullOrEmpty(img.ImageUrl))
+                        {
+                            var filePath = Path.Combine(_env.WebRootPath ?? "wwwroot", img.ImageUrl.TrimStart('/'));
+                            if (System.IO.File.Exists(filePath))
+                            {
+                                try { System.IO.File.Delete(filePath); } catch { }
+                            }
+                        }
+                    }
+                    _context.POIImages.RemoveRange(images);
+                }
 
+                // Xóa Audio
                 var audios = await _context.Audio.Where(a => a.PoiId == id).ToListAsync();
                 if (audios.Any()) _context.Audio.RemoveRange(audios);
 
+                // Xóa TourPOI
                 var tourPois = await _context.TourPOI.Where(tp => tp.PoiId == id).ToListAsync();
                 if (tourPois.Any()) _context.TourPOI.RemoveRange(tourPois);
 
-                var reqs = await _context.ApprovalRequests.Where(r => r.EntityType == "POI" && r.EntityId == id).ToListAsync();
-                if (reqs.Any()) _context.ApprovalRequests.RemoveRange(reqs);
+                // Xóa QRCodes
+                var qrs = await _context.QRCodes.Where(q => q.PoiId == id).ToListAsync();
+                if (qrs.Any()) _context.QRCodes.RemoveRange(qrs);
 
-                // Lưu xóa bản ghi con trước
-                await _context.SaveChangesAsync();
+                // Xóa ApprovalRequests của POI này (bao gồm cả CREATE/UPDATE của POI và AUDIO của POI)
+                var poiReqs = await _context.ApprovalRequests
+                    .Where(r => (r.EntityType == "POI" && r.EntityId == id) || 
+                                (r.EntityType == "AUDIO" && r.EntityId.HasValue && audioIds.Contains(r.EntityId.Value)))
+                    .ToListAsync();
+                if (poiReqs.Any()) _context.ApprovalRequests.RemoveRange(poiReqs);
 
-                // Phase 2: Xóa POI chính
+                // 4. Xóa POI chính
                 _context.POI.Remove(poi);
+
+                // 5. Lưu tất cả thay đổi một lần duy nhất
                 await _context.SaveChangesAsync();
 
                 try { await LogOwnerAction("DELETE_POI", $"Owner đã xóa điểm thuyết minh: {poiName}"); } catch { }

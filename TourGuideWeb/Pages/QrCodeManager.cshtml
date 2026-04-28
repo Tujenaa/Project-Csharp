@@ -20,6 +20,52 @@
         </button>
     </div>
 
+    <!-- Mã QR Mặc định Truy cập Ứng dụng -->
+    <div class="card app-card special-qr-card mb-4">
+        <div class="card-body">
+            <div class="special-qr-row">
+                <!-- IDENTIFIER -->
+                <div class="sqr-cell sqr-id">
+                    <span class="sqr-label">IDENTIFIER</span>
+                    <span class="badge-native">STATIC</span>
+                    <span class="qr-name"><i class="bi bi-phone-vibrate-fill" style="color:var(--app-accent)"></i> Mã QR Truy cập Ứng dụng (Android)</span>
+                </div>
+                <!-- ĐỊA ĐIỂM -->
+                <div class="sqr-cell">
+                    <span class="sqr-label">ĐỊA ĐIỂM</span>
+                    <div class="poi-link-box">
+                        <i class="bi bi-android2"></i>
+                        <span>Toàn hệ thống</span>
+                        <span class="native-tag">Cố định</span>
+                    </div>
+                </div>
+                
+                <!-- QR PREVIEW -->
+                <div class="sqr-cell sqr-preview-cell">
+                    <span class="sqr-label">QR PREVIEW</span>
+                    <div class="special-qr-preview">
+                        <img src="/QR vào app apk.png" alt="App QR" class="static-qr-img" />
+                        <div class="img-overlay" onclick="window.open('/QR vào app apk.png', '_blank')">
+                            <i class="bi bi-zoom-in"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- THAO TÁC -->
+                <div class="sqr-cell sqr-actions">
+                    <span class="sqr-label">THAO TÁC</span>
+                    <div class="d-flex gap-2">
+                        <a href="/QR vào app apk.png" download="TourGuide_App_Login_QR.png" class="btn-app-icon" title="Tải ảnh QR (.PNG)">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <button class="btn-app-icon disabled-btn" disabled title="Mã QR mặc định không thể xóa">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card app-card">
         <div class="card-body">
             <div class="table-responsive">
@@ -39,7 +85,15 @@
                         {
                             <tr>
                                 <td class="id-cell">
-                                    @if(q.Id > 0) { <span>#@q.Id</span> } else { <span class="badge-native">APP NATIVE</span> }
+                                    @if (q.Id > 0)
+                                    {
+                                        <span>#@q.Id</span>
+                                    }
+                                    else
+                                    {
+
+                                        <span class="badge-native">APP NATIVE</span>
+                                    }
                                     <span class="qr-name">@q.Name</span>
                                 </td>
                                 <td>
@@ -48,7 +102,10 @@
                                         <div class="poi-link-box">
                                             <i class="bi bi-geo-alt-fill"></i>
                                             <span>@q.PoiName</span>
-                                            @if(q.Id == 0) { <span class="native-tag">Mặc định</span> }
+                                            @if (q.Id == 0)
+                                            {
+                                                <span class="native-tag">Mặc định</span>
+                                            }
                                         </div>
                                     }
                                     else
@@ -66,12 +123,12 @@
                                 <td class="date-cell">@q.CreatedAt.ToString("MMM dd, yyyy")</td>
                                 <td class="text-right actions-cell">
                                     @* Fix: avoid JSON in onclick attribute to prevent quote breakage *@
-                                    <button class="btn-app-icon" 
-                                            onclick="prepareEdit(@q.Id, '@Html.Encode(q.Name)', '@(q.PoiId?.ToString() ?? "")', '@Html.Encode(q.Content)')" 
+                                    <button class="btn-app-icon"
+                                            onclick="prepareEdit(@q.Id, '@Html.Encode(q.Name)', '@(q.PoiId?.ToString() ?? "")', '@Html.Encode(q.Content)')"
                                             title="Tùy chỉnh">
                                         <i class="bi bi-gear-fill"></i>
                                     </button>
-                                    
+
                                     @if (q.Id > 0)
                                     {
                                         <button class="btn-app-icon btn-app-danger" onclick="confirmDelete(@q.Id, '@Html.Encode(q.Name)')" title="Xóa">
@@ -106,7 +163,7 @@
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" id="fId" />
                 <input type="hidden" name="action" id="fAction" value="save" />
-                
+
                 <div class="form-group-app">
                     <label>Tên mã QR (Ghi chú)</label>
                     <input type="text" name="name" id="fName" placeholder="VD: QR Cổng chính nhà hát" required />
@@ -180,7 +237,9 @@
         --app-danger: #F43F5E;
     }
 
-    .app-theme { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .app-theme {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
 
     .qr-header-app {
         display: flex;
@@ -194,7 +253,12 @@
         box-shadow: 0 12px 30px rgba(26, 16, 53, 0.15);
     }
 
-    .header-content { display: flex; align-items: center; gap: 20px; }
+    .header-content {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
     .app-icon-wrap {
         width: 50px;
         height: 50px;
@@ -206,78 +270,472 @@
         font-size: 24px;
         color: white;
     }
-    .title-group h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
-    .title-group p { margin: 4px 0 0; color: #B2A7D4; font-size: 14px; }
+
+    .title-group h2 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+
+    .title-group p {
+        margin: 4px 0 0;
+        color: #B2A7D4;
+        font-size: 14px;
+    }
 
     .btn-app-primary {
-        background: white; color: var(--app-primary); border: none;
-        padding: 12px 24px; border-radius: 12px; font-weight: 600;
-        cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        background: white;
+        color: var(--app-primary);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .btn-app-primary:hover { background: var(--app-accent); color: white; transform: translateY(-2px); }
 
-    .app-card { border-radius: 24px; border: 1px solid var(--app-border); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-    .app-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-    .app-table th {
-        padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 700;
-        color: var(--app-text-muted); letter-spacing: 1px; text-transform: uppercase;
-        border-bottom: 1px solid var(--app-border); background: #F9FAFB;
+        .btn-app-primary:hover {
+            background: var(--app-accent);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+    .app-card {
+        border-radius: 24px;
+        border: 1px solid var(--app-border);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
     }
-    .app-table td { padding: 18px 24px; border-bottom: 1px solid var(--app-border); vertical-align: middle; color: var(--app-text); }
-    
-    .id-cell { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--app-accent); width: 220px; }
-    .badge-native { font-size: 9px; background: #EEE; color: #666; padding: 2px 5px; border-radius: 4px; margin-bottom: 4px; display: inline-block; }
-    .native-tag { font-size: 10px; background: #D1FAE5; color: #065F46; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
-    .qr-name { display: block; color: var(--app-text); font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; margin-top: 2px; }
-    
-    .poi-link-box { display: inline-flex; align-items: center; gap: 8px; background: #F4F2FB; padding: 6px 12px; border-radius: 10px; color: var(--app-primary); font-weight: 500; font-size: 13px; }
-    .app-link-tag { background: #F1F5F9; color: #475569; padding: 4px 10px; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 12px; }
 
-    .qr-trigger { position: relative; width: 50px; height: 50px; cursor: pointer; background: #fff; border: 1.5px solid var(--app-border); border-radius: 12px; padding: 3px; }
-    .qr-hover-overlay { position: absolute; inset: 0; background: rgba(81, 43, 212, 0.4); border-radius: 10px; display: none; align-items: center; justify-content: center; color: white; }
-    .qr-trigger:hover .qr-hover-overlay { display: flex; }
+    .app-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
 
-    .btn-app-icon { background: #F4F2FB; border: none; width: 36px; height: 36px; border-radius: 10px; color: var(--app-primary); cursor: pointer; transition: 0.2s; }
-    .btn-app-icon:hover { background: var(--app-primary); color: white; }
-    .btn-app-danger { color: var(--app-danger); background: #FFF1F2; }
-    .btn-app-danger:hover { background: var(--app-danger); color: white; }
-    
-    .disabled-btn { opacity: 0.3; cursor: not-allowed; }
+        .app-table th {
+            padding: 16px 24px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--app-text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--app-border);
+            background: #F9FAFB;
+        }
 
-    .modal-backdrop-app { position: fixed; inset: 0; background: rgba(26, 16, 53, 0.6); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .modal-content-app { background: white; border-radius: 28px; width: 500px; max-width: 100%; position: relative; overflow: hidden; }
-    .modal-header-app { padding: 24px 30px; border-bottom: 1px solid var(--app-border); display: flex; justify-content: space-between; align-items: center; }
-    .modal-header-app h4 { margin: 0; font-size: 18px; color: var(--app-text); }
-    .btn-close-app { background: #F4F2FB; border: none; width: 32px; height: 32px; border-radius: 50%; color: var(--app-primary); cursor: pointer; }
+        .app-table td {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--app-border);
+            vertical-align: middle;
+            color: var(--app-text);
+        }
 
-    .modal-body-app { padding: 30px; }
-    .form-group-app { margin-bottom: 20px; }
-    .form-group-app label { display: block; font-size: 12px; font-weight: 700; color: var(--app-text-muted); text-transform: uppercase; margin-bottom: 8px; }
-    .form-group-app input, .form-group-app select { width: 100%; padding: 12px 16px; border: 2px solid var(--app-border); border-radius: 14px; outline: none; transition: 0.2s; font-size: 14px; }
-    .form-group-app input:focus, .form-group-app select:focus { border-color: var(--app-accent); }
-    
-    .logic-hints { display: flex; gap: 10px; margin-top: 8px; }
-    .logic-hints span { font-size: 11px; background: #EEE; padding: 2px 8px; border-radius: 4px; cursor: pointer; color: var(--app-primary); font-weight: 600; }
-    .logic-hints span:hover { background: var(--app-primary); color: white; }
+    .id-cell {
+        font-family: 'Space Mono', monospace;
+        font-size: 13px;
+        color: var(--app-accent);
+        width: 220px;
+    }
 
-    .modal-footer-app { padding: 20px 30px; background: #F9FAFB; display: flex; gap: 12px; justify-content: flex-end; }
-    .btn-cancel { background: transparent; border: none; color: var(--app-text-muted); font-weight: 600; cursor: pointer; }
-    .btn-app-submit { background: var(--app-primary); color: white; border: none; padding: 12px 30px; border-radius: 14px; font-weight: 700; cursor: pointer; }
+    .badge-native {
+        font-size: 9px;
+        background: #EEE;
+        color: #666;
+        padding: 2px 5px;
+        border-radius: 4px;
+        margin-bottom: 4px;
+        display: inline-block;
+    }
 
-    .zoom-box { background: var(--app-bg-dark); color: white; text-align: center; border-radius: 32px; width: 420px; }
-    .zoom-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .native-tag {
+        font-size: 10px;
+        background: #D1FAE5;
+        color: #065F46;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 8px;
+    }
+
+    .qr-name {
+        display: block;
+        color: var(--app-text);
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 2px;
+    }
+
+    .poi-link-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #F4F2FB;
+        padding: 6px 12px;
+        border-radius: 10px;
+        color: var(--app-primary);
+        font-weight: 500;
+        font-size: 13px;
+    }
+
+    .app-link-tag {
+        background: #F1F5F9;
+        color: #475569;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-family: 'Space Mono', monospace;
+        font-size: 12px;
+    }
+
+    .qr-trigger {
+        position: relative;
+        width: 50px;
+        height: 50px;
+        cursor: pointer;
+        background: #fff;
+        border: 1.5px solid var(--app-border);
+        border-radius: 12px;
+        padding: 3px;
+    }
+
+    .qr-hover-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(81, 43, 212, 0.4);
+        border-radius: 10px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .qr-trigger:hover .qr-hover-overlay {
+        display: flex;
+    }
+
+    .btn-app-icon {
+        background: #F4F2FB;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        color: var(--app-primary);
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+        .btn-app-icon:hover {
+            background: var(--app-primary);
+            color: white;
+        }
+
+    .btn-app-danger {
+        color: var(--app-danger);
+        background: #FFF1F2;
+    }
+
+        .btn-app-danger:hover {
+            background: var(--app-danger);
+            color: white;
+        }
+
+    .disabled-btn {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .modal-backdrop-app {
+        position: fixed;
+        inset: 0;
+        background: rgba(26, 16, 53, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .modal-content-app {
+        background: white;
+        border-radius: 28px;
+        width: 500px;
+        max-width: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modal-header-app {
+        padding: 24px 30px;
+        border-bottom: 1px solid var(--app-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .modal-header-app h4 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--app-text);
+        }
+
+    .btn-close-app {
+        background: #F4F2FB;
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        color: var(--app-primary);
+        cursor: pointer;
+    }
+
+    .modal-body-app {
+        padding: 30px;
+    }
+
+    .form-group-app {
+        margin-bottom: 20px;
+    }
+
+        .form-group-app label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--app-text-muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .form-group-app input, .form-group-app select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--app-border);
+            border-radius: 14px;
+            outline: none;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+
+            .form-group-app input:focus, .form-group-app select:focus {
+                border-color: var(--app-accent);
+            }
+
+    .logic-hints {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+        .logic-hints span {
+            font-size: 11px;
+            background: #EEE;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--app-primary);
+            font-weight: 600;
+        }
+
+            .logic-hints span:hover {
+                background: var(--app-primary);
+                color: white;
+            }
+
+    .modal-footer-app {
+        padding: 20px 30px;
+        background: #F9FAFB;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+
+    .btn-cancel {
+        background: transparent;
+        border: none;
+        color: var(--app-text-muted);
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-app-submit {
+        background: var(--app-primary);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 14px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .zoom-box {
+        background: var(--app-bg-dark);
+        color: white;
+        text-align: center;
+        border-radius: 32px;
+        width: 420px;
+    }
+
+    .zoom-header {
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
     .qr-display-frame {
-        position: relative; background: #FFFFFF; padding: 30px; border-radius: 20px; margin: 20px auto; width: fit-content;
+        position: relative;
+        background: #FFFFFF;
+        padding: 30px;
+        border-radius: 20px;
+        margin: 20px auto;
+        width: fit-content;
         box-shadow: 0 0 30px rgba(155, 127, 234, 0.3);
     }
-    #zoomCanvas { width: 240px !important; height: 240px !important; }
-    .qr-scan-line { position: absolute; left: 30px; right: 30px; height: 2px; background: var(--app-accent); opacity: 0.6; top: 30px; animation: scan 3s infinite linear; }
-    @@keyframes scan { 0% { top: 30px; } 100% { top: 270px; } }
-    
-    .qr-meta { padding: 0 40px 24px; text-align: left; }
-    .qr-meta label { font-size: 10px; color: #888; text-transform: uppercase; }
-    .qr-meta p { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--app-accent); margin: 4px 0 0; }
-    .btn-download-app { width: 100%; background: var(--app-primary); color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 700; cursor: pointer; }
+
+    #zoomCanvas {
+        width: 240px !important;
+        height: 240px !important;
+    }
+
+    .qr-scan-line {
+        position: absolute;
+        left: 30px;
+        right: 30px;
+        height: 2px;
+        background: var(--app-accent);
+        opacity: 0.6;
+        top: 30px;
+        animation: scan 3s infinite linear;
+    }
+
+    @@keyframes scan {
+        0% {
+            top: 30px;
+        }
+
+        100% {
+            top: 270px;
+        }
+    }
+
+    .qr-meta {
+        padding: 0 40px 24px;
+        text-align: left;
+    }
+
+        .qr-meta label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+        }
+
+        .qr-meta p {
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            color: var(--app-accent);
+            margin: 4px 0 0;
+        }
+
+    .btn-download-app {
+        width: 100%;
+        background: var(--app-primary);
+        color: white;
+        border: none;
+        padding: 16px;
+        border-radius: 16px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    /* Special QR Card Styles - matching table style */
+    .special-qr-card {
+        background: linear-gradient(90deg, #FDFCFE 0%, #F4F2FB 100%);
+        border: 1px solid var(--app-border);
+    }
+
+    .special-qr-row {
+        display: flex;
+        align-items: center;
+        gap: 0;
+    }
+
+    .sqr-cell {
+        padding: 18px 24px;
+        border-right: 1px solid var(--app-border);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+        .sqr-cell:last-child {
+            border-right: none;
+        }
+
+    .sqr-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--app-text-muted);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    .sqr-id {
+        min-width: 220px;
+        font-family: 'Space Mono', monospace;
+        font-size: 13px;
+        color: var(--app-accent);
+    }
+
+    .sqr-content {
+        flex: 1;
+    }
+
+    .sqr-preview-cell {
+        align-items: center;
+    }
+
+    .sqr-actions {
+        align-items: flex-start;
+    }
+
+    .special-qr-preview {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        border: 1.5px solid var(--app-border);
+        background: white;
+        padding: 3px;
+        cursor: pointer;
+    }
+
+    .static-qr-img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .img-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(81, 43, 212, 0.4);
+        border-radius: 10px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .special-qr-preview:hover .img-overlay {
+        display: flex;
+    }
 </style>
 
 @section Scripts {

@@ -75,11 +75,12 @@ CREATE TABLE History (
     Id             INT PRIMARY KEY IDENTITY(1,1),
     PoiId          INT,
     UserId         INT,
+    DeviceId       NVARCHAR(255) NULL,
 
     PlayTime       DATETIME DEFAULT GETDATE(),
     ListenDuration INT NOT NULL DEFAULT 0,
 
-    FOREIGN KEY (PoiId)  REFERENCES POI(Id),
+    FOREIGN KEY (PoiId)  REFERENCES POI(Id) ON DELETE CASCADE,
     FOREIGN KEY (UserId) REFERENCES Users(Id)
 );
 
@@ -94,7 +95,7 @@ CREATE TABLE POIImages (
 
     CreatedAt   DATETIME DEFAULT GETDATE(),
 
-    FOREIGN KEY (PoiId) REFERENCES POI(Id)
+    FOREIGN KEY (PoiId) REFERENCES POI(Id) ON DELETE CASCADE
 );
 
 -- ========================
@@ -357,7 +358,8 @@ VALUES
 -- Cập nhật Tours sang PUBLISHED
 UPDATE Tours SET Status = 'PUBLISHED' WHERE Status = 'DRAFT';
 ALTER TABLE Users ADD IsActive BIT NOT NULL DEFAULT 1;
-
+--Thêm
+ALTER TABLE History ADD DeviceId NVARCHAR(255) NULL;
 -- ================================================
 -- CẬP NHẬT CỘT CÒN THIẾU TRONG BẢNG USERS
 -- ================================================

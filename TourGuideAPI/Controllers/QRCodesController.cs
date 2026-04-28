@@ -28,7 +28,7 @@ namespace TourGuideAPI.Controllers
 
             if (!IsAdmin)
             {
-                query = query.Where(q => q.OwnerId == MyUserId);
+                query = query.Where(q => q.POI != null && q.POI.OwnerId == MyUserId);
             }
 
             var list = await query.OrderByDescending(q => q.CreatedAt).ToListAsync();
@@ -62,10 +62,10 @@ namespace TourGuideAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateQRCode(int id, QRCode qr)
         {
-            var existing = await _context.QRCodes.FindAsync(id);
+            var existing = await _context.QRCodes.Include(q => q.POI).FirstOrDefaultAsync(q => q.Id == id);
             if (existing == null) return NotFound();
 
-            if (!IsAdmin && existing.OwnerId != MyUserId)
+            if (!IsAdmin && (existing.POI == null || existing.POI.OwnerId != MyUserId))
             {
                 return Forbid();
             }
@@ -81,10 +81,10 @@ namespace TourGuideAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQRCode(int id)
         {
-            var qr = await _context.QRCodes.FindAsync(id);
+            var qr = await _context.QRCodes.Include(q => q.POI).FirstOrDefaultAsync(q => q.Id == id);
             if (qr == null) return NotFound();
 
-            if (!IsAdmin && qr.OwnerId != MyUserId)
+            if (!IsAdmin && (qr.POI == null || qr.POI.OwnerId != MyUserId))
             {
                 return Forbid();
             }
