@@ -28,5 +28,16 @@
 	</array>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tourguideapp</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>vn.tourguide.app</string>
+		</dict>
+	</array>
 </dict>
 </plist>

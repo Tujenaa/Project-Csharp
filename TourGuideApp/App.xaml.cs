@@ -115,24 +115,32 @@ namespace TourGuideApp
                         AuthService.LoginOfflineAsGuest();
                     }
 
-                    // Lưu ID để MapPage xử lý khi load
+                    // Lưu ID để MapPage xử lý khi load (nếu cần)
                     MapTourState.FocusPoiId = poiId.Value;
 
-                    // Chờ một chút ngắn để đảm bảo các tiến trình khởi tạo măc định của MAUI/Activity đã ổn định
-                    await Task.Delay(500);
+                    // Chuyển sang giao diện chính nếu đang ở Welcome/Login
+                    if (MainPage is not AppShell)
+                    {
+                        MainPage = new AppShell();
+                        await Task.Delay(500); // Chờ AppShell khởi tạo
+                    }
+                    else
+                    {
+                        // Nếu đã ở AppShell, điều hướng về trang Home
+                        await Shell.Current.GoToAsync("//home");
+                    }
 
-                    // Buộc chuyển sang AppShell bất kể đang ở Login hay Home
-                    MainPage = new AppShell();
-
-                    // Phát audio sau khi giao diện đã ổn định hẳn
+                    // Phát audio
                     _ = Task.Run(async () =>
                     {
                         try
                         {
-                            await Task.Delay(2000); 
+                            // Lấy thông tin POI từ API
                             var poi = await new ApiService().GetPOIById(poiId.Value);
                             if (poi != null)
                             {
+                                // Chờ một chút để UI ổn định trước khi phát
+                                await Task.Delay(1000); 
                                 await AudioPlaybackService.Instance.PlayAsync(poi);
                             }
                         }
@@ -156,8 +164,14 @@ namespace TourGuideApp
                             AuthService.LoginOfflineAsGuest();
                         }
 
-                        await Task.Delay(500);
-                        MainPage = new AppShell();
+                        if (MainPage is not AppShell)
+                        {
+                            MainPage = new AppShell();
+                        }
+                        else
+                        {
+                            await Shell.Current.GoToAsync("//home");
+                        }
                     }
                 }
             });

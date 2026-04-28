@@ -50,6 +50,13 @@ public static class QrCodeService
                 string lastSegment = uri.Segments.LastOrDefault()?.Trim('/') ?? "";
                 if (int.TryParse(lastSegment, out int id)) return id;
             }
+            
+            // Trường hợp: tourguideapp:///poi/123 (3 slashes)
+            if (string.IsNullOrEmpty(uri.Host) && uri.LocalPath.StartsWith("/poi/"))
+            {
+                string lastSegment = uri.Segments.LastOrDefault()?.Trim('/') ?? "";
+                if (int.TryParse(lastSegment, out int id)) return id;
+            }
 
             // Trường hợp: tourguideapp://guest?poi=123
             return GetQueryParam(uri.Query, "poi");

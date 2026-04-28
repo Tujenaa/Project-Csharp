@@ -12,7 +12,7 @@ public class ApiService
 
     public static class ApiConfig
     {
-        private const string DevHostIp = "192.168.1.119"; 
+        private const string DevHostIp = "192.168.1.166"; 
         private const string DevPort = "5266";
 
         public static string BaseUrl
@@ -50,6 +50,8 @@ public class ApiService
                 if (pois != null && pois.Count > 0)
                 {
                     _ = LocalDbService.Instance.SavePOIsAsync(pois);
+                    // Tải ngầm ảnh để dùng offline
+                    _ = ImageCacheService.Instance.CachePoisImagesAsync(pois);
                     return pois.Where(p => p.IsApproved).ToList();
                 }
             }

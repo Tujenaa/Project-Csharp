@@ -11,6 +11,7 @@ namespace TourGuideAPI.Models
         public string Content { get; set; } = string.Empty;
         public int OwnerId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public bool IsActive { get; set; } = true;
 
         [ForeignKey("PoiId")]
         public POI? POI { get; set; }

@@ -19,8 +19,9 @@ public class Tour : INotifyPropertyChanged
         get
         {
             if (string.IsNullOrEmpty(ThumbnailUrl)) return "place_placeholder.png";
-            var baseUrl = Services.ApiService.ApiConfig.BaseUrl.Replace("/api/", "");
-            return ThumbnailUrl.StartsWith("http") ? ThumbnailUrl : baseUrl + "/" + ThumbnailUrl;
+            var baseUrl = Services.ApiService.ApiConfig.BaseUrl.Replace("/api/", "").TrimEnd('/');
+            var remoteUrl = ThumbnailUrl.StartsWith("http") ? ThumbnailUrl : baseUrl + "/" + ThumbnailUrl.TrimStart('/');
+            return Services.ImageCacheService.Instance.GetImageSource(remoteUrl) ?? remoteUrl;
         }
     }
 

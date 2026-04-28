@@ -177,12 +177,15 @@ CREATE TABLE [ApprovalRequests] (
 -- ================================================
 CREATE TABLE [QRCodes] (
     [Id]          INT IDENTITY (1, 1) NOT NULL,
-    [PoiId]       INT            NOT NULL,      -- Link tới POI
-    [CustomUrl]   NVARCHAR (MAX) NULL,          -- URL tùy chỉnh nếu có
+    [Name]        NVARCHAR (255) NULL,          -- Ghi chú/Tên mã QR
+    [PoiId]       INT            NULL,          -- Liên kết đến POI (có thể để trống cho mã QR tự do)
+    [Content]     NVARCHAR (MAX) NOT NULL,      -- Nội dung mã hóa (tourguideapp://...)
+    [OwnerId]     INT            NOT NULL,      -- ID người sở hữu/tạo
     [CreatedAt]   DATETIME2 (7)  NOT NULL DEFAULT GETDATE(),
-    [CreatedBy]   INT            NOT NULL,      -- ID người tạo
     [IsActive]    BIT            NOT NULL DEFAULT 1,
-    CONSTRAINT [PK_QRCodes] PRIMARY KEY CLUSTERED ([Id] ASC)
+    CONSTRAINT [PK_QRCodes] PRIMARY KEY CLUSTERED ([Id] ASC),
+    FOREIGN KEY (PoiId) REFERENCES POI(Id) ON DELETE SET NULL,
+    FOREIGN KEY (OwnerId) REFERENCES Users(Id)
 );
 -- ================================================
 -- DỮ LIỆU MẪU

@@ -29,11 +29,15 @@ public class POI : INotifyPropertyChanged
     {
         get
         {
-            var baseUrl = Services.ApiService.ApiConfig.BaseUrl.Replace("/api/", "");
+            var baseUrl = Services.ApiService.ApiConfig.BaseUrl.Replace("/api/", "").TrimEnd('/');
             if (Images == null || Images.Count == 0) 
                 return new List<string> { "place_placeholder.png" };
             
-            return Images.Select(img => img.StartsWith("http") ? img : baseUrl + "/" + img).ToList();
+            return Images.Select(img => 
+            {
+                var remoteUrl = img.StartsWith("http") ? img : baseUrl + "/" + img.TrimStart('/');
+                return Services.ImageCacheService.Instance.GetImageSource(remoteUrl) ?? remoteUrl;
+            }).ToList();
         }
     }
 
